@@ -20,6 +20,8 @@ export const tr = {
     playlistNotFound: 'Diese Präsentation gibt es nicht (mehr).',
     playlistInUse: (screens: string[]) =>
         `Die Präsentation läuft noch auf ${screens.map((s) => `„${s}"`).join(', ')}. Erst dort im Zeitplan eine andere wählen.`,
+    playlistEmbedded: (names: string[]) =>
+        `Die Präsentation ist eingebettet in ${names.map((n) => `„${n}"`).join(', ')}. Erst dort die Einbettung entfernen.`,
     templateInUse: (names: string[]) =>
         `Diese Vorlage steckt noch in: ${names.join(', ')}. Zuerst dort lösen oder entfernen.`,
     /** A playlist whose slides exist only as drafts. */

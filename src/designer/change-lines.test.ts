@@ -12,6 +12,11 @@ describe('describeChange (Plan.md 100)', () => {
         expect(result.names).toBe('Begrüßung, Termine, Dank');
     });
 
+    it('words embedding a presentation and removing it (Plan.md 120)', () => {
+        expect(line({ ...base, action: 'published', details: ['embedded:Hauptteil'] }).text).toBe('„Foyer“ veröffentlicht: „Hauptteil“ eingebettet');
+        expect(line({ ...base, action: 'published', details: ['unembedded:Hauptteil'] }).text).toBe('„Foyer“ veröffentlicht: Einbettung von „Hauptteil“ entfernt');
+    });
+
     it('words the other operations', () => {
         expect(line({ ...base, action: 'created' }).text).toBe('„Foyer“ angelegt');
         expect(line({ ...base, action: 'duplicated', details: ['source:Advent'] }).text).toBe('„Foyer“ angelegt, als Kopie von „Advent“');

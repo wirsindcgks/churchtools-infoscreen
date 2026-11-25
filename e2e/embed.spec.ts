@@ -59,7 +59,13 @@ test('the main part cannot embed anything once it is embedded', async ({ page })
     await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
 
     await page.goto('playlists');
-    await page.getByTestId('playlist-card').first().getByTestId('open-playlist').click();
+    // The card of the main part names where it is embedded and keeps it from being deleted (Plan.md 120 C).
+    const main = page.getByTestId('playlist-card').first();
+    await expect(main.getByTestId('playlist-embedded-in')).toContainText('Eingebettet in „');
+    await main.getByTestId('playlist-menu').click();
+    await expect(main.getByTestId('delete-playlist')).toBeDisabled();
+    await page.keyboard.press('Escape');
+    await main.getByTestId('open-playlist').click();
     await expectSlides(page);
     await expect(page.getByTestId('embed-item')).toHaveCount(0);
     await expect(page.getByTestId('embed-playlist')).toBeDisabled();

@@ -164,6 +164,14 @@ export class PlaylistInUseError extends Error {
     }
 }
 
+/** A playlist embedded in another is not deleted (Plan.md 120) – the other would lose those slides. */
+export class PlaylistEmbeddedError extends Error {
+    constructor(readonly playlistNames: string[]) {
+        super(tr.playlistEmbedded(playlistNames));
+        this.name = 'PlaylistEmbeddedError';
+    }
+}
+
 /** A template that still sits on a slide is not deleted – the slide would lose its blocks. */
 export class TemplateInUseError extends Error {
     constructor(readonly playlistNames: string[]) {
@@ -210,8 +218,12 @@ export interface PlaylistOverview {
     firstSlide: SlideDoc | null;
     slideCount: number;
     media: MediaDoc[];
-    /** Screens whose schedule shows it, as default or through a rule. */
+    /** Screens whose schedule shows it, as default or through a rule. Its band runs there – the notices count these. */
     screens: ScreenRef[];
+    /** Screens that show it only through a presentation embedding it (Plan.md 120): its slides run there, its band does not. Missing = none. */
+    embeddedScreens?: ScreenRef[];
+    /** The presentations that embed it (Plan.md 120), by name; missing = none. */
+    embeddedIn?: { id: string; name: string }[];
     /**
      * The last save that changed what it shows: its own or, later, that of one
      * of its slides through another playlist (Plan.md 49). Null before any.
@@ -1005,6 +1017,7 @@ export class ScreenRepository {
         const running = await this.readRunningScreens();
         const screens = running.screens.map((s) => s.doc);
         const slides = new Map((await this.readSlides()).docs.map((s) => [s.doc.id, s.doc]));
+        const docs = running.playlists.map((p) => p.doc);
         const overviews = running.playlists.map(({ doc }) => {
             const own = doc.slideIds.map((id) => slides.get(id)).filter((s): s is SlideDoc => s !== undefined);
             const editedAt = playlistStand(doc, own) ?? '';
@@ -1014,6 +1027,8 @@ export class ScreenRepository {
                 slideCount: own.length,
                 media: [] as MediaDoc[],
                 screens: screensShowing(doc.id, screens),
+                embeddedScreens: screensShowing(doc.id, screens, docs).filter((s) => !screensShowing(doc.id, screens).some((own) => own.id === s.id)),
+                embeddedIn: embeddersOf(doc.id, docs).map((p) => ({ id: p.id, name: withPlaylistDefaults(p, screens).name })),
                 editedAt: editedAt || null,
                 // savePlaylist stamps a playlist and its slides alike – a newer slide names the playlist it was saved from.
                 editedBy:
@@ -1071,15 +1086,13 @@ export class ScreenRepository {
                 slides: inner.doc.slideIds.map((sid) => byId.get(sid)).filter((s): s is SlideDoc => !!s),
             }];
         });
-        const embeddedIn = running.playlists
-            .filter((p) => p.doc.id !== id && p.doc.embeds?.some((e) => e.playlistId === id))
-            .map((p) => ({ id: p.doc.id, name: withPlaylistDefaults(p.doc, screens).name }))
-            .sort((a, b) => a.name.localeCompare(b.name, LOCALE));
+        const docs = running.playlists.map((p) => p.doc);
+        const embeddedIn = embeddersOf(id, docs).map((p) => ({ id: p.id, name: withPlaylistDefaults(p, screens).name }));
         return {
             playlist: withPlaylistDefaults(stored.doc, screens),
             slides,
             media,
-            screens: screensShowing(id, screens),
+            screens: screensShowing(id, screens, docs),
             sharedWith,
             embedded,
             embeddedIn,
@@ -1154,6 +1167,8 @@ export class ScreenRepository {
             ...(source.playlist.progress ? { progress: true } : {}),
             ...(source.playlist.progressPlacement === 'edge' ? { progressPlacement: 'edge' as const } : {}),
             ...(source.playlist.progressStyle === 'segments' ? { progressStyle: 'segments' as const } : {}),
+            // The copy embeds the same main part (Plan.md 120); a slide skipped above counts no more in the positions.
+            ...(source.playlist.embeds?.length ? { embeds: source.playlist.embeds.map((e) => ({ ...e, position: Math.min(e.position, slides.length) })) } : {}),
             revision: 1,
             updatedBy,
             updatedAt: time,
@@ -1254,6 +1269,12 @@ export class ScreenRepository {
         const before = new Set(stored.doc.slideIds);
         const names = new Map(bundle.slides.map((s) => [s.id, s.name]));
         const removed = stored.doc.slideIds.filter((id) => !playlist.slideIds.includes(id)).length;
+        const embedsBefore = new Set((stored.doc.embeds ?? []).map((e) => e.playlistId));
+        const embedsAfter = new Set((playlist.embeds ?? []).map((e) => e.playlistId));
+        const nameOf = (embedId: string) => {
+            const doc = running.playlists.find((p) => p.doc.id === embedId)?.doc;
+            return doc ? withPlaylistDefaults(doc, screens).name : '';
+        };
         this.log({
             area: 'playlist',
             targetId: playlist.id,
@@ -1263,6 +1284,8 @@ export class ScreenRepository {
                 ...toWrite.filter((s) => before.has(s.id)).map((s) => `changed:${s.name}`),
                 ...playlist.slideIds.filter((id) => !before.has(id)).map((id) => `added:${names.get(id) ?? ''}`),
                 ...(removed ? [`removed:${removed}`] : []),
+                ...[...embedsAfter].filter((e) => !embedsBefore.has(e)).map((e) => `embedded:${nameOf(e)}`),
+                ...[...embedsBefore].filter((e) => !embedsAfter.has(e)).map((e) => `unembedded:${nameOf(e)}`),
             ],
             by: options.updatedBy,
             now: options.now,
@@ -1329,7 +1352,11 @@ export class ScreenRepository {
         const running = await this.readRunningScreens();
         const stored = running.playlists.find((p) => p.doc.id === id);
         if (!stored) return;
-        const users = screensShowing(id, running.screens.map((s) => s.doc));
+        // Embedded somewhere (Plan.md 120): the presentations embedding it would lose those slides – named, not their screens.
+        const screens = running.screens.map((s) => s.doc);
+        const embedders = embeddersOf(id, running.playlists.map((p) => p.doc));
+        if (embedders.length) throw new PlaylistEmbeddedError(embedders.map((p) => withPlaylistDefaults(p, screens).name));
+        const users = screensShowing(id, screens);
         if (users.length) throw new PlaylistInUseError(users.map((s) => s.name));
         const ids = await this.ensureCategories();
         await this.kv.deleteValue(ids.playlists, stored.valueId);
@@ -1566,7 +1593,7 @@ export class ScreenRepository {
         const uses = new Map<string, MediaUse[]>();
         for (const { doc } of running.playlists) {
             const playlist = { id: doc.id, name: withPlaylistDefaults(doc, screens).name };
-            const showing = screensShowing(doc.id, screens);
+            const showing = screensShowing(doc.id, screens, running.playlists.map((p) => p.doc));
             for (const slide of doc.slideIds.map((id) => slides.get(id))) {
                 if (!slide) continue;
                 for (const mediaId of new Set(referencedMedia(slide))) {
@@ -1812,9 +1839,21 @@ export function copySlide(slide: SlideDoc, updatedAt?: string): SlideDoc {
     };
 }
 
-function screensShowing(playlistId: string, screens: readonly ScreenDoc[]): ScreenRef[] {
+/** The playlists that embed this one (Plan.md 120), sorted by name. */
+function embeddersOf(playlistId: string, playlists: readonly PlaylistDoc[]): PlaylistDoc[] {
+    return playlists
+        .filter((p) => p.id !== playlistId && p.embeds?.some((e) => e.playlistId === playlistId))
+        .sort((a, b) => a.name.localeCompare(b.name, LOCALE));
+}
+
+/**
+ * The screens that show the playlist. With `playlists`, also those that show it through a presentation embedding it
+ * (Plan.md 120) – what "Wo läuft das?" counts; without, only where it is chosen itself.
+ */
+function screensShowing(playlistId: string, screens: readonly ScreenDoc[], playlists?: readonly PlaylistDoc[]): ScreenRef[] {
+    const ids = new Set([playlistId, ...(playlists ? embeddersOf(playlistId, playlists).map((p) => p.id) : [])]);
     return screens
-        .filter((s) => playlistIdsOf(s).includes(playlistId))
+        .filter((s) => playlistIdsOf(s).some((id) => ids.has(id)))
         .map((s) => ({ id: s.id, slug: s.slug, name: s.name }))
         .sort((a, b) => a.name.localeCompare(b.name, LOCALE));
 }

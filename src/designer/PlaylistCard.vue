@@ -32,13 +32,18 @@ const emit = defineEmits<{ remove: []; duplicate: [] }>();
 const context = useStageContext();
 const playlist = computed(() => props.overview.playlist);
 const portrait = computed(() => playlist.value.stage.height > playlist.value.stage.width);
-const inUse = computed(() => props.overview.screens.length > 0);
+/** Where its slides run: the screens that choose it and those that show it through an embedding (Plan.md 120). */
+const allScreens = computed(() => [...props.overview.screens, ...(props.overview.embeddedScreens ?? [])]);
+const inUse = computed(() => allScreens.value.length > 0);
+/** The presentations that embed this one (Plan.md 120); they keep it from being deleted. */
+const embeddedIn = computed(() => (props.overview.embeddedIn ?? []).map((p) => `„${p.name}“`).join(', '));
+const deleteBlocked = computed(() => (embeddedIn.value ? t.playlists.card.deleteEmbedded(embeddedIn.value) : inUse.value ? t.playlists.card.deleteBlocked : undefined));
 /** A band is running (Plan.md, Nächste Schritte 34) – not one that only sits there, expired. */
 const hasBanner = computed(() => bannerShown(playlist.value.banner, context.now, context.timeZone));
 
 /** The screens that show it right now, by their own signs of life (Plan.md 77). */
 const live = computed(() =>
-    liveScreens(playlist.value.id, props.overview.screens, props.heartbeats ?? null, props.now ?? context.now),
+    liveScreens([playlist.value.id, ...(props.overview.embeddedIn ?? []).map((p) => p.id)], allScreens.value, props.heartbeats ?? null, props.now ?? context.now),
 );
 
 /** When and by whom it was last edited – in the church's time zone, like every time here. */
@@ -86,11 +91,11 @@ const edited = computed(() => lastEdited(props.overview.editedAt, props.overview
                 <Icon name="copy" :size="16" /> {{ t.playlists.card.duplicate }}
             </button>
             <button
-                v-tip="inUse ? t.playlists.card.deleteBlocked : undefined"
+                v-tip="deleteBlocked"
                 role="menuitem"
                 type="button"
                 class="danger"
-                :disabled="inUse"
+                :disabled="!!deleteBlocked"
                 data-testid="delete-playlist"
                 @click="close(); emit('remove')"
             >
@@ -113,7 +118,11 @@ const edited = computed(() => lastEdited(props.overview.editedAt, props.overview
             <ul class="d-facts">
                 <li v-tip="inUse ? t.playlists.card.runsOn : t.playlists.card.runsNowhere" data-testid="playlist-screens">
                     <Icon name="tv" :size="16" />
-                    {{ inUse ? overview.screens.map((s) => s.name).join(', ') : t.common.onNoScreen }}
+                    {{ inUse ? allScreens.map((s) => s.name).join(', ') : t.common.onNoScreen }}
+                </li>
+                <li v-if="embeddedIn" v-tip="t.playlists.card.embeddedInTitle" data-testid="playlist-embedded-in">
+                    <Icon name="slides" :size="16" />
+                    {{ t.playlists.card.embeddedIn(embeddedIn) }}
                 </li>
             </ul>
         </section>
