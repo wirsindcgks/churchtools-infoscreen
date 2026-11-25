@@ -168,7 +168,7 @@ const motionSeconds = computed(() => pageInterval(props.block.seconds ?? 6, prop
             <img v-if="url" class="picture" :src="url" :style="{ objectFit: block.fit }" alt="">
         </div>
         <!-- Keyed by the picture really on show: `advance` waits for the decoding, the bar starts over with the picture. -->
-        <PageProgress v-if="(turnSeconds || (still && urls.length > 1)) && pageProgressShown(block, context)" :key="index" :seconds="turnSeconds" :held="still" :segments="pageProgressSegments(block)" :size="8" :inset="16" :color="themeOf(context).text" :edge="pageProgressEdge(block)" :number="index + 1" :total="urls.length" />
+        <PageProgress v-if="(turnSeconds || (still && urls.length > 1)) && pageProgressShown(block, context)" :key="index" :seconds="turnSeconds" :held="still" :segments="pageProgressSegments(block)" :color="themeOf(context).text" :edge="pageProgressEdge(block)" :number="index + 1" :total="urls.length" />
     </div>
     <!-- A calm placeholder, never a broken-image icon on a TV. -->
     <div v-else class="placeholder" />

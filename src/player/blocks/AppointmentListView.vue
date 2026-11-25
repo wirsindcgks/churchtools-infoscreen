@@ -14,6 +14,7 @@ import type { Block } from '../../model/schema';
 import { themeOf, useStageContext } from '../context';
 import { textStyle } from '../format';
 import { PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, paginateByHeight, SHOW_ALL_CAP, movePage, reportTurn } from '../paging';
+import { progressReserve } from '../progress-size';
 import { listLayout } from '../theme';
 import AppointmentRow from './AppointmentRow.vue';
 import PageSegments from './PageSegments.vue';
@@ -52,14 +53,14 @@ function measure(): void {
 
 /** The whole bar, the figures included, can be switched off (Plan.md 105); its room then goes to the rows. */
 const progressOn = computed(() => pageProgressShown(props.block, context));
-/** The page bar at the bottom: 0.55em text and a little air. */
+/** The page bar at the bottom: the number at a fixed size (progress-size.ts) and a little air. */
 const edge = computed(() => pageProgressEdge(props.block));
 /** One segment per page instead of the bar with the number (Plan.md 109). */
 const segments = computed(() => pageProgressSegments(props.block));
 /** The designer's stage turns no pages: the bar then stands at 40 % (Plan.md 109). */
 const held = computed(() => context.paging === false);
 /** Room kept free for the page bar; the edge line is thinner and has no number beside it. */
-const reserve = computed(() => (progressOn.value ? props.block.style.fontSize * (edge.value ? 0.365 : 0.9) : 0));
+const reserve = computed(() => (progressOn.value ? progressReserve(edge.value) : 0));
 /** Without "alle Termine" only the rows that fit whole – a row cut off at the bottom looks broken. */
 const pages = computed(() =>
     props.block.showAll
@@ -199,10 +200,6 @@ onBeforeUnmount(() => {
     bottom: var(--list-inset);
     left: var(--list-inset);
     right: var(--list-inset);
-}
-.paged--visitor .pager--segments {
-    font-size: 1em;
-    --segment-height: 0.16em;
 }
 .paged--visitor .pager--edge {
     right: 0;

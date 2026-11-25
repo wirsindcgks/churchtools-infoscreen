@@ -89,6 +89,7 @@ watch(() => [props.startedAt, props.seconds, props.held, props.number, props.seg
     display: flex;
     align-items: center;
     gap: 0.6em;
+    /* PROGRESS_FONT_PX (progress-size.ts): a fixed value, no runtime CSS variable on a weak player; a test keeps both alike. */
     font-size: 24px;
     pointer-events: none;
 }

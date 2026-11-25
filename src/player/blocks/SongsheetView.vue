@@ -329,7 +329,7 @@ const headStyle = computed(() => ({
             <div class="line">&nbsp;</div>
         </div>
         <div v-if="sheet?.footer" class="foot" :style="{ fontSize: `${0.22 * Math.min(1, scale)}em` }" data-testid="songsheet-footer">{{ sheet.footer }}</div>
-        <PageProgress v-if="paged" :key="page" :seconds="turnSeconds" :held="held" :offset="pageOffset" :size="8" :inset="16" :number="page + 1" :total="pages" :color="themeOf(context).text" />
+        <PageProgress v-if="paged" :key="page" :seconds="turnSeconds" :held="held" :offset="pageOffset" :number="page + 1" :total="pages" :color="themeOf(context).text" />
     </div>
     <!-- Source "Probe" before the first choice: the way to the phone page stands where the song will be – only once the choice was read,
          so that the code does not flash up while the player starts (user, 2026-11-13). -->

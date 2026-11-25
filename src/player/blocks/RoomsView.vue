@@ -12,6 +12,7 @@ import { doorSign, emptyText, overviewRows } from '../../rooms/display';
 import { useStageContext } from '../context';
 import { textStyle } from '../format';
 import { PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, paginateByHeight, movePage, reportTurn } from '../paging';
+import { progressReserve } from '../progress-size';
 import PageSegments from './PageSegments.vue';
 import RoomRow from './RoomRow.vue';
 import { tp } from '../../i18n/player';
@@ -50,7 +51,7 @@ function measure(): void {
     heights.value = items ? [...items].map((row) => row.offsetHeight) : [];
 }
 
-/** The page bar at the bottom: 0.55em text and a little air, like AppointmentListView's. */
+/** The page bar at the bottom: the number at a fixed size (progress-size.ts) and a little air, like AppointmentListView's. */
 const progressOn = computed(() => pageProgressShown(props.block, context));
 const edge = computed(() => pageProgressEdge(props.block));
 /** One segment per page instead of the bar with the number (Plan.md 109). */
@@ -58,7 +59,7 @@ const segments = computed(() => pageProgressSegments(props.block));
 /** The designer's stage turns no pages: the bar then stands at 40 % (Plan.md 109). */
 const held = computed(() => context.paging === false);
 /** Room kept free for the page bar; the edge line is thinner and has no number beside it. */
-const reserve = computed(() => (progressOn.value ? props.block.style.fontSize * (edge.value ? 0.365 : 0.9) : 0));
+const reserve = computed(() => (progressOn.value ? progressReserve(edge.value) : 0));
 const pages = computed(() => paginateByHeight(rows.value, heights.value, props.block.height, reserve.value));
 const page = ref(0);
 const shown = computed(() => pages.value[page.value % Math.max(1, pages.value.length)] ?? []);
