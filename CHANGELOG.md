@@ -4,6 +4,21 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.70.2] – 2026-11-25
+
+### Geändert
+
+- **Alle Fortschrittsbalken gleich groß.** Die Balken in Terminliste, Gruppen, Personen, Räumen, Beiträgen, Galerie und
+  Liedblatt haben dieselbe feste Größe wie der Balken der ganzen Präsentation, unabhängig von der Schriftgröße des
+  Bausteins. Bei großer Schrift wird die Seitenzahl dadurch kleiner als bisher, bei kleiner etwas größer.
+
+### Behoben
+
+- **Seitenzahl der Listen abgeschnitten:** „1/2“ unten rechts in Terminliste, Gruppen, Personen und Räumen war unten
+  und rechts angeschnitten.
+- **Zahl im Fortschrittsbalken des Editors** zählt die Folien einer eingebetteten Präsentation mit, wie Vorschau und
+  Bildschirm (Plan.md 120).
+
 ## [0.70.1] – 2026-11-25
 
 ### Geändert
@@ -2181,6 +2196,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.67.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.67.0
 [0.66.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.66.0
 [0.68.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.68.0
+[0.70.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.70.2
 [0.70.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.70.1
 [0.70.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.70.0
 [0.69.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.69.0
