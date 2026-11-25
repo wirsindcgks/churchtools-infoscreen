@@ -4,6 +4,23 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.70.0] – 2026-11-25
+
+Danke an DJSudermann ([@DJSudermann](https://github.com/DJSudermann)) für den Wunsch, eine ganze Präsentation in einer
+anderen zu zeigen ([Beitrag im ChurchTools-Forum](https://forum.church.tools/post/54858)).
+
+### Neu
+
+- **Eine Präsentation in einer anderen** (Plan.md 120). Terminfolien und Spendeninformation lassen sich einmal als
+  **Hauptteil** pflegen und in die Schleifen vor und nach dem Gottesdienst einbetten: In der Folienliste unter „Neue
+  Folie“ → „Präsentation einbetten …“. Der Hauptteil steht dort als ein Eintrag, lässt sich verschieben und entfernen,
+  bearbeitet wird er in seiner eigenen Präsentation. Was dort veröffentlicht wird, läuft sofort in jeder Schleife mit;
+  die Vorschau zeigt die eingebetteten Folien an ihrer Stelle, der Fortschrittsbalken zählt sie mit. Eingebettet wird
+  eine Ebene tief, eine Präsentation je Schleife, im selben Format.
+- **Wo der Hauptteil läuft** (Plan.md 120). Seine Karte auf der Seite „Präsentationen“ zeigt „Eingebettet in …“ und die
+  Bildschirme der Schleifen; löschen lässt er sich erst, wenn ihn keine Präsentation mehr einbettet. Der Verlauf hält
+  Einbetten und Entfernen fest, Duplizieren übernimmt die Einbettung.
+
 ## [0.69.0] – 2026-11-24
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für die Anregung, eine neue Player-Version früher auf die
@@ -2148,4 +2165,5 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.67.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.67.0
 [0.66.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.66.0
 [0.68.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.68.0
+[0.70.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.70.0
 [0.69.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.69.0

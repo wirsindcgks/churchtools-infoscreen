@@ -166,7 +166,7 @@ nicht die Änderungen, sondern lange Sitzungen, Testläufe, Bilder und Berichte.
   freigegebene Kalender, Dienste nur aus offenen Dienstgruppen) – auch wenn das Gerät mehr lesen kann. Ausnahmen wählt
   ein Gestalter bewusst (etwa Notizen geschlossener Dienstgruppen im „Ablauf“, Punkt 119); dann sagt der Hilfetext, dass
   sie für alle sichtbar auf dem Bildschirm stehen.
-- **Geheimnisse:** keine Instanz-URL, kein `*.church.tools`, keine Tokens, keine Personendaten in Code, Tests, Doku,
+- **Geheimnisse:** keine Instanz-URL, kein `*.church.tools` (ausgenommen das öffentliche Forum `forum.church.tools`), keine Tokens, keine Personendaten in Code, Tests, Doku,
   Kommentaren; `fixtures/` nicht versioniert; Datei- und Bild-Hashes sind Zugangsschlüssel.
 - **Bauregeln:** kein Inline-Skript (CSP), der Player lädt keine Chunks nach, Zeiten über `Intl`/Zeitzone der Instanz,
   nie fester Offset; Timer und Listener werden beim Abbau entfernt (Kiosk-Tabs laufen wochenlang).
@@ -206,7 +206,8 @@ veröffentlichen“.*
 - **Keine Zugangsdaten und keine Instanz-URL ins Repo.** `.env` ist ignoriert. Instanz-URL und Login-Token
   heißen dort `CT_BASE_URL` und `CT_LOGIN_TOKEN` – **ohne `VITE_`-Präfix**, damit Vite sie nie ins Bündel
   schreibt; sie leben nur im Dev-Proxy. Die Anwendung selbst nimmt `window.settings.base_url` oder den eigenen
-  Ursprung. `scripts/check-dist.js` bricht den Build ab, wenn im `dist/` eine `*.church.tools`-Adresse steht.
+  Ursprung. `scripts/check-dist.js` bricht den Build ab, wenn im `dist/` eine `*.church.tools`-Adresse steht – außer dem öffentlichen Forum
+  `forum.church.tools`, auf das der Changelog für Wünsche von dort verlinkt *(seit 2026-11-25, Nutzer)*.
 - **`fixtures/` ist bewusst nicht versioniert.** Ein frisch geklonter Arbeitsplatz hat die aufgezeichneten
   Antworten nicht und muss sie sich beschaffen, bevor Tests laufen.
 - **Aufgezeichnet wird nur von der Testinstanz** – und vor dem Ablegen bereinigt. Zu entfernen sind mindestens:

@@ -43,8 +43,9 @@ for (const tag of html.match(/<script\b[^>]*>/gi) ?? []) {
     }
 }
 
-// 3. No instance address: the package is meant for other congregations too.
-const forbidden = [/[a-z0-9-]+\.church\.tools/i];
+// 3. No instance address: the package is meant for other congregations too. The public forum of ChurchTools is no
+//    instance – the changelog thanks people for wishes from there (user, 2026-11-25).
+const forbidden = [/\b(?!forum\.church\.tools)[a-z0-9-]+\.church\.tools/i];
 if (process.env.CT_BASE_URL) forbidden.push(new URL(process.env.CT_BASE_URL).host);
 for (const file of files.filter((f) => /\.(js|css|html)$/.test(f))) {
     const content = fs.readFileSync(file, 'utf8');
