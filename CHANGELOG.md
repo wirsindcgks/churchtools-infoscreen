@@ -4,6 +4,14 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.70.3] – 2026-11-25
+
+### Behoben
+
+- **Eingebettete Präsentation in der Folienliste:** Der Name stand neben „N Folien · eingebettet“ und wurde auf einen
+  Buchstaben gekürzt; jetzt hat er eine eigene Zeile. Der Knopf heißt kurz „Bearbeiten“ und bricht nicht mehr auf zwei
+  Zeilen um, der volle Text „Im Hauptteil bearbeiten“ steht im Tooltip.
+
 ## [0.70.2] – 2026-11-25
 
 ### Geändert
@@ -2196,6 +2204,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.67.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.67.0
 [0.66.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.66.0
 [0.68.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.68.0
+[0.70.3]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.70.3
 [0.70.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.70.2
 [0.70.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.70.1
 [0.70.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.70.0
