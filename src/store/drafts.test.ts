@@ -154,4 +154,12 @@ describe('DraftStore', () => {
             await expect(refusing(500).load('p1')).rejects.toThrow('refused');
         });
     });
+
+    it('keeps embeds on the draft, and leaves the field out without any (Plan.md 120)', async () => {
+        const embeds = [{ playlistId: 'main', position: 1 }];
+        await drafts.save(change({ embeds }), anna);
+        expect((await drafts.load('p1'))?.playlist.embeds).toEqual(embeds);
+        await drafts.save(change({ embeds: [] }), { ...anna, expectedRevision: 1 });
+        expect((await drafts.load('p1'))?.playlist).not.toHaveProperty('embeds');
+    });
 });

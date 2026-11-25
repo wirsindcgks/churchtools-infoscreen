@@ -1089,3 +1089,51 @@ describe('ScreenRepository.fontUses (Plan.md 103)', () => {
         expect(uses.get('custom-b')).toHaveLength(1);
     });
 });
+
+describe('embedded presentations (Plan.md 120)', () => {
+    async function twoPlaylists() {
+        const repo = new ScreenRepository(new MemoryKv());
+        const stage = { width: 1920, height: 1080 };
+        const outer = await repo.createPlaylist({ name: 'Vorher', stage }, 'Anna');
+        const main = await repo.createPlaylist({ name: 'Hauptteil', stage }, 'Anna');
+        const embed = (id: string) => ({ playlistId: id, position: 1 });
+        /** Saves `id` as the designer would: the loaded bundle with the embeds. */
+        const saveWith = async (id: string, embeds?: { playlistId: string; position: number }[]) => {
+            const loaded = await repo.loadPlaylist(id);
+            const playlist = { ...loaded.playlist, ...(embeds ? { embeds } : {}) };
+            return repo.savePlaylist({ playlist, slides: loaded.slides }, { expectedRevision: loaded.playlist.revision, updatedBy: 'Anna' });
+        };
+        return { repo, outer, main, embed, saveWith, stage };
+    }
+
+    it('loads the embedded presentations with their slides, and who embeds a presentation', async () => {
+        const { repo, outer, main, embed, saveWith } = await twoPlaylists();
+        await saveWith(outer.id, [embed(main.id)]);
+        const loaded = await repo.loadPlaylist(outer.id);
+        expect(loaded.embedded.map((e) => e.playlist.id)).toEqual([main.id]);
+        expect(loaded.embedded[0]?.slides).toHaveLength(1);
+        expect(loaded.embeddedIn).toEqual([]);
+        expect((await repo.loadPlaylist(main.id)).embeddedIn).toEqual([{ id: outer.id, name: 'Vorher' }]);
+        // asked for by a draft, though not published
+        expect((await repo.loadPlaylist(main.id, [], [outer.id])).embedded.map((e) => e.playlist.id)).toEqual([outer.id]);
+    });
+
+    it('leaves the field out without an embed', async () => {
+        const { repo, outer, saveWith } = await twoPlaylists();
+        await saveWith(outer.id);
+        expect((await repo.loadPlaylist(outer.id)).playlist).not.toHaveProperty('embeds');
+    });
+
+    it('refuses to publish an embed that is missing, of another format, itself embedding, or in an embedded presentation', async () => {
+        const { repo, outer, main, embed, saveWith } = await twoPlaylists();
+        await expect(saveWith(outer.id, [embed('gone')])).rejects.toThrow('gibt es nicht mehr');
+        const portrait = await repo.createPlaylist({ name: 'Hochkant', stage: { width: 1080, height: 1920 } }, 'Anna');
+        await expect(saveWith(outer.id, [embed(portrait.id)])).rejects.toThrow('anderes Format');
+        await saveWith(outer.id, [embed(main.id)]);
+        const third = await repo.createPlaylist({ name: 'Dritte', stage: outer.stage }, 'Anna');
+        await expect(saveWith(third.id, [embed(outer.id)])).rejects.toThrow('bettet selbst eine Präsentation ein');
+        await expect(saveWith(main.id, [embed(third.id)])).rejects.toThrow('eingebettet');
+        expect((await repo.loadPlaylist(main.id)).playlist).not.toHaveProperty('embeds');
+    });
+});
+

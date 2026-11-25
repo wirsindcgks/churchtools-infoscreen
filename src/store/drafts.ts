@@ -14,6 +14,7 @@ import {
 import {
     SCHEMA_VERSION,
     type PlaylistDraftDoc,
+    type PlaylistEmbed,
     type SlideDoc,
     type SlideDraftDoc,
 } from '../model/schema';
@@ -66,6 +67,7 @@ export interface DraftChange {
     progress?: boolean;
     progressPlacement?: 'inset' | 'edge';
     progressStyle?: 'bar' | 'segments';
+    embeds?: PlaylistEmbed[];
     /** The slides to write as drafts; every other slide draft of this playlist is deleted. */
     slides: SlideDoc[];
 }
@@ -172,6 +174,7 @@ export class DraftStore {
                 ...(change.progress ? { progress: true } : {}),
                 ...(change.progressPlacement === 'edge' ? { progressPlacement: 'edge' as const } : {}),
                 ...(change.progressStyle === 'segments' ? { progressStyle: 'segments' as const } : {}),
+                ...(change.embeds?.length ? { embeds: change.embeds } : {}),
                 revision: current + 1,
                 updatedBy: options.updatedBy,
                 updatedAt,

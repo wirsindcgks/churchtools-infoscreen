@@ -227,6 +227,10 @@ export interface LoadedPlaylist extends PlaylistBundle {
     screens: ScreenRef[];
     /** By slide id of this playlist: the other playlists that show it too; only slides with at least one. */
     sharedWith: Record<string, { id: string; name: string }[]>;
+    /** The presentations embedded in this one (and those asked for with `extraEmbedIds`) with their slides in order (Plan.md 120). */
+    embedded: { playlist: StagedPlaylist; slides: SlideDoc[] }[];
+    /** The presentations that embed this one, by name. */
+    embeddedIn: { id: string; name: string }[];
     issues: ReadIssue[];
 }
 
@@ -1030,9 +1034,10 @@ export class ScreenRepository {
 
     /**
      * One playlist with its slides and media – what the editor opens. `extraSlideIds` are slides of a draft that
-     * are not published yet (linked ones taken over): `sharedWith` is worked out for them as well.
+     * are not published yet (linked ones taken over): `sharedWith` is worked out for them as well. `extraEmbedIds` are
+     * embedded presentations of a draft that the published one does not embed (Plan.md 120).
      */
-    async loadPlaylist(id: string, extraSlideIds: string[] = []): Promise<LoadedPlaylist> {
+    async loadPlaylist(id: string, extraSlideIds: string[] = [], extraEmbedIds: string[] = []): Promise<LoadedPlaylist> {
         const running = await this.readRunningScreens();
         const stored = running.playlists.find((p) => p.doc.id === id);
         if (!stored) throw new PlaylistNotFoundError(id);
@@ -1058,12 +1063,26 @@ export class ScreenRepository {
                 .sort((a, b) => a.name.localeCompare(b.name, LOCALE));
             if (others.length) sharedWith[sid] = others;
         }
+        const embedded = [...new Set([...(stored.doc.embeds ?? []).map((e) => e.playlistId), ...extraEmbedIds])].flatMap((eid) => {
+            const inner = running.playlists.find((p) => p.doc.id === eid);
+            if (!inner) return [];
+            return [{
+                playlist: withPlaylistDefaults(inner.doc, screens),
+                slides: inner.doc.slideIds.map((sid) => byId.get(sid)).filter((s): s is SlideDoc => !!s),
+            }];
+        });
+        const embeddedIn = running.playlists
+            .filter((p) => p.doc.id !== id && p.doc.embeds?.some((e) => e.playlistId === id))
+            .map((p) => ({ id: p.doc.id, name: withPlaylistDefaults(p.doc, screens).name }))
+            .sort((a, b) => a.name.localeCompare(b.name, LOCALE));
         return {
             playlist: withPlaylistDefaults(stored.doc, screens),
             slides,
             media,
             screens: screensShowing(id, screens),
             sharedWith,
+            embedded,
+            embeddedIn,
             issues: [...issues, ...mediaRead.issues],
         };
     }
@@ -1183,6 +1202,18 @@ export class ScreenRepository {
                 updatedBy: stored.doc.updatedBy,
                 updatedAt: stored.doc.updatedAt,
             });
+        }
+        // Plan.md 120: one level only – checked before the first write.
+        for (const embed of bundle.playlist.embeds ?? []) {
+            const inner = running.playlists.find((p) => p.doc.id === embed.playlistId);
+            if (!inner) throw new Error(tr.embedMissing(embed.playlistId));
+            const innerStaged = withPlaylistDefaults(inner.doc, running.screens.map((s) => s.doc));
+            if (!sameStage(innerStaged.stage, bundle.playlist.stage)) throw new Error(tr.otherFormat(innerStaged.name, bundle.playlist.name));
+            if (inner.doc.embeds?.length) throw new Error(tr.embedEmbeds(innerStaged.name));
+        }
+        if (bundle.playlist.embeds?.length) {
+            const embeddedBy = running.playlists.filter((p) => p.doc.id !== bundle.playlist.id && p.doc.embeds?.some((e) => e.playlistId === bundle.playlist.id));
+            if (embeddedBy.length) throw new Error(tr.embedEmbedded(embeddedBy.map((p) => p.doc.name).join(', ')));
         }
         const playlist: StagedPlaylist = {
             ...bundle.playlist,

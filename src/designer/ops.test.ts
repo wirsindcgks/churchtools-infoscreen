@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { serialize } from '../model/read';
 import { textBlock, makeSlide } from '../model/testing';
-import { BLOCK_LABELS, PALETTE, blockBelow as below, clampFrame, createBanner, createBlock, createScreenBundle, levelOf, textLevels, duplicateSlide, fitToStage, freeSpot, move, reorder, reorderMany, boundingBox, slugify, groupOf, withGroups, dropSingleGroups, gatherLayers } from './ops';
+import { BLOCK_LABELS, PALETTE, blockBelow as below, clampFrame, createBanner, createBlock, createScreenBundle, levelOf, textLevels, duplicateSlide, fitToStage, freeSpot, fromEntries, move, playlistEntries, type PlaylistEntry, reorder, reorderMany, boundingBox, slugify, groupOf, withGroups, dropSingleGroups, gatherLayers } from './ops';
 import { History } from './history';
 import { DEFAULT_THEME, type Block, type BlockType, type ContentBlockType } from '../model/schema';
 
@@ -358,5 +358,35 @@ describe('turned blocks count by their box (Plan.md F1)', () => {
         // At (1200, 300) the plain frame has nothing, the turned box has.
         expect(below([turned, cover], cover, { x: 1200, y: 300 })?.id).toBe('turned');
         expect(below([turned, cover], cover, { x: 1000, y: 300 })).toBeNull();
+    });
+});
+
+describe('playlist entries (Plan.md 120)', () => {
+    const ids = ['a', 'b', 'c'];
+    const embed = (playlistId: string, position: number) => ({ playlistId, position });
+    const own = (id: string): PlaylistEntry => ({ kind: 'slide', id });
+    const inner = (playlistId: string): PlaylistEntry => ({ kind: 'embed', playlistId });
+
+    it('puts an embed before the slide of its position, at the end from the end on', () => {
+        expect(playlistEntries(ids)).toEqual([own('a'), own('b'), own('c')]);
+        expect(playlistEntries(ids, [embed('x', 0)])).toEqual([inner('x'), own('a'), own('b'), own('c')]);
+        expect(playlistEntries(ids, [embed('x', 2)])).toEqual([own('a'), own('b'), inner('x'), own('c')]);
+        expect(playlistEntries(ids, [embed('x', 3)])).toEqual([own('a'), own('b'), own('c'), inner('x')]);
+        expect(playlistEntries(ids, [embed('x', 9)])).toEqual([own('a'), own('b'), own('c'), inner('x')]);
+        expect(playlistEntries([], [embed('x', 0)])).toEqual([inner('x')]);
+    });
+
+    it('keeps several embeds at one place in order', () => {
+        expect(playlistEntries(ids, [embed('x', 1), embed('y', 1)])).toEqual([own('a'), inner('x'), inner('y'), own('b'), own('c')]);
+    });
+
+    it('goes back: the position is the number of slides before, no embed is no field', () => {
+        const entries = [inner('x'), own('a'), own('b'), inner('y'), own('c')];
+        expect(fromEntries(entries)).toEqual({ slideIds: ids, embeds: [embed('x', 0), embed('y', 2)] });
+        expect(fromEntries(playlistEntries(ids)).embeds).toBeUndefined();
+        expect(fromEntries(playlistEntries(ids, [embed('x', 7)]))).toEqual({ slideIds: ids, embeds: [embed('x', 3)] });
+        for (const embeds of [[embed('x', 0)], [embed('x', 1), embed('y', 3)]]) {
+            expect(fromEntries(playlistEntries(ids, embeds)).embeds).toEqual(embeds);
+        }
     });
 });

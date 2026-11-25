@@ -7,7 +7,7 @@
  */
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef, watch } from 'vue';
-import { blockCalendarIds, DEFAULT_THEME, SCHEMA_VERSION, sameStage, type Block, type ContentBlock, type ContentBlockType, type MediaDoc, type PlaylistBundle, type SlideDoc, type SlideLayout, type TemplateDoc, type ThemeDoc } from '../model/schema';
+import { blockCalendarIds, DEFAULT_THEME, SCHEMA_VERSION, sameStage, type Block, type ContentBlock, type ContentBlockType, type MediaDoc, type PlaylistBundle, type PlaylistDoc, type SlideDoc, type SlideLayout, type TemplateDoc, type ThemeDoc } from '../model/schema';
 import {
     ConflictError,
     copySlide,
@@ -26,11 +26,36 @@ import { History } from './history';
 import { layerUnits } from './layers';
 import { fitToRegions, frameFixed, layoutRegions, regionAt, type Region, type RegionId } from './layout-regions';
 import { GRID_SIZES } from './snap';
-import { BLOCK_LABELS, boundingBox, clampFrame, MIN_BLOCK_SIZE, cloneJson, createBlock, createSlide, dropSingleGroups, duplicateSlide, freeSpot, gatherLayers, groupOf, move, moveAround, newId, reorderMany, withGroups, type Layer } from './ops';
+import { BLOCK_LABELS, boundingBox, clampFrame, MIN_BLOCK_SIZE, cloneJson, createBlock, createSlide, dropSingleGroups, duplicateSlide, freeSpot, gatherLayers, fromEntries, groupOf, move, moveAround, newId, playlistEntries, reorderMany, withGroups, type Layer, type PlaylistEntry } from './ops';
 import { applyCustomFonts } from '../player/custom-fonts';
 import { outerFrame } from './rotate';
+import { shownSlideIds } from '../model/embeds';
 import { expandTemplates, templateIdsOf } from '../model/templates';
 import { dissolveTemplate, templateFromBlocks, withTemplateFrames, type TemplateBlock } from './templates';
+
+/** The slides of a playlist and its embedded presentations as the entries of one list (Plan.md 120); written back with the embed positions right. */
+function entriesOf(b: PlaylistBundle): PlaylistEntry[] {
+    return playlistEntries(b.playlist.slideIds, b.playlist.embeds);
+}
+
+function writeEntries(b: PlaylistBundle, entries: PlaylistEntry[]): void {
+    const { slideIds, embeds } = fromEntries(entries);
+    b.playlist.slideIds = slideIds;
+    // No embed is no field – else the comparison with the published state and the history would see a change.
+    if (embeds) b.playlist.embeds = embeds;
+    else delete b.playlist.embeds;
+}
+
+/** Where a new entry goes: behind the slide, at the end without it. */
+function afterSlide(entries: PlaylistEntry[], slideId: string | undefined): number {
+    const at = entries.findIndex((e) => e.kind === 'slide' && e.id === slideId);
+    return at >= 0 ? at + 1 : entries.length;
+}
+
+/** What the slide list shows (Plan.md 120): an own slide with its number, or an embedded presentation with what is known of it. */
+export type ListEntry =
+    | { kind: 'slide'; slide: SlideDoc; number: number }
+    | { kind: 'embed'; playlistId: string; name: string; slideCount: number; first: SlideDoc | null; missing: boolean };
 
 /** Publishing (Plan.md 79, Paket E): what the button "Veröffentlichen" is doing. */
 export type SaveStatus = 'idle' | 'publishing' | 'published' | 'conflict' | 'error';
@@ -92,6 +117,10 @@ export const useEditorStore = defineStore('editor', () => {
      * removed – undoing "Verknüpfung lösen" brings the old id back, and it is linked again.
      */
     const sharedWith = ref<LoadedPlaylist['sharedWith']>({});
+    /** The presentations embedded in this one with their slides (Plan.md 120), by id; edited only in their own editor. */
+    const embedded = ref<Record<string, { playlist: PlaylistDoc; slides: SlideDoc[] }>>({});
+    /** The presentations that embed this one. */
+    const embeddedIn = ref<{ id: string; name: string }[]>([]);
     /** Who is editing: `updatedBy` of the playlist and of the drafts. */
     const author = ref('');
     /** Drafts are available: the category exists and this person may write there. */
@@ -158,6 +187,44 @@ export const useEditorStore = defineStore('editor', () => {
     });
     /** Slides in playlist order for looking at: template blocks carry the frame of their template. Never changed in place – `change()` writes to the draft. */
     const slides = computed<SlideDoc[]>(() => draftSlides.value.map((s) => withTemplateFrames(s, templateById.value)));
+    /** The list as shown: own slides numbered 1…n, embedded presentations between them. */
+    const entries = computed<ListEntry[]>(() => {
+        const byId = new Map(slides.value.map((s) => [s.id, s]));
+        let number = 0;
+        return playlistEntries(playlist.value?.slideIds ?? [], playlist.value?.embeds).flatMap((entry): ListEntry[] => {
+            if (entry.kind === 'slide') {
+                const found = byId.get(entry.id);
+                return found ? [{ kind: 'slide', slide: found, number: ++number }] : [];
+            }
+            const inner = embedded.value[entry.playlistId];
+            const own = (inner?.slides ?? []).map((s) => withTemplateFrames(s, templateById.value));
+            return [{
+                kind: 'embed',
+                playlistId: entry.playlistId,
+                name: inner?.playlist.name ?? '',
+                slideCount: own.length,
+                first: own.find((s) => s.enabled) ?? own[0] ?? null,
+                missing: !inner,
+            }];
+        });
+    });
+    /** Why nothing can be embedded here (one embed per presentation, one level): null = it can. */
+    const embedBlock = computed<{ reason: 'embeds' } | { reason: 'embedded'; names: string[] } | null>(() => {
+        if (playlist.value?.embeds?.length) return { reason: 'embeds' };
+        if (embeddedIn.value.length) return { reason: 'embedded', names: embeddedIn.value.map((p) => p.name) };
+        return null;
+    });
+    /** The slides the whole playlist shows in order, the embedded ones in place – for the preview. Looked at, never changed. */
+    const shownSlides = computed<SlideDoc[]>(() => {
+        const own = playlist.value;
+        if (!own) return [];
+        const innerPlaylists = Object.values(embedded.value).map((e) => e.playlist);
+        const byId = new Map([...Object.values(embedded.value).flatMap((e) => e.slides), ...(draft.value?.slides ?? [])].map((s) => [s.id, s]));
+        return shownSlideIds(own, innerPlaylists)
+            .map((id) => byId.get(id))
+            .filter((s): s is SlideDoc => !!s)
+            .map((s) => withTemplateFrames(s, templateById.value));
+    });
     const slide = computed(() =>
         templateEdit.value
             ? (templateEdit.value.bundle.slides[0] ?? null)
@@ -196,6 +263,10 @@ export const useEditorStore = defineStore('editor', () => {
     const croppingId = ref<string | null>(null);
     const calendarIds = computed(() => [
         ...new Set(draftSlides.value.flatMap((s) => expandTemplates(s, templateById.value).blocks.flatMap(blockCalendarIds))),
+    ]);
+    /** The calendars of the whole preview: those of the own slides and of the embedded ones. */
+    const shownCalendarIds = computed(() => [
+        ...new Set([...draftSlides.value, ...Object.values(embedded.value).flatMap((e) => e.slides)].flatMap((s) => expandTemplates(s, templateById.value).blocks.flatMap(blockCalendarIds))),
     ]);
     /** The blocks being made into a template wait for a name (the dialog sits in the editor page, the menus only ask for it). */
     const templateNaming = ref<string[] | null>(null);
@@ -302,7 +373,7 @@ export const useEditorStore = defineStore('editor', () => {
             }
         }
         const [loaded, storedTheme, storedTemplates] = await Promise.all([
-            repo.loadPlaylist(playlistId, stored?.playlist.slideIds ?? []),
+            repo.loadPlaylist(playlistId, stored?.playlist.slideIds ?? [], stored?.playlist.embeds?.map((e) => e.playlistId) ?? []),
             // A theme that cannot be read leaves the defaults; it must not keep the playlist closed.
             repo.loadTheme().catch(() => null),
             // Likewise templates: without them template blocks show as missing, the rest works.
@@ -313,18 +384,28 @@ export const useEditorStore = defineStore('editor', () => {
         templates.value = storedTemplates;
         screens.value = loaded.screens;
         reset({ playlist: loaded.playlist, slides: loaded.slides }, loaded.playlist.revision, loaded.sharedWith);
+        embedded.value = Object.fromEntries(loaded.embedded.map((e) => [e.playlist.id, { playlist: e.playlist, slides: e.slides }]));
+        embeddedIn.value = loaded.embeddedIn;
         if (!stored || !draft.value) return;
         // The draft over the published state: name and order from the draft, a slide from the draft where it has one.
         const drafted = new Map(stored.slides.map((s) => [s.id, s]));
         const published = new Map(loaded.slides.map((s) => [s.id, s]));
-        const ids = stored.playlist.slideIds.filter((id) => drafted.has(id) || published.has(id));
+        // A slide gone since is left out through the entries, so that an embed keeps its place among the rest (Plan.md 120).
+        const kept = fromEntries(
+            playlistEntries(stored.playlist.slideIds, stored.playlist.embeds).filter((e) => e.kind !== 'slide' || drafted.has(e.id) || published.has(e.id)),
+        );
+        const ids = kept.slideIds;
         const wanted = new Set(ids);
         // Published slides keep their place in the array, new ones follow: undoing everything gives the same JSON.
         const composed = [
             ...loaded.slides.filter((s) => wanted.has(s.id)).map((s) => drafted.get(s.id) ?? s),
             ...ids.filter((id) => !published.has(id)).map((id) => drafted.get(id)!),
         ];
-        draft.value = cloneJson({ playlist: { ...loaded.playlist, name: stored.playlist.name, slideIds: ids, progress: stored.playlist.progress, progressPlacement: stored.playlist.progressPlacement, progressStyle: stored.playlist.progressStyle }, slides: composed });
+        const composedPlaylist: PlaylistBundle['playlist'] = { ...loaded.playlist, name: stored.playlist.name, slideIds: ids, progress: stored.playlist.progress, progressPlacement: stored.playlist.progressPlacement, progressStyle: stored.playlist.progressStyle };
+        // The embeds come from the draft alone: none there means none, whatever is published.
+        if (kept.embeds) composedPlaylist.embeds = kept.embeds;
+        else delete composedPlaylist.embeds;
+        draft.value = cloneJson({ playlist: composedPlaylist, slides: composed });
         draftJson.value = bundleJson.value;
         draftRevision.value = stored.playlist.revision;
         draftInfo.value = { updatedBy: stored.playlist.updatedBy, updatedAt: stored.playlist.updatedAt };
@@ -364,6 +445,8 @@ export const useEditorStore = defineStore('editor', () => {
             height: template.height,
         };
         holder.blocks = [created];
+        embedded.value = {};
+        embeddedIn.value = [];
         reset(
             {
                 playlist: { schema: { ...SCHEMA_VERSION }, kind: 'playlist', id: newId(), name: template.name, slideIds: [holder.id], stage: { ...template.stage }, revision: 0 },
@@ -575,8 +658,9 @@ export const useEditorStore = defineStore('editor', () => {
         const created = createSlide(tr.newSlide, theme.value);
         change((b) => {
             b.slides.push(created);
-            const at = b.playlist.slideIds.indexOf(slide.value?.id ?? '') + 1;
-            b.playlist.slideIds.splice(at > 0 ? at : b.playlist.slideIds.length, 0, created.id);
+            const list = entriesOf(b);
+            list.splice(afterSlide(list, slide.value?.id), 0, { kind: 'slide', id: created.id });
+            writeEntries(b, list);
         });
         selectSlide(created.id);
     }
@@ -589,7 +673,9 @@ export const useEditorStore = defineStore('editor', () => {
         const originalId = slide.value.id;
         change((b) => {
             b.slides.push(copy);
-            b.playlist.slideIds.splice(b.playlist.slideIds.indexOf(originalId) + 1, 0, copy.id);
+            const list = entriesOf(b);
+            list.splice(afterSlide(list, originalId), 0, { kind: 'slide', id: copy.id });
+            writeEntries(b, list);
         });
         selectSlide(copy.id);
     }
@@ -640,8 +726,9 @@ export const useEditorStore = defineStore('editor', () => {
         }
         change((b) => {
             b.slides.push(...taken);
-            const at = b.playlist.slideIds.indexOf(slide.value?.id ?? '') + 1;
-            b.playlist.slideIds.splice(at > 0 ? at : b.playlist.slideIds.length, 0, ...taken.map((c) => c.id));
+            const list = entriesOf(b);
+            list.splice(afterSlide(list, slide.value?.id), 0, ...taken.map((c): PlaylistEntry => ({ kind: 'slide', id: c.id })));
+            writeEntries(b, list);
         });
         selectSlide(taken[0]!.id);
     }
@@ -664,7 +751,7 @@ export const useEditorStore = defineStore('editor', () => {
         if (templateEdit.value) return;
         const index = slides.value.findIndex((s) => s.id === id);
         change((b) => {
-            b.playlist.slideIds = b.playlist.slideIds.filter((s) => s !== id);
+            writeEntries(b, entriesOf(b).filter((e) => e.kind !== 'slide' || e.id !== id));
             b.slides = b.slides.filter((s) => s.id !== id);
         });
         const next = slides.value[Math.min(index, slides.value.length - 1)];
@@ -675,7 +762,42 @@ export const useEditorStore = defineStore('editor', () => {
     function moveSlide(from: number, to: number): void {
         if (templateEdit.value) return;
         if (from === to) return;
-        change((b) => (b.playlist.slideIds = move(b.playlist.slideIds, from, to)));
+        change((b) => {
+            const list = entriesOf(b);
+            const at = list.map((e, i) => (e.kind === 'slide' ? i : -1)).filter((i) => i >= 0);
+            const fromAt = at[from];
+            if (fromAt === undefined) return;
+            const [moved] = list.splice(fromAt, 1);
+            const rest = list.map((e, i) => (e.kind === 'slide' ? i : -1)).filter((i) => i >= 0);
+            // Before the slide that takes the place `to`, at the end behind the last.
+            const target = rest[Math.max(0, to)];
+            list.splice(target ?? list.length, 0, moved!);
+            writeEntries(b, list);
+        });
+    }
+
+    /** Moves a line of the list – a slide or an embedded presentation (Plan.md 120); indices count entries. */
+    function moveEntry(from: number, to: number): void {
+        if (templateEdit.value) return;
+        if (from === to) return;
+        change((b) => writeEntries(b, move(entriesOf(b), from, to)));
+    }
+
+    /** Embeds a presentation (as `loadPlaylist` gives it) behind the chosen slide, at the end without one. */
+    function embedPlaylist(loaded: Pick<LoadedPlaylist, 'playlist' | 'slides'>): void {
+        if (templateEdit.value || embedBlock.value) return;
+        const id = loaded.playlist.id;
+        embedded.value = { ...embedded.value, [id]: { playlist: loaded.playlist, slides: loaded.slides } };
+        change((b) => {
+            const list = entriesOf(b);
+            list.splice(afterSlide(list, slide.value?.id), 0, { kind: 'embed', playlistId: id });
+            writeEntries(b, list);
+        });
+    }
+
+    function removeEmbed(playlistId: string): void {
+        if (templateEdit.value) return;
+        change((b) => writeEntries(b, entriesOf(b).filter((e) => e.kind !== 'embed' || e.playlistId !== playlistId)));
     }
 
     function updateSlide(patch: Partial<Omit<SlideDoc, 'id' | 'kind' | 'schema' | 'blocks'>>): void {
@@ -1387,7 +1509,7 @@ export const useEditorStore = defineStore('editor', () => {
             const published = savedSlideIds.value;
             const changed = bundle.slides.filter((s) => baseline.get(s.id) !== JSON.stringify(s) || !published.has(s.id));
             const saved = await repo.drafts.save(
-                { playlistId, name: bundle.playlist.name, slideIds: [...bundle.playlist.slideIds], progress: bundle.playlist.progress, progressPlacement: bundle.playlist.progressPlacement, progressStyle: bundle.playlist.progressStyle, slides: cloneJson(changed) },
+                { playlistId, name: bundle.playlist.name, slideIds: [...bundle.playlist.slideIds], embeds: bundle.playlist.embeds ? cloneJson(bundle.playlist.embeds) : undefined, progress: bundle.playlist.progress, progressPlacement: bundle.playlist.progressPlacement, progressStyle: bundle.playlist.progressStyle, slides: cloneJson(changed) },
                 { expectedRevision: draftRevision.value, updatedBy: author.value },
             );
             draftRevision.value = saved.revision;
@@ -1576,6 +1698,15 @@ export const useEditorStore = defineStore('editor', () => {
         slide,
         block,
         calendarIds,
+        shownCalendarIds,
+        embedded,
+        embeddedIn,
+        entries,
+        embedBlock,
+        shownSlides,
+        moveEntry,
+        embedPlaylist,
+        removeEmbed,
         selectedBlockIds,
         multiSelect,
         hoveredBlockId,

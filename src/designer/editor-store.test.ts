@@ -298,6 +298,111 @@ describe('editor store', () => {
         editor.removeBlocks([shape]);
         expect(editor.slide?.blocks).toHaveLength(1);
     });
+    describe('embedded presentations (Plan.md 120)', () => {
+        async function embedSetup() {
+            const ctx = await setup();
+            await ctx.repository.drafts.ensureCategory();
+            await ctx.editor.open(ctx.playlistId); // drafts are known from opening on
+            const main = await ctx.repository.createPlaylist({ name: 'Hauptteil', stage: ctx.editor.stage }, 'Anna');
+            ctx.editor.addSlide();
+            ctx.editor.addSlide();
+            return { ...ctx, main };
+        }
+        const embedMain = async (ctx: Awaited<ReturnType<typeof embedSetup>>, selectIndex = 0) => {
+            ctx.editor.selectSlide(ctx.editor.slides[selectIndex]!.id);
+            ctx.editor.embedPlaylist(await ctx.repository.loadPlaylist(ctx.main.id));
+        };
+
+        it('embeds behind the chosen slide, as one entry, and undoes it', async () => {
+            const ctx = await embedSetup();
+            const { editor, main } = ctx;
+            await embedMain(ctx, 0);
+            expect(editor.playlist?.embeds).toEqual([{ playlistId: main.id, position: 1 }]);
+            expect(editor.entries.map((e) => e.kind)).toEqual(['slide', 'embed', 'slide', 'slide']);
+            expect(editor.slides).toHaveLength(3);
+            expect(editor.shownSlides).toHaveLength(4);
+            expect(editor.embedBlock).toEqual({ reason: 'embeds' });
+            editor.undo();
+            expect(editor.playlist).not.toHaveProperty('embeds');
+            expect(editor.dirty).toBe(true); // the two added slides
+        });
+
+        it('moves the entry and keeps the position when slides are added, removed and moved before it', async () => {
+            const ctx = await embedSetup();
+            const { editor, main } = ctx;
+            await embedMain(ctx, 1); // after the second slide: position 2
+            expect(editor.playlist?.embeds).toEqual([{ playlistId: main.id, position: 2 }]);
+            editor.selectSlide(editor.slides[0]!.id);
+            editor.addSlide();
+            expect(editor.playlist?.embeds?.[0]?.position).toBe(3);
+            editor.removeSlide(editor.slides[0]!.id);
+            expect(editor.playlist?.embeds?.[0]?.position).toBe(2);
+            editor.moveSlide(0, 2); // to the very end, behind the embed
+            expect(editor.entries.map((e) => e.kind)).toEqual(['slide', 'embed', 'slide', 'slide']);
+            expect(editor.playlist?.embeds?.[0]?.position).toBe(1);
+            editor.moveEntry(1, 0);
+            expect(editor.playlist?.embeds?.[0]?.position).toBe(0);
+            expect(editor.entries.map((e) => e.kind)).toEqual(['embed', 'slide', 'slide', 'slide']);
+            expect(editor.slides.map((s) => s.id)).toEqual(editor.playlist!.slideIds);
+        });
+
+        it('removes the embed with the field and undoes that', async () => {
+            const ctx = await embedSetup();
+            const { editor, main } = ctx;
+            await embedMain(ctx);
+            editor.removeEmbed(main.id);
+            expect(editor.playlist).not.toHaveProperty('embeds');
+            expect(editor.embedBlock).toBeNull();
+            editor.undo();
+            expect(editor.playlist?.embeds).toHaveLength(1);
+        });
+
+        it('publishes the embed, and opens it again with the embedded presentation loaded', async () => {
+            const ctx = await embedSetup();
+            const { editor, repository, playlistId, main } = ctx;
+            await embedMain(ctx);
+            expect(await editor.publish()).toBe(true);
+            expect((await repository.loadPlaylist(playlistId)).playlist.embeds).toEqual([{ playlistId: main.id, position: 1 }]);
+            await editor.open(main.id);
+            expect(editor.embeddedIn.map((p) => p.id)).toEqual([playlistId]);
+            expect(editor.embedBlock).toMatchObject({ reason: 'embedded' });
+            await editor.open(playlistId);
+            expect(Object.keys(editor.embedded)).toEqual([main.id]);
+            editor.removeEmbed(main.id);
+            expect(await editor.publish()).toBe(true);
+            expect((await repository.loadPlaylist(playlistId)).playlist).not.toHaveProperty('embeds');
+        });
+
+        it('carries the embed in the draft, also when it is not published', async () => {
+            const ctx = await embedSetup();
+            const { editor, repository, playlistId, main } = ctx;
+            await embedMain(ctx);
+            await editor.flushDraft();
+            expect((await repository.drafts.load(playlistId))?.playlist.embeds).toEqual([{ playlistId: main.id, position: 1 }]);
+            await editor.open(playlistId);
+            expect(editor.playlist?.embeds).toEqual([{ playlistId: main.id, position: 1 }]);
+            expect(editor.entries.filter((e) => e.kind === 'embed')).toHaveLength(1);
+            expect(Object.keys(editor.embedded)).toEqual([main.id]);
+        });
+
+        it('keeps the embed in its place when a slide of the draft is gone', async () => {
+            const ctx = await embedSetup();
+            const { editor, repository, playlistId, main } = ctx;
+            await embedMain(ctx, 1);
+            await editor.flushDraft();
+            const stored = (await repository.drafts.load(playlistId))!;
+            const ids = stored.playlist.slideIds;
+            // A slide in front that no longer exists anywhere: the embed counted it.
+            await repository.drafts.save(
+                { playlistId, name: stored.playlist.name, slideIds: ['gone', ...ids], embeds: [{ playlistId: main.id, position: 3 }], slides: stored.slides },
+                { expectedRevision: stored.playlist.revision, updatedBy: 'Anna' },
+            );
+            await editor.open(playlistId);
+            expect(editor.playlist?.slideIds).toEqual(ids);
+            expect(editor.playlist?.embeds).toEqual([{ playlistId: main.id, position: 2 }]);
+        });
+    });
+
 });
 
 describe('editor store gestures', () => {

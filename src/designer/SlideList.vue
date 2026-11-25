@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { t } from '../i18n/designer';
 import type { SlideDoc } from '../model/schema';
 import { useStageContext } from '../player/context';
@@ -8,6 +9,7 @@ import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
 import { fitStage } from '../player/stage';
 import { useEditorStore } from './editor-store';
+import EmbedPlaylistDialog from './EmbedPlaylistDialog.vue';
 import Icon from './Icon.vue';
 import SlideImportDialog from './SlideImportDialog.vue';
 import { useConfirm } from './useConfirm';
@@ -15,6 +17,7 @@ import { useSortable } from './useSortable';
 import { vTip } from './tip';
 
 const { confirm } = useConfirm();
+const router = useRouter();
 
 /**
  * `sheet`: the list stands in the sheet of a phone (Plan.md 79, C2) – as a grid of two columns with bigger pictures,
@@ -65,11 +68,20 @@ const thumb = computed(() => {
 });
 
 const importing = ref(false);
+const embedding = ref(false);
+/** Why "Präsentation einbetten" is greyed out; undefined while it works. */
+const embedBlocked = computed(() => {
+    const block = editor.embedBlock;
+    if (!block) return undefined;
+    return block.reason === 'embeds'
+        ? t.editor.slideList.embedBlockedEmbeds
+        : t.editor.slideList.embedBlockedEmbedded(block.names.map((n) => `„${n}"`).join(', '));
+});
 
 /** Dragging replaces the browser's own drag and drop, which a finger cannot use (Plan.md 79, D7): the handle for the mouse, a held tile for the finger. */
 useSortable({
     container: list,
-    onMove: (from, to) => editor.moveSlide(from, to),
+    onMove: (from, to) => editor.moveEntry(from, to),
     grid: () => !!props.sheet,
     mouseOnRow: () => !!props.sheet,
     touchOnRow: true,
@@ -78,6 +90,14 @@ useSortable({
 /** What the chain symbol says: the other playlists showing the slide (Plan.md 49). */
 function linkedLabel(id: string): string {
     return t.editor.slideList.linkedWith(editor.linkedIn(id).map((p) => p.name).join(', '));
+}
+
+async function removeEmbed(id: string, name: string): Promise<void> {
+    if (await confirm({ message: t.editor.slideList.confirmRemoveEmbed(name), confirmLabel: t.common.remove, danger: true })) editor.removeEmbed(id);
+}
+
+function editEmbed(id: string): void {
+    void router.push({ name: 'editor', params: { id } });
 }
 
 async function remove(id: string, name: string): Promise<void> {
@@ -105,72 +125,111 @@ async function remove(id: string, name: string): Promise<void> {
             </button>
         </header>
         <ol id="slide-list-ol" ref="list">
-            <li
-                v-for="(slide, index) in editor.slides"
-                :key="slide.id"
-                v-tip="`${index + 1}. ${slide.name}`"
-                :class="{
-                    active: slide.id === editor.slide?.id,
-                    disabled: !slide.enabled,
-                }"
-                :aria-label="`${index + 1}. ${slide.name}`"
-                data-sort-item
-                data-testid="slide-item"
-                @click="editor.selectSlide(slide.id)"
-            >
-                <div class="lead">
-                    <span class="num">{{ index + 1 }}</span>
-                    <button v-tip="t.common.dragToSort" class="grip" type="button" data-sort-handle :aria-label="t.common.dragToSort" data-testid="slide-handle" @click.stop>
-                        <Icon name="grip" :size="14" />
-                    </button>
-                </div>
-                <div class="thumb" :style="{ width: `${thumb.width}px`, height: `${thumb.height}px` }">
-                    <StageView :width="editor.stage.width" :height="editor.stage.height" :fit="thumb.fit">
-                        <SlideView :slide="slide" :width="editor.stage.width" :height="editor.stage.height" />
-                    </StageView>
-                    <span
-                        v-if="editor.linkedIn(slide.id).length"
-                        v-tip="linkedLabel(slide.id)"
-                        class="linked-badge"
-                        :aria-label="linkedLabel(slide.id)"
-                        data-testid="slide-linked-badge"
-                    >
-                        <Icon name="link" :size="12" />
-                    </span>
-                </div>
-                <div class="meta">
-                    <span class="name">{{ slide.name }}</span>
-                    <span
-                        v-tip="runs(slide).longer ? t.editor.slideList.runsLonger(slide.durationSeconds, runs(slide).seconds) : undefined"
-                        class="duration"
-                        :class="{ longer: runs(slide).longer }"
-                        data-testid="slide-duration"
-                    >
-                        <template v-if="runs(slide).longer">{{ slide.durationSeconds }} → </template>{{ runs(slide).seconds }} s{{ slide.enabled ? '' : t.editor.slideList.off }}
-                    </span>
-                </div>
-                <div v-if="!sheet && slide.id === editor.slide?.id" class="actions" @click.stop>
-                    <button
-                        v-tip="t.editor.slideList.duplicate"
-                        class="d-btn d-btn--icon"
-                        type="button"
-                        :aria-label="t.editor.slideList.duplicate"
-                        @click="editor.duplicateCurrentSlide()"
-                    >
-                        <Icon name="duplicate" :size="16" />
-                    </button>
-                    <button
-                        v-tip="t.editor.slideList.remove"
-                        class="d-btn d-btn--icon"
-                        type="button"
-                        :aria-label="t.editor.slideList.remove"
-                        :disabled="editor.slides.length <= 1"
-                        @click="remove(slide.id, slide.name)"
-                    >
-                        <Icon name="trash" :size="16" class="danger-icon" />
-                    </button>
-                </div>
-            </li>
+            <template v-for="entry in editor.entries" :key="entry.kind === 'slide' ? entry.slide.id : `embed-${entry.playlistId}`">
+                <li
+                    v-if="entry.kind === 'embed'"
+                    class="embed"
+                    :aria-label="entry.name"
+                    data-sort-item
+                    data-testid="embed-item"
+                >
+                    <div class="lead">
+                        <span class="num"><Icon name="slides" :size="14" /></span>
+                        <button v-tip="t.common.dragToSort" class="grip" type="button" data-sort-handle :aria-label="t.common.dragToSort" data-testid="embed-handle" @click.stop>
+                            <Icon name="grip" :size="14" />
+                        </button>
+                    </div>
+                    <div class="thumb" :style="{ width: `${thumb.width}px`, height: `${thumb.height}px` }">
+                        <StageView v-if="entry.first" :width="editor.stage.width" :height="editor.stage.height" :fit="thumb.fit">
+                            <SlideView :slide="entry.first" :width="editor.stage.width" :height="editor.stage.height" />
+                        </StageView>
+                    </div>
+                    <div class="meta">
+                        <span class="name">{{ entry.missing ? t.editor.slideList.embedMissing : entry.name }}</span>
+                        <span class="duration">{{ t.editor.slideList.embedded(entry.slideCount) }}</span>
+                    </div>
+                    <div class="actions embed-actions" @click.stop>
+                        <button class="d-btn" type="button" :disabled="entry.missing" data-testid="embed-edit" @click="editEmbed(entry.playlistId)">
+                            {{ t.editor.slideList.editEmbed }}
+                        </button>
+                        <button
+                            v-tip="t.editor.slideList.removeEmbed"
+                            class="d-btn d-btn--icon"
+                            type="button"
+                            :aria-label="t.editor.slideList.removeEmbed"
+                            data-testid="embed-remove"
+                            @click="removeEmbed(entry.playlistId, entry.name)"
+                        >
+                            <Icon name="trash" :size="16" class="danger-icon" />
+                        </button>
+                    </div>
+                </li>
+                <li
+                    v-else
+                    v-tip="`${entry.number}. ${entry.slide.name}`"
+                    :class="{
+                        active: entry.slide.id === editor.slide?.id,
+                        disabled: !entry.slide.enabled,
+                    }"
+                    :aria-label="`${entry.number}. ${entry.slide.name}`"
+                    data-sort-item
+                    data-testid="slide-item"
+                    @click="editor.selectSlide(entry.slide.id)"
+                >
+                    <div class="lead">
+                        <span class="num">{{ entry.number }}</span>
+                        <button v-tip="t.common.dragToSort" class="grip" type="button" data-sort-handle :aria-label="t.common.dragToSort" data-testid="slide-handle" @click.stop>
+                            <Icon name="grip" :size="14" />
+                        </button>
+                    </div>
+                    <div class="thumb" :style="{ width: `${thumb.width}px`, height: `${thumb.height}px` }">
+                        <StageView :width="editor.stage.width" :height="editor.stage.height" :fit="thumb.fit">
+                            <SlideView :slide="entry.slide" :width="editor.stage.width" :height="editor.stage.height" />
+                        </StageView>
+                        <span
+                            v-if="editor.linkedIn(entry.slide.id).length"
+                            v-tip="linkedLabel(entry.slide.id)"
+                            class="linked-badge"
+                            :aria-label="linkedLabel(entry.slide.id)"
+                            data-testid="slide-linked-badge"
+                        >
+                            <Icon name="link" :size="12" />
+                        </span>
+                    </div>
+                    <div class="meta">
+                        <span class="name">{{ entry.slide.name }}</span>
+                        <span
+                            v-tip="runs(entry.slide).longer ? t.editor.slideList.runsLonger(entry.slide.durationSeconds, runs(entry.slide).seconds) : undefined"
+                            class="duration"
+                            :class="{ longer: runs(entry.slide).longer }"
+                            data-testid="slide-duration"
+                        >
+                            <template v-if="runs(entry.slide).longer">{{ entry.slide.durationSeconds }} → </template>{{ runs(entry.slide).seconds }} s{{ entry.slide.enabled ? '' : t.editor.slideList.off }}
+                        </span>
+                    </div>
+                    <div v-if="!sheet && entry.slide.id === editor.slide?.id" class="actions" @click.stop>
+                        <button
+                            v-tip="t.editor.slideList.duplicate"
+                            class="d-btn d-btn--icon"
+                            type="button"
+                            :aria-label="t.editor.slideList.duplicate"
+                            @click="editor.duplicateCurrentSlide()"
+                        >
+                            <Icon name="duplicate" :size="16" />
+                        </button>
+                        <button
+                            v-tip="t.editor.slideList.remove"
+                            class="d-btn d-btn--icon"
+                            type="button"
+                            :aria-label="t.editor.slideList.remove"
+                            :disabled="editor.slides.length <= 1"
+                            @click="remove(entry.slide.id, entry.slide.name)"
+                        >
+                            <Icon name="trash" :size="16" class="danger-icon" />
+                        </button>
+                    </div>
+                </li>
+            </template>
             <!-- Where one looks for the next slide: below the last (Plan.md, Nächste Schritte 11); in the sheet a tile of the grid. -->
             <li class="add-item">
                 <button
@@ -196,9 +255,22 @@ async function remove(id: string, name: string): Promise<void> {
                     <Icon name="copy" :size="16" />
                     <span class="import-label">{{ t.editor.slideList.importLabel }}</span>
                 </button>
+                <button
+                    v-tip="embedBlocked ?? t.editor.slideList.embedTitle"
+                    class="import"
+                    type="button"
+                    :aria-label="t.editor.slideList.embedTitle"
+                    :disabled="!!embedBlocked"
+                    data-testid="embed-playlist"
+                    @click="embedding = true"
+                >
+                    <Icon name="slides" :size="16" />
+                    <span class="import-label">{{ t.editor.slideList.embedLabel }}</span>
+                </button>
             </li>
         </ol>
         <SlideImportDialog v-if="importing" @close="importing = false" />
+        <EmbedPlaylistDialog v-if="embedding" @close="embedding = false" />
     </aside>
 </template>
 
@@ -363,8 +435,25 @@ li.add-item:hover {
     font-size: var(--d-size-sm);
     cursor: pointer;
 }
-.import:hover {
+.import:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+.import:hover:not(:disabled) {
     background: var(--d-accent-pale);
+}
+/* An embedded presentation: a symbol for the number, not chosen, its two buttons always there. */
+li.embed {
+    cursor: default;
+}
+li.embed .num {
+    display: grid;
+    place-items: center;
+    height: 20px;
+}
+.embed-actions {
+    align-items: center;
+    justify-content: space-between;
 }
 li.disabled .thumb {
     opacity: 0.4;

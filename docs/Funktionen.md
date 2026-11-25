@@ -241,6 +241,40 @@ verknüpfte, die sich gemeinsam ändern. Auf Wunsch zeigt ein Fortschrittsbalken
 
 ![Präsentationen als Kacheln mit Format, Zahl der Folien und den Bildschirmen, die sie zeigen](bilder/playlists.png)
 
+### Präsentation einbetten
+
+Terminfolien und Spendeninformation sollen vor und nach dem Gottesdienst laufen, aber nur einmal gepflegt werden? Dann
+legt ihr sie als **Hauptteil** an und **bettet** ihn in die Schleifen davor und danach **ein**. Jede Schleife hat ihre
+eigenen Folien dazu, etwa „Herzlich willkommen" am Anfang oder „Einladung zum Stehcafé" am Ende. Kommt im Hauptteil eine
+Folie dazu, erscheint sie in beiden Schleifen – ohne dass ihr sie dort nachtragt.
+
+```mermaid
+flowchart LR
+    H["Hauptteil<br>Termine, Spenden"]
+    V["Vor dem Gottesdienst<br>Willkommen + Hauptteil"]
+    N["Nach dem Gottesdienst<br>Hauptteil + Stehcafé"]
+    H -->|"eingebettet"| V
+    H -->|"eingebettet"| N
+```
+
+**So geht es:** In der Folienliste der Schleife, unter „Neue Folie", **„Präsentation einbetten …"** wählen, den
+Hauptteil anklicken und „Einbetten". Er steht als **ein Eintrag** in der Liste, mit dem Bild seiner ersten Folie, seinem
+Namen und der Zahl seiner Folien – hinter der gewählten Folie, ohne Auswahl am Ende. Am Griff lässt er sich wie eine
+Folie verschieben, mit dem Papierkorb wieder entfernen (die Folien bleiben im Hauptteil). Die Vorschau der ganzen
+Präsentation spielt die eingebetteten Folien an ihrer Stelle mit.
+
+**Bearbeitet wird nur im Hauptteil:** „Im Hauptteil bearbeiten" am Eintrag öffnet ihn. Was dort veröffentlicht wird,
+läuft sofort in jeder Schleife mit, die ihn einbettet – die Schleifen selbst müssen nicht neu veröffentlicht werden.
+
+**Die Regeln:**
+
+- Es geht **eine Ebene**: Eine Präsentation, die selbst etwas einbettet, lässt sich nicht einbetten.
+- Jede Präsentation bettet **höchstens eine** andere ein. Ist sie selbst irgendwo eingebettet, ist „Präsentation einbetten …"
+  ausgegraut; der Hinweis daran nennt den Grund.
+- Der Hauptteil hat **dasselbe Format** wie die Schleife.
+- **Ausgeschaltete Folien** des Hauptteils bleiben auch eingebettet aus.
+- **Fortschrittsbalken und Hinweisband** sind die der äußeren Präsentation; der Balken zählt alle gezeigten Folien.
+
 ## Zeitpläne
 
 Welche Präsentation ein Bildschirm wann zeigt: nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30 Minuten
