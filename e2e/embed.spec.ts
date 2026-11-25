@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { expectSlides } from './helpers';
+import { expectSlides, openSection } from './helpers';
 
 // A whole presentation inside another (Plan.md 120), in demo mode.
 test.use({ viewport: { width: 1440, height: 900 } });
@@ -31,6 +31,13 @@ test('embeds a presentation as one entry, shows it in the preview, publishes and
     await expect(page.getByTestId('embed-item')).toContainText('3 Folien · eingebettet');
     await expect(page.getByTestId('embed-item')).toContainText('Im Hauptteil bearbeiten');
     await expect(page.getByTestId('embed-playlist')).toBeDisabled();
+
+    // The number on the editor's progress bar counts the embedded slides in their place: the second own slide is 5 of 6.
+    await openSection(page, 'progress');
+    await page.getByTestId('playlist-progress').check();
+    await expect(page.getByTestId('slide-number')).toHaveText('1/6');
+    await page.getByTestId('slide-item').nth(1).click();
+    await expect(page.getByTestId('slide-number')).toHaveText('5/6');
 
     // The preview of the whole presentation runs the embedded slides as well: 3 own and 3 embedded.
     await page.getByTestId('open-preview').click();

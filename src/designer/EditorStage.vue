@@ -45,7 +45,8 @@ const banner = computed(() => {
 const progress = computed(() => {
     const slide = editor.slide;
     if (!editor.draft?.playlist.progress || editor.templateEdit || !slide) return null;
-    const place = placeInRotation(editor.slides, slide.id);
+    // Counted over what the screen shows: the slides of an embedded presentation in their place (Plan.md 120).
+    const place = placeInRotation(editor.shownSlides, slide.id);
     return { textColor: progressTextColor(slide.background), seconds: slideSeconds(slide, stage.pages ?? {}), number: place.number, total: place.number ? place.total : 0 };
 });
 // The same on the stage: with the presentation's bar on the slide, the blocks leave theirs out (Plan.md 109).
