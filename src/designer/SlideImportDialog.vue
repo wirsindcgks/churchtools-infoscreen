@@ -12,6 +12,7 @@ import type { LoadedPlaylist, PlaylistOverview, ScreenRepository } from '../stor
 import { useEditorStore } from './editor-store';
 import SelectMenu from './SelectMenu.vue';
 import SlideThumb from './SlideThumb.vue';
+import Tile from './Tile.vue';
 
 const emit = defineEmits<{ close: [] }>();
 const editor = useEditorStore();
@@ -128,23 +129,34 @@ function take(): void {
                     {{ t.editor.import.playlist }}
                     <SelectMenu :model-value="playlistId" :options="playlistOptions" testid="slide-import-playlist" @update:model-value="playlistId = String($event)" />
                 </label>
-                <ul class="slides">
-                    <li v-for="slide in slides" :key="slide.id">
-                        <label :class="{ on: chosen.has(slide.id), off: unavailable(slide.id) }" data-testid="slide-import-item">
-                            <SlideThumb :slide="slide" :stage="editor.stage" />
-                            <span class="name">
+                <div class="d-tiles tiles">
+                    <Tile
+                        v-for="slide in slides"
+                        :key="slide.id"
+                        as="label"
+                        :class="{ 'd-tile--selected': chosen.has(slide.id), off: unavailable(slide.id) }"
+                        data-testid="slide-import-item"
+                    >
+                        <template #media>
+                            <span class="d-tile-media"><SlideThumb :slide="slide" :stage="editor.stage" /></span>
+                            <span class="d-tile-check">
                                 <input
                                     type="checkbox"
                                     :checked="chosen.has(slide.id)"
                                     :disabled="unavailable(slide.id)"
+                                    :aria-label="slide.name"
                                     @change="toggle(slide.id)"
                                 >
-                                {{ slide.name }}
                             </span>
-                            <span v-if="unavailable(slide.id)" class="hint" data-testid="slide-import-here">{{ t.editor.import.alreadyHere }}</span>
-                        </label>
-                    </li>
-                </ul>
+                        </template>
+                        <template #title>{{ slide.name }}</template>
+                        <section v-if="unavailable(slide.id)" class="d-tile-section">
+                            <ul class="d-facts">
+                                <li data-testid="slide-import-here">{{ t.editor.import.alreadyHere }}</li>
+                            </ul>
+                        </section>
+                    </Tile>
+                </div>
             </template>
             <div class="d-dialog-actions">
                 <button class="d-btn" type="button" @click="emit('close')">{{ t.common.cancel }}</button>
@@ -171,7 +183,7 @@ function take(): void {
 .import {
     display: grid;
     gap: 12px;
-    width: min(760px, 100%);
+    width: min(1100px, 100%);
 }
 .import h2 {
     margin: 0;
@@ -181,23 +193,20 @@ function take(): void {
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
-.slides {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 10px;
+.tiles {
     max-height: 50vh;
     overflow-y: auto;
-    margin: 0;
-    padding: 2px;
-    list-style: none;
-}
-.slides label {
-    display: grid;
-    gap: 4px;
+    /* Room for the ring and the shadow of the tiles at the edge. */
     padding: 4px;
-    border: 2px solid transparent;
-    border-radius: var(--d-radius-lg);
+}
+.tiles label {
     cursor: pointer;
+}
+.tiles .off {
+    cursor: default;
+    opacity: 0.5;
+    /* Already here: no hover shadow, it cannot be picked. */
+    box-shadow: none;
 }
 .mode {
     margin: 0;
@@ -209,26 +218,5 @@ function take(): void {
     margin-bottom: 4px;
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
-}
-.slides label.off {
-    cursor: default;
-    opacity: 0.5;
-}
-.slides label.on {
-    border-color: var(--d-accent);
-    background: var(--d-accent-pale);
-}
-.slides :deep(.slide-thumb) {
-    border-radius: var(--d-radius);
-}
-.name {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: var(--d-size-sm);
-    overflow-wrap: anywhere;
-}
-.name input {
-    flex: none;
 }
 </style>

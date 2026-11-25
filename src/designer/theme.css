@@ -366,6 +366,38 @@
 .infoscreen-designer :where(.d-tile:hover) {
     box-shadow: var(--d-shadow-card-hover);
 }
+/* The chosen tile: a ring, in every dialog and grid that picks from tiles. */
+.infoscreen-designer :where(.d-tile.d-tile--selected) {
+    box-shadow: 0 0 0 2px var(--d-accent);
+}
+/*
+ * The checkbox or radio on the picture, top left. Not named `select`: a stylesheet ChurchTools loads later
+ * gives that class `position: relative`, which put the box under the picture (Befunde G43, Nachtrag).
+ */
+.infoscreen-designer :where(.d-tile-check) {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    cursor: pointer;
+}
+/* No box around it (wish of the user, 2026-10-05): a shadow keeps it visible on light and dark pictures alike. */
+.infoscreen-designer :where(.d-tile-check input) {
+    position: static;
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--d-accent);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+    cursor: pointer;
+}
 /* The picture on top, 16:9, with the round corners of the tile. */
 .infoscreen-designer :where(.d-tile-media) {
     display: block;

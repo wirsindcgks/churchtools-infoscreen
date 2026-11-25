@@ -10,6 +10,7 @@ import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
 import { useEditorStore } from './editor-store';
 import SlideThumb from './SlideThumb.vue';
+import Tile from './Tile.vue';
 
 const emit = defineEmits<{ close: [] }>();
 const editor = useEditorStore();
@@ -63,18 +64,28 @@ async function take(): Promise<void> {
             <p v-else-if="!candidates.length" class="hint" data-testid="embed-none">
                 {{ t.editor.embed.none }}
             </p>
-            <ul v-else class="playlists">
-                <li v-for="o in candidates" :key="o.playlist.id">
-                    <label :class="{ on: chosen === o.playlist.id }" data-testid="embed-candidate">
-                        <SlideThumb :slide="o.firstSlide" :stage="editor.stage" />
-                        <span class="name">
-                            <input v-model="chosen" type="radio" name="embed-playlist" :value="o.playlist.id">
-                            {{ o.playlist.name }}
+            <div v-else class="d-tiles tiles">
+                <Tile
+                    v-for="o in candidates"
+                    :key="o.playlist.id"
+                    as="label"
+                    :class="{ 'd-tile--selected': chosen === o.playlist.id }"
+                    data-testid="embed-candidate"
+                >
+                    <template #media>
+                        <span class="d-tile-media"><SlideThumb :slide="o.firstSlide" :stage="editor.stage" /></span>
+                        <span class="d-tile-check">
+                            <input v-model="chosen" type="radio" name="embed-playlist" :value="o.playlist.id" :aria-label="o.playlist.name">
                         </span>
-                        <span class="hint">{{ t.editor.embed.slideCount(o.slideCount) }}</span>
-                    </label>
-                </li>
-            </ul>
+                    </template>
+                    <template #title>{{ o.playlist.name }}</template>
+                    <section class="d-tile-section">
+                        <ul class="d-facts">
+                            <li>{{ t.editor.embed.slideCount(o.slideCount) }}</li>
+                        </ul>
+                    </section>
+                </Tile>
+            </div>
             <div class="d-dialog-actions">
                 <button class="d-btn" type="button" @click="emit('close')">{{ t.common.cancel }}</button>
                 <button class="d-btn d-btn--primary" type="button" :disabled="!chosen || taking" data-testid="embed-take" @click="take">
@@ -89,7 +100,7 @@ async function take(): Promise<void> {
 .embed {
     display: grid;
     gap: 12px;
-    width: min(760px, 100%);
+    width: min(1100px, 100%);
 }
 .embed h2 {
     margin: 0;
@@ -99,39 +110,13 @@ async function take(): Promise<void> {
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
-.playlists {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 10px;
+.tiles {
     max-height: 50vh;
     overflow-y: auto;
-    margin: 0;
-    padding: 2px;
-    list-style: none;
-}
-.playlists label {
-    display: grid;
-    gap: 4px;
+    /* Room for the ring and the shadow of the tiles at the edge. */
     padding: 4px;
-    border: 2px solid transparent;
-    border-radius: var(--d-radius-lg);
+}
+.tiles label {
     cursor: pointer;
-}
-.playlists label.on {
-    border-color: var(--d-accent);
-    background: var(--d-accent-pale);
-}
-.playlists :deep(.slide-thumb) {
-    border-radius: var(--d-radius);
-}
-.name {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: var(--d-size-sm);
-    overflow-wrap: anywhere;
-}
-.name input {
-    flex: none;
 }
 </style>
