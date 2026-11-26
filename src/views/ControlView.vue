@@ -4,6 +4,7 @@
  * A tap writes a choice into the category `steuerung`; the player reads it. Built for a dark stage, thumbs and a narrow screen.
  */
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { stepPart, type ControlDoc, type PartRef } from '../agenda/control';
 import { agendaDisplay, clockText, pickEvent, type AgendaEvent, type AgendaPick, type LivePosition } from '../agenda/live';
 import { sheetOf, songsLeft, songsheetPick } from '../agenda/songsheet';
@@ -242,8 +243,8 @@ watch(eventId, async () => {
     }
 });
 
-/** Also in the designers' group (or an administrator): the button "Designer" in the head leads back. The same test as the start page's. */
-const designerToo = ref(controlMemory.designerToo);
+/** The way out (Plan.md 135): "ChurchTools" goes back into the module when the page was opened from it – the pencil went (user, 2026-11-26). */
+const router = useRouter();
 
 onMounted(async () => {
     // The last visit's state at once; the reading below replaces it.
@@ -253,10 +254,6 @@ onMounted(async () => {
         eventId.value = controlMemory.eventId;
         loading.value = false;
     }
-    void getRepository()
-        .then((handle) => handle.repository.visibleCategories())
-        .then((categories) => (designerToo.value = controlMemory.designerToo = Object.keys(categories).length > 0))
-        .catch(() => null);
     try {
         const [person, handle, zone] = await Promise.all([currentPerson(), getRepository(), fetchTimeZone()]);
         repository = handle.repository;
@@ -303,7 +300,7 @@ onBeforeUnmount(() => {
 <template>
     <main class="infoscreen-designer control">
         <header class="head" data-testid="control-head">
-            <a href="/" class="back" data-testid="control-back" :aria-label="t.control.backAria" @click.prevent="leaveControl"><Icon name="back" :size="18" /><span>{{ t.control.backToChurchTools }}</span></a>
+            <a href="/" class="back" data-testid="control-back" :aria-label="t.control.backAria" @click.prevent="leaveControl(!!router.options.history.state.back)"><Icon name="back" :size="18" /><span>{{ t.control.backToChurchTools }}</span></a>
             <h1>{{ t.control.title }}</h1>
             <div ref="areaBox" class="area-box">
                 <button
@@ -326,9 +323,6 @@ onBeforeUnmount(() => {
                     </li>
                 </ul>
             </div>
-            <RouterLink v-if="designerToo" :to="{ name: 'designer' }" class="to-designer" :aria-label="t.modeSwitch.designer" :title="t.modeSwitch.designer" data-testid="mode-designer">
-                <Icon name="pencil" :size="20" />
-            </RouterLink>
         </header>
         <div class="middle" data-testid="control-middle">
             <p v-if="loading" class="note">{{ t.control.loading }}</p>
@@ -502,6 +496,7 @@ h1 {
 }
 .area-box {
     position: relative;
+    flex: 1;
     min-width: 0;
 }
 /* Looks like a choice (user, 2026-11-13: on the phone the dropdown was not to be recognised – no colour of its own, the dark blue of
@@ -509,7 +504,9 @@ h1 {
 .head .area-button {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 6px;
+    width: 100%;
     min-height: 44px;
     padding: 0 10px 0 14px;
     border: 1px solid #3a3f4a;
@@ -563,19 +560,6 @@ h1 {
     color: #b8bcc4;
     font-size: 0.8rem;
     font-weight: 400;
-}
-/* A light, neutral ring (user, 2026-11-13) – blue is kept for the running part alone. */
-.to-designer {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    box-sizing: border-box;
-    border: 2px solid #c9ccd3;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.06);
-    color: #f1f2f4;
 }
 p {
     margin: 0;

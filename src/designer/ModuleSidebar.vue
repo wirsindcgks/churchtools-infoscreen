@@ -20,7 +20,6 @@ import Icon, { type IconName } from './Icon.vue';
 import { ensureStageAccess, stageAccess } from './stage-access';
 import { vTip } from './tip';
 import ControlQrDialog from './ControlQrDialog.vue';
-import { controlMemory } from '../views/control-memory';
 
 const route = useRoute();
 onMounted(() => {
@@ -97,10 +96,7 @@ onBeforeUnmount(() => {
 /** From a tablet up (the sidebar is a card there) the entry shows the QR code of the phone page; on the phone it leads there. */
 const qrOpen = ref(false);
 function openStage(event: Event): void {
-    if (window.matchMedia('(max-width: 48rem)').matches) {
-        controlMemory.designerToo = true;
-        return;
-    }
+    if (window.matchMedia('(max-width: 48rem)').matches) return;
     event.preventDefault();
     qrOpen.value = true;
 }

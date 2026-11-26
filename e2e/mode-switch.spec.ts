@@ -51,8 +51,11 @@ test.describe('between designer and phone page on a desktop', () => {
         await expect(dialog).toHaveCount(0);
         await expect(page.getByTestId('control-area')).toContainText('Gottesdienst');
 
-        await page.getByTestId('mode-designer').click();
+        // The pencil went (user, 2026-11-26): "ChurchTools" leads back into the designer the page was opened from.
+        await page.getByTestId('control-back').click();
         await expect(page.getByTestId('screens-heading')).toBeVisible();
+        // The phone page held the page behind still (Plan.md 135 A); now it may scroll again.
+        expect(await page.evaluate(() => [document.documentElement.style.overflow, document.body.style.overflow])).toEqual(['', '']);
     });
 
     test('chooses the area from the list under the head', async ({ page }) => {
@@ -108,7 +111,7 @@ for (const [name, viewport] of [
     test.describe(`the stage page over the bar of ChurchTools on a ${name}`, () => {
         test.use({ viewport });
 
-        test('covers the bar, does not scroll, and gives the page back on leaving', async ({ page }) => {
+        test('covers the bar and does not scroll', async ({ page }) => {
             await page.goto('steuerung');
             const head = page.getByTestId('control-head');
             await expect(head).toBeVisible();
@@ -130,10 +133,6 @@ for (const [name, viewport] of [
             // The demo has no event, so the bar below is empty and hidden: the middle reaches down to the edge of the window and not past it.
             const middle = (await page.getByTestId('control-middle').boundingBox())!;
             expect(middle.y + middle.height).toBeLessThanOrEqual(viewport.height + 1);
-            await head.getByTestId('mode-designer').click();
-            await expect(page.getByTestId('screens-heading')).toBeVisible();
-            // The page behind may scroll again.
-            expect(await page.evaluate(() => document.body.style.overflow)).toBe('');
         });
     });
 }
@@ -155,7 +154,7 @@ for (const [name, viewport] of [
             const head = (await page.getByTestId('control-head').boundingBox())!;
             expect(head.x).toBeGreaterThanOrEqual(0);
             expect(head.x + head.width).toBeLessThanOrEqual(viewport.width);
-            for (const id of ['control-area', 'mode-designer']) {
+            for (const id of ['control-back', 'control-area']) {
                 const box = (await page.getByTestId(id).boundingBox())!;
                 expect(box.x).toBeGreaterThanOrEqual(head.x);
                 expect(box.x + box.width).toBeLessThanOrEqual(head.x + head.width + 1);
@@ -180,7 +179,7 @@ test.describe('the way to the stage page', () => {
         };
         await toStage();
         await expect(loadingLine).toHaveCount(0);
-        await page.getByTestId('mode-designer').click();
+        await page.getByTestId('control-back').click();
         await expect(page.getByTestId('screens-heading')).toBeVisible();
 
         await toStage();

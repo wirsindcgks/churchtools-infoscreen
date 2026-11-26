@@ -5,7 +5,6 @@
  */
 import { onMounted, ref } from 'vue';
 import { t } from '../i18n/designer';
-import { controlMemory } from '../views/control-memory';
 import QrCode from './QrCode.vue';
 import { controlUrl } from './player-url';
 
@@ -32,7 +31,6 @@ async function copy(): Promise<void> {
 }
 
 function openHere(): void {
-    controlMemory.designerToo = true;
     emit('close');
 }
 </script>
