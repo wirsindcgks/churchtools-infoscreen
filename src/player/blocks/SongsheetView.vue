@@ -26,6 +26,20 @@ const { context, nowMs, pick, display } = useAgenda(() => props.block);
 const rehearsal = computed(() => isRehearsalSheet(props.block));
 const byTime = computed(() => props.block.pageByTime && !rehearsal.value);
 
+// The event this block follows, for the position the player reports to the phone page (Plan.md 124 D); the designer has no such record.
+watch(
+    () => pick.value?.event.eventId,
+    (eventId) => {
+        if (!context.songsheetEvents) return;
+        if (eventId === undefined || rehearsal.value) delete context.songsheetEvents[props.block.id];
+        else context.songsheetEvents[props.block.id] = eventId;
+    },
+    { immediate: true },
+);
+onBeforeUnmount(() => {
+    if (context.songsheetEvents) delete context.songsheetEvents[props.block.id];
+});
+
 // Every part is a computed of its own: the pick is made new each second, these keep their value (and so the render) while nothing changes.
 const chosen = computed(() =>
     rehearsal.value ? rehearsalPick(context.rehearsal, nowMs.value) : songsheetPick(pick.value, pick.value ? context.agenda?.controls?.[pick.value.event.eventId] : undefined),

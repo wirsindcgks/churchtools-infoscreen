@@ -252,7 +252,26 @@ verknüpfte, die sich gemeinsam ändern. Auf Wunsch zeigt ein Fortschrittsbalken
 
 Die Vorschau im Editor läuft bei „Per Klick“ nicht von selbst weiter – mit den Pfeilen schaltest du von Hand. Klicks wirken nur auf Bildschirmen, die
 auf der Einstellungsseite „Musiker“ für die Klicksteuerung freigegeben sind (siehe [Einrichtung](Einrichtung.md)).
-<!-- bis Stück D: Der Bildschirm reagiert auf Klicks, aber es gibt noch keine Handyseite dafür (Stück D) und keinen Presenter am Gerät (Stück E). Diesen Absatz und den Hinweis auf die Freigabe vor dem Release prüfen; ist ein Bildschirm nicht freigegeben, läuft „Per Klick“ dort nach Zeit. -->
+
+**Vom Handy weiterschalten.** Auf der Handyseite „Steuerung“ gibt es neben „Gottesdienst“ und „Probe“ den Bereich **„Bildschirm“** – er erscheint nur,
+wenn mindestens ein Bildschirm für die Klicksteuerung freigegeben ist. Dort wählen die Musiker den Bildschirm und sehen, wo er steht („Folie 3 von 12 – Name“).
+Große Knöpfe schalten **Zurück** und **Vor**, **Schwarz** legt Schwarz über den Bildschirm (ein weiterer Tipp, auch auf Vor oder Zurück, nimmt es weg), und in der Liste
+darunter springt ein Tipp auf eine Folie. Darunter steht, wer zuletzt geklickt hat („zuletzt Anna, vor 5 s“) – ein Klick kommt nach ein bis zwei Sekunden am
+Bildschirm an. Steht der Bildschirm auf einer Folie mit **Liedblatt**, schalten Vor und Zurück erst die Teile des Liedes (wie im Bereich „Gottesdienst“ bzw. „Probe“) und
+danach die Folie. Auch hier geht ein **Bluetooth-Presenter**: Bild ab und Pfeil rechts wirken wie Vor, Bild auf und Pfeil links wie Zurück. Läuft auf dem
+Bildschirm keine Präsentation mit Klicksteuerung, steht das da, und die Knöpfe ruhen.
+
+```mermaid
+flowchart LR
+    H["Handy<br>Bereich „Bildschirm“"]
+    S["Kategorie „Steuerung“<br>Klick je Bildschirm"]
+    B["Bildschirm<br>Player"]
+    T["Kategorie „Status“<br>Stand je Bildschirm"]
+    H -->|"Vor, Zurück, Schwarz"| S
+    S -->|"liest jede Sekunde"| B
+    B -->|"meldet Folie und Schwarz"| T
+    T -->|"liest alle 3 Sekunden"| H
+```
 
 ![Präsentationen als Kacheln mit Format, Zahl der Folien und den Bildschirmen, die sie zeigen](bilder/playlists.png)
 

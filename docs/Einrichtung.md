@@ -293,7 +293,7 @@ Fernseher; das Handy sieht nicht, ob ein Gottesdienst die Probe schon beendet ha
 gilt: Die Musiker sehen die Bildschirme nicht, deshalb schreibt die Seite beim „Speichern" die Namen in die Kategorie „Steuerung". Danach auf „Rechte
 aktualisieren" tippen: Fernseher lesen dann „Steuerung", die Musikergruppe liest zusätzlich die Kategorie „Status", in der die Bildschirme melden, wo sie
 stehen (nur lesen). „Status" gibt es erst, wenn ein Administrator die Startseite geöffnet hat.
-<!-- bis Stück D: Die Bildschirme nutzen die Freigabe und melden ihren Stand nach „Status“; die Handyseite dafür folgt mit Stück D. -->
+Auf der Handyseite erscheint danach der Bereich **„Bildschirm“** (siehe [Funktionen](Funktionen.md#präsentationen)); ohne freigegebenen Bildschirm fehlt er.
 
 In ChurchTools siehst du das Ergebnis an der Gruppe „Infoscreen-Musiker" unter **Einstellungen → Automatische Mitgliedschaft**: Filter
 „Mitgliedschaft in einer Gruppe" mit deinen Bandgruppen, dazu „Person ist nicht archiviert" und „Person ist nicht verstorben".

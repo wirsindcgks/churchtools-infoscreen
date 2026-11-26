@@ -33,3 +33,22 @@ describe('readPosition (Plan.md 124 C)', () => {
         expect(readPosition({ kind: 'heartbeat', screen: 'demo', at: '2026-11-26T10:00:00Z' })).toBeNull();
     });
 });
+
+describe('readPosition: name, time of the click and source of the songsheet (Plan.md 124 D)', () => {
+    it('reads by and clickAt, and leaves out what is damaged', () => {
+        expect(readPosition({ ...doc, by: 'Anna', clickAt: '2026-11-26T09:59:55Z' })).toEqual({ ...doc, by: 'Anna', clickAt: '2026-11-26T09:59:55Z' });
+        const read = readPosition({ ...doc, by: '', clickAt: 'gestern' })!;
+        expect(read.by).toBeUndefined();
+        expect(read.clickAt).toBeUndefined();
+        expect(readPosition({ ...doc, by: 4 })!.by).toBeUndefined();
+    });
+
+    it('reads the source of the songsheet; the old value true and an unreadable one count as unknown', () => {
+        expect(readPosition({ ...doc, songsheet: { source: 'agenda', eventId: 12 } })!.songsheet).toEqual({ source: 'agenda', eventId: 12 });
+        expect(readPosition({ ...doc, songsheet: { source: 'rehearsal' } })!.songsheet).toEqual({ source: 'rehearsal' });
+        expect(readPosition({ ...doc, songsheet: true })!.songsheet).toBe(true);
+        expect(readPosition({ ...doc, songsheet: { source: 'agenda' } })!.songsheet).toBe(true);
+        expect(readPosition({ ...doc, songsheet: { source: 'agenda', eventId: 0 } })!.songsheet).toBe(true);
+        for (const none of [false, 'ja', 3, null, { source: 'x' }, {}]) expect(readPosition({ ...doc, songsheet: none })!.songsheet).toBeUndefined();
+    });
+});

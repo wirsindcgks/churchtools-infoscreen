@@ -16,7 +16,7 @@ import { createVideoCache } from '../player/video-cache';
 import { screenVideoUrls } from '../player/video';
 import { createPreloader } from '../player/preload';
 import { turnsWithin } from '../player/paging';
-import { effectiveAdvance } from '../player/click';
+import { effectiveAdvance, songsheetOf } from '../player/click';
 import { placeInRotation, useRotation } from '../player/rotation';
 import { activePlaylistId } from '../player/schedule';
 import { keepPlayerStorage, registerPlayerServiceWorker, watchForNewVersion } from '../player/service-worker';
@@ -71,6 +71,7 @@ const context = reactive<StageContext>({
     images: new Map<string, string>(),
     pages: {},
     turns: {},
+    songsheetEvents: {},
     paging: true,
 });
 provideStageContext(context);
@@ -248,8 +249,9 @@ function pageBy(by: number): void {
 
 /** The stage is black (Plan.md 124 C) – above banner and bar; a presentation of its own starts without it. */
 const black = ref(false);
-/** The `seq` of the click applied last, for the position written to `status`. */
+/** The `seq` of the click applied last, with the name and time of the click value, for the position written to `status`. */
 const appliedSeq = ref(0);
+const appliedBy = ref<{ by?: string; at?: string }>({});
 /** One step of a click: a paged block on the slide turns first, else the slide moves; no least time and no `engage()`, unlike touch (Plan.md 124 C). */
 function clickBy(by: number): void {
     if (current.value && turnsWithin(current.value, context.turns ?? {}, by)) {
@@ -288,6 +290,7 @@ watch(
                 await nextTick();
             }
             appliedSeq.value = batch.seq;
+            appliedBy.value = { by: batch.by, at: batch.at };
         });
     },
 );
@@ -296,11 +299,14 @@ watch(
     () => {
         black.value = false;
         appliedSeq.value = 0;
+        appliedBy.value = {};
     },
 );
+/** What the songsheet block of the slide on show says of its source; a computed of its own so that a block reporting its event moves the position. */
+const songsheet = computed(() => (current.value ? songsheetOf(current.value, context.songsheetEvents ?? {}) : undefined));
 // Where the screen stands, for the phone page; only while the presentation does not run by time alone (the player drops what did not change).
 watch(
-    [advance, playlist, current, slides, black, appliedSeq],
+    [advance, playlist, current, slides, black, appliedSeq, appliedBy, songsheet],
     () => {
         const slide = current.value;
         const running = playlist.value;
@@ -312,9 +318,11 @@ watch(
             number: place.number,
             total: place.total,
             slides: slides.value.map((s) => ({ id: s.id, name: s.name })),
-            ...(slide.blocks.some((b) => b.type === 'songsheet') ? { songsheet: true as const } : {}),
+            ...(songsheet.value ? { songsheet: songsheet.value } : {}),
             ...(black.value ? { black: true as const } : {}),
             seq: appliedSeq.value,
+            ...(appliedBy.value.by ? { by: appliedBy.value.by } : {}),
+            ...(appliedBy.value.at ? { clickAt: appliedBy.value.at } : {}),
         });
     },
     { immediate: true },
