@@ -16,7 +16,6 @@ import { fillOfKind } from '../fill-kind';
 import FillEditor from '../FillEditor.vue';
 import { useGeneralHelp } from '../help/register';
 import Icon from '../Icon.vue';
-import InspectorHelp from '../InspectorHelp.vue';
 import InspectorSection from '../InspectorSection.vue';
 import { useInspectorContext } from './context';
 import { useEdit } from './edit';
@@ -131,6 +130,16 @@ const progressPlacementOptions = [
     { value: 'inset', label: t.inspector.progressPlacements.inset },
     { value: 'edge', label: t.inspector.progressPlacements.edge },
 ];
+/** The folded "Folie" (Plan.md 132 B): how long it stands, and whether it is left out. */
+const slideSummary = computed(() =>
+    slide.value ? [`${slide.value.durationSeconds} ${t.inspector.unitSeconds}`, ...(slide.value.enabled ? [] : [t.inspector.hiddenShort])].join(' · ') : '',
+);
+const slideHelp = {
+    items: [
+        { term: t.inspector.displaySeconds, text: t.inspector.displaySecondsInfo },
+        { term: t.inspector.enabled, text: t.inspector.enabledInfo },
+    ],
+};
 /** The bar in the folded summary of "Präsentation" (Plan.md 132 A): only while it is on, with its form and placement. */
 const progressSummary = computed(() => {
     const playlist = editor.draft?.playlist;
@@ -170,37 +179,37 @@ const backgroundColors = computed(() => {
 
 <template>
     <section v-if="slide" data-testid="slide-inspector">
-        <!-- The line that names the slide carries the "?" of the help (Plan.md 98), as the head of a block's inspector does. -->
-        <div class="slide-head">
+        <!-- The slide's own settings under a head of their own (Plan.md 132 B), so they do not read as part of the list of blocks
+             above; outside the group like that list: open at first, and it stays open while another section opens. -->
+        <InspectorSection id="slide" :group="false" default-open :title="t.inspector.slideSection" :summary="slideSummary" :help="slideHelp">
             <TextField :model-value="slide.name" :label="t.common.name" :maxlength="100" testid="slide-name" @update:model-value="editor.updateSlide({ name: $event })" />
-            <InspectorHelp />
-        </div>
-        <!-- A slide that other playlists show too (Plan.md 49): changes here count there as well. -->
-        <div v-if="linkedNames" class="linked" data-testid="slide-linked">
-            <span v-tip="t.inspector.linkedAlso(linkedNames)" class="linked-text" data-testid="slide-linked-in">
-                <Icon name="link" :size="14" />
-                <span class="linked-names">{{ t.inspector.linkedAlso(linkedNames) }}</span>
-                <span v-if="editor.linkPending(slide.id)" class="linked-pending" data-testid="slide-link-pending">
-                    {{ t.inspector.linkedPending }}
+            <!-- A slide that other playlists show too (Plan.md 49): changes here count there as well. -->
+            <div v-if="linkedNames" class="linked" data-testid="slide-linked">
+                <span v-tip="t.inspector.linkedAlso(linkedNames)" class="linked-text" data-testid="slide-linked-in">
+                    <Icon name="link" :size="14" />
+                    <span class="linked-names">{{ t.inspector.linkedAlso(linkedNames) }}</span>
+                    <span v-if="editor.linkPending(slide.id)" class="linked-pending" data-testid="slide-link-pending">
+                        {{ t.inspector.linkedPending }}
+                    </span>
                 </span>
-            </span>
-            <button class="d-btn" type="button" data-testid="slide-unlink" @click="editor.unlinkSlide(slide.id)">
-                {{ t.inspector.unlink }}
-            </button>
-        </div>
-        <NumberField
-            :model-value="slide.durationSeconds"
-            :label="t.inspector.displaySeconds"
-            :unit="t.inspector.unitSeconds"
-            :min="1"
-            :max="3600"
-            testid="duration-input"
-            @update:model-value="editor.updateSlide({ durationSeconds: $event })"
-        />
-        <ToggleField :model-value="slide.enabled" :label="t.inspector.enabled" testid="slide-enabled" @update:model-value="editor.updateSlide({ enabled: $event })" />
-        <p v-if="runsLonger" class="hint" data-testid="duration-hint">
-            {{ t.inspector.runsLonger(runsLonger) }}
-        </p>
+                <button class="d-btn" type="button" data-testid="slide-unlink" @click="editor.unlinkSlide(slide.id)">
+                    {{ t.inspector.unlink }}
+                </button>
+            </div>
+            <NumberField
+                :model-value="slide.durationSeconds"
+                :label="t.inspector.displaySeconds"
+                :unit="t.inspector.unitSeconds"
+                :min="1"
+                :max="3600"
+                testid="duration-input"
+                @update:model-value="editor.updateSlide({ durationSeconds: $event })"
+            />
+            <ToggleField :model-value="slide.enabled" :label="t.inspector.enabled" testid="slide-enabled" @update:model-value="editor.updateSlide({ enabled: $event })" />
+            <p v-if="runsLonger" class="hint" data-testid="duration-hint">
+                {{ t.inspector.runsLonger(runsLonger) }}
+            </p>
+        </InspectorSection>
         <InspectorSection id="layout" :title="t.inspector.layout" :summary="layoutSummary" :help="layoutHelp">
             <TileField
                 :model-value="splitValue(layout)"
@@ -317,15 +326,6 @@ const backgroundColors = computed(() => {
 
 <style scoped>
 /* The name takes the room, the "?" stands at the end of its line. */
-.slide-head {
-    display: flex;
-    align-items: center;
-    gap: var(--d-space-2);
-}
-.slide-head > :first-child {
-    flex: 1;
-    min-width: 0;
-}
 section {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
