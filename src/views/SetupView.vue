@@ -46,7 +46,7 @@ import {
     personGroups,
     type GroupSummary,
 } from '../setup/load';
-import { releasedRehearsalScreens, settingsToSave, type SettingsFields } from '../setup/settings-doc';
+import { releasedClickScreens, releasedRehearsalScreens, settingsToSave, type SettingsFields } from '../setup/settings-doc';
 import { churchToolsMusicianApi, provisionMusicians, updateMusicianSources } from '../setup/musicians';
 import { wikiCategoryCreation } from '../setup/wiki-creation';
 import { createDeviceLogin } from '../setup/device-token';
@@ -258,6 +258,9 @@ const rehearsalScreenIds = ref<string[]>([]);
 const rehearsalPlaylistIds = ref<string[]>([]);
 const draftRehearsalScreens = ref<string[]>([]);
 const draftRehearsalPlaylists = ref<string[]>([]);
+/** The screens released for the click steering (Plan.md 124 B), as stored, and the choice on the page until „Speichern“. */
+const clickScreenIds = ref<string[]>([]);
+const draftClickScreens = ref<string[]>([]);
 /** The presentations with a rehearsal sheet (`isRehearsalSheet`); null until read. */
 const rehearsalPlaylists = ref<{ id: string; name: string }[] | null>(null);
 /** `controlCategoryId` is no ref: this is set with it. */
@@ -384,6 +387,7 @@ function planInput(people?: 'new', musician?: 'new'): PlanInput {
         agendaServiceGroupIds: grantableServiceGroups(agendaServiceGroupIds, serviceGroupList),
         songsheet: songsheetInUse,
         rehearsalScreens: rehearsalScreenIds.value.length > 0,
+        clickScreens: clickScreenIds.value.length > 0,
         screenCalendarIds: releasedCalendars.value,
         peopleGroupIds: releasedPeopleGroups.value,
         controlCategoryId: controlCategoryId ?? undefined,
@@ -653,6 +657,7 @@ function discardForm(form: FormPage): void {
         draftMusicianSources.value = [...musicianSourceGroupIds.value];
         draftRehearsalScreens.value = [...rehearsalScreenIds.value];
         draftRehearsalPlaylists.value = [...rehearsalPlaylistIds.value];
+        draftClickScreens.value = [...clickScreenIds.value];
     } else {
         draftRoomTypes.value = [...roomTypeIds.value];
     }
@@ -982,15 +987,21 @@ async function addMusicianGroup(): Promise<void> {
 
 const sameStrings = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && a.every((id) => b.includes(id));
 
-/** Whether the choice of screens or presentations for the rehearsal differs from the stored one – only where the page lets it be changed. */
+/** Whether the choice of screens or presentations for the rehearsal or of the click screens differs from the stored one – only where the page lets it be changed. */
 function rehearsalDirty(): boolean {
-    return rehearsalReady.value && (!sameStrings(draftRehearsalScreens.value, rehearsalScreenIds.value) || !sameStrings(draftRehearsalPlaylists.value, rehearsalPlaylistIds.value));
+    return (
+        rehearsalReady.value &&
+        (!sameStrings(draftRehearsalScreens.value, rehearsalScreenIds.value) ||
+            !sameStrings(draftRehearsalPlaylists.value, rehearsalPlaylistIds.value) ||
+            !sameStrings(draftClickScreens.value, clickScreenIds.value))
+    );
 }
 
 /** The choice needs the musicians' group and the category `steuerung` (the list goes there), and the right to save the settings. */
 const rehearsalReady = computed(() => musicianGroupId.value !== null && hasControlCategory.value && settingsWritable.value !== false);
 
 const rehearsalScreenChoices = computed(() => screens.value.filter((sc) => !draftRehearsalScreens.value.includes(sc.id)).map((sc) => ({ value: sc.id, label: sc.name })));
+const clickScreenChoices = computed(() => screens.value.filter((sc) => !draftClickScreens.value.includes(sc.id)).map((sc) => ({ value: sc.id, label: sc.name })));
 const rehearsalPlaylistChoices = computed(() => (rehearsalPlaylists.value ?? []).filter((p) => !draftRehearsalPlaylists.value.includes(p.id)).map((p) => ({ value: p.id, label: p.name })));
 /** Presentations with a rehearsal sheet that the musicians cannot choose yet. */
 const unreleasedRehearsalPlaylists = computed(() => (rehearsalPlaylists.value ?? []).filter((p) => !draftRehearsalPlaylists.value.includes(p.id)).map((p) => p.name));
@@ -1004,6 +1015,14 @@ function releaseRehearsalScreen(value: string | number): void {
 }
 function withdrawRehearsalScreen(id: string): void {
     draftRehearsalScreens.value = draftRehearsalScreens.value.filter((x) => x !== id);
+}
+function releaseClickScreen(value: string | number): void {
+    const id = String(value);
+    if (draftClickScreens.value.includes(id) || draftClickScreens.value.length >= RELEASED_GROUPS_MAX) return;
+    draftClickScreens.value = [...draftClickScreens.value, id];
+}
+function withdrawClickScreen(id: string): void {
+    draftClickScreens.value = draftClickScreens.value.filter((x) => x !== id);
 }
 function releaseRehearsalPlaylist(value: string | number): void {
     const id = String(value);
@@ -1040,11 +1059,13 @@ async function saveRehearsal(): Promise<void> {
     rehearsalPlaylists.value = known;
     const nextScreens = screens.value.filter((sc) => draftRehearsalScreens.value.includes(sc.id));
     const nextPlaylists = known.filter((p) => draftRehearsalPlaylists.value.includes(p.id));
+    const nextClick = screens.value.filter((sc) => draftClickScreens.value.includes(sc.id));
     try {
         await repository.writeRehearsalCatalog({
             kind: 'rehearsalCatalog',
             screens: nextScreens.map((sc) => ({ id: sc.id, name: sc.name })),
             playlists: nextPlaylists.map((p) => ({ id: p.id, name: p.name })),
+            clickScreens: nextClick.map((sc) => ({ id: sc.id, name: sc.name })),
             at: new Date().toISOString(),
         });
     } catch (e) {
@@ -1054,11 +1075,14 @@ async function saveRehearsal(): Promise<void> {
     await persistSettings({
         rehearsalScreenIds: nextScreens.length ? nextScreens.map((sc) => sc.id) : undefined,
         rehearsalPlaylistIds: nextPlaylists.length ? nextPlaylists.map((p) => p.id) : undefined,
+        clickScreenIds: nextClick.length ? nextClick.map((sc) => sc.id) : undefined,
     });
     rehearsalScreenIds.value = nextScreens.map((sc) => sc.id);
     rehearsalPlaylistIds.value = nextPlaylists.map((p) => p.id);
     draftRehearsalScreens.value = [...rehearsalScreenIds.value];
     draftRehearsalPlaylists.value = [...rehearsalPlaylistIds.value];
+    clickScreenIds.value = nextClick.map((sc) => sc.id);
+    draftClickScreens.value = [...clickScreenIds.value];
 }
 
 /** „Speichern" on the page „Musiker": writes the rule anew and runs it, then keeps the band groups in the settings. Throws on failure. */
@@ -1458,6 +1482,7 @@ async function check(side: Side): Promise<void> {
                 agendaServiceGroupIds: grantableServiceGroups(agendaServiceGroupIds, serviceGroupList),
                 songsheetInUse,
                 rehearsalScreens: rehearsalScreenIds.value.length > 0,
+                clickScreens: clickScreenIds.value.length > 0,
                 controlRights: controlCategoryId === null ? undefined : (plan.value?.find((spec) => spec.key === 'device')?.grants.filter((g) => g.dataId?.length === 1 && g.dataId[0] === controlCategoryId) ?? []),
                 screenCalendarIds: releasedCalendars.value,
                 videoInUse,
@@ -1596,6 +1621,8 @@ onMounted(async () => {
         draftRehearsalScreens.value = [...rehearsalScreenIds.value];
         rehearsalPlaylistIds.value = [...(settings?.rehearsalPlaylistIds ?? [])];
         draftRehearsalPlaylists.value = [...rehearsalPlaylistIds.value];
+        clickScreenIds.value = releasedClickScreens(settings, screenList);
+        draftClickScreens.value = [...clickScreenIds.value];
         peopleDeviceIds.value = settings?.peopleDeviceIds ?? [];
         Object.assign(savedGroups, selected);
         createdGroupIds.value = settings?.createdGroupIds ?? [];
@@ -2312,6 +2339,31 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                 <p v-if="unreleasedRehearsalPlaylists.length" class="muted small" data-testid="rehearsal-unreleased">{{ t.setup.musicians.rehearsal.unreleased(unreleasedRehearsalPlaylists) }}</p>
                                 <p class="muted small">{{ t.setup.musicians.rehearsal.note }}</p>
                                 <p class="muted small">{{ t.setup.musicians.rehearsal.gone }}</p>
+                            </div>
+                            <div class="rehearsal-release" data-testid="click-release">
+                                <h3>{{ t.setup.musicians.click.title }}</h3>
+                                <p class="muted">{{ t.setup.musicians.click.lead }}</p>
+                                <label class="d-field">
+                                    {{ t.setup.musicians.click.screens }}
+                                    <SelectMenu
+                                        :model-value="undefined"
+                                        :options="clickScreenChoices"
+                                        :placeholder="t.setup.musicians.click.screensChoose"
+                                        :disabled="!rehearsalReady || !clickScreenChoices.length || draftClickScreens.length >= RELEASED_GROUPS_MAX"
+                                        testid="click-screen-add"
+                                        @update:model-value="releaseClickScreen"
+                                    />
+                                </label>
+                                <p v-if="!draftClickScreens.length" class="muted" data-testid="click-screens-none">{{ t.setup.musicians.click.screensNone }}</p>
+                                <ul v-else class="released-groups">
+                                    <li v-for="id in draftClickScreens" :key="id" data-testid="click-screen">
+                                        <span>{{ screenNameById(id) }}</span>
+                                        <button class="d-btn" type="button" :disabled="!rehearsalReady" :aria-label="t.setup.musicians.click.screenWithdraw(screenNameById(id))" data-testid="click-screen-remove" @click="withdrawClickScreen(id)">
+                                            {{ t.common.remove }}
+                                        </button>
+                                    </li>
+                                </ul>
+                                <p class="muted small">{{ t.setup.musicians.click.note }}</p>
                             </div>
                             <ul v-if="musicianRun.log.length" class="log" data-testid="musician-log">
                                 <li v-for="(line, i) in musicianRun.log" :key="i">{{ line }}</li>

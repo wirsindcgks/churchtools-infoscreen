@@ -10,6 +10,7 @@ const catalog: RehearsalCatalogDoc = {
     kind: 'rehearsalCatalog',
     screens: [{ id: 's1', name: 'Probenraum' }],
     playlists: [{ id: 'p1', name: 'Probenblatt' }, { id: 'p2', name: 'Band' }],
+    clickScreens: [],
     at: '2026-11-11T09:00:00Z',
 };
 

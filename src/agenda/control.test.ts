@@ -134,7 +134,7 @@ describe('rehearsal choice (Plan.md 121, "Proben")', () => {
 });
 
 describe('the rehearsal catalog (Plan.md 125 A)', () => {
-    const catalog = { kind: 'rehearsalCatalog', screens: [{ id: 's1', name: 'Probenraum' }], playlists: [{ id: 'p1', name: 'Probe' }], at: '2026-11-23T10:00:00Z' };
+    const catalog = { kind: 'rehearsalCatalog', screens: [{ id: 's1', name: 'Probenraum' }], playlists: [{ id: 'p1', name: 'Probe' }], clickScreens: [{ id: 's2', name: 'Bühne' }], at: '2026-11-23T10:00:00Z' };
     const text = (v: unknown): string => JSON.stringify(v);
     const rehearsalValue = { kind: 'rehearsal', songId: 7, arrangementId: 3, section: 1, at: '2026-11-11T10:00:00Z' };
     const now = Date.parse('2026-11-24T12:00:00Z');
@@ -142,6 +142,13 @@ describe('the rehearsal catalog (Plan.md 125 A)', () => {
     it('reads a JSON string and an object', () => {
         expect(readRehearsalCatalog(text(catalog))).toEqual(catalog);
         expect(readRehearsalCatalog(catalog)).toEqual(catalog);
+    });
+    it('reads a value from before the click steering with no click screens, and a damaged list as none', () => {
+        const old: Record<string, unknown> = { ...catalog };
+        delete old.clickScreens;
+        expect(readRehearsalCatalog(text(old))?.clickScreens).toEqual([]);
+        expect(readRehearsalCatalog({ ...catalog, clickScreens: 'x' })?.clickScreens).toEqual([]);
+        expect(readRehearsalCatalog({ ...catalog, clickScreens: [{ id: 's2' }, { name: 'x' }] })?.clickScreens).toEqual([{ id: 's2', name: '' }]);
     });
     it('reads empty lists, and leaves out entries without an id', () => {
         expect(readRehearsalCatalog({ ...catalog, screens: [], playlists: [] })).toEqual({ ...catalog, screens: [], playlists: [] });

@@ -99,6 +99,22 @@ describe('checkRightsPending (Plan.md 122)', () => {
         expect(mocks.plan).toHaveBeenLastCalledWith(expect.objectContaining({ rehearsalScreens: true }));
     });
 
+    it('counts only released click screens that still exist (Plan.md 124 B)', async () => {
+        const withRelease = (ids: string[]) => {
+            mocks.repo.mockResolvedValue({
+                repository: { ...repository(), loadSettings: vi.fn().mockResolvedValue({ clickScreenIds: ids }) },
+                demo: false,
+            });
+        };
+        withRelease(['gone']);
+        await checkRightsPending();
+        expect(mocks.plan).toHaveBeenLastCalledWith(expect.objectContaining({ clickScreens: false }));
+        window.sessionStorage.clear();
+        withRelease(['gone', 's1']);
+        await checkRightsPending();
+        expect(mocks.plan).toHaveBeenLastCalledWith(expect.objectContaining({ clickScreens: true }));
+    });
+
     it('is false when a right is locked', async () => {
         mocks.refresh.mockResolvedValue({ groups: [{}], blocked: [{}] });
         await checkRightsPending();

@@ -67,6 +67,7 @@ export interface DraftChange {
     progress?: boolean;
     progressPlacement?: 'inset' | 'edge';
     progressStyle?: 'bar' | 'segments';
+    advance?: 'time' | 'time-click' | 'click';
     embeds?: PlaylistEmbed[];
     /** The slides to write as drafts; every other slide draft of this playlist is deleted. */
     slides: SlideDoc[];
@@ -174,6 +175,7 @@ export class DraftStore {
                 ...(change.progress ? { progress: true } : {}),
                 ...(change.progressPlacement === 'edge' ? { progressPlacement: 'edge' as const } : {}),
                 ...(change.progressStyle === 'segments' ? { progressStyle: 'segments' as const } : {}),
+                ...(change.advance && change.advance !== 'time' ? { advance: change.advance } : {}),
                 ...(change.embeds?.length ? { embeds: change.embeds } : {}),
                 revision: current + 1,
                 updatedBy: options.updatedBy,

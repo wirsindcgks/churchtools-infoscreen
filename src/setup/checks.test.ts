@@ -411,6 +411,24 @@ describe('checkDeviceGroup', () => {
         expect(check([], false)).toEqual([]);
     });
 
+    it('warns for released click screens as well, without a block "Liedblatt" (Plan.md 124 B)', () => {
+        const controlRights = [{ authId: 2015, dataId: [36], label: 'Steuerung der Musiker sehen' }];
+        const check = (grants: Grant[], clickScreens: boolean) =>
+            checkDeviceGroup({
+                statusId: 1,
+                members: [{ label: 'Gerät A', grants }],
+                calendars,
+                usedCalendarIds: [], publicCalendarIds: [2],
+                songsheetInUse: false,
+                clickScreens,
+                controlRights,
+                wikiCategoryId: WIKI,
+            }).filter((c) => c.text.startsWith('Die Steuerung'));
+        expect(check([], true)).toHaveLength(1);
+        expect(check([grant(2015, 36)], true)).toEqual([]);
+        expect(check([], false)).toEqual([]);
+    });
+
     it('checks that a device sees the song categories for the block "Liedblatt" (Plan.md 121, G82)', () => {
         const check = (grants: Grant[], songsheetInUse = true) =>
             checkDeviceGroup({

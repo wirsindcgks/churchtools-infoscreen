@@ -211,6 +211,20 @@ describe('editor store', () => {
         expect((await repository.loadPlaylist(playlistId)).playlist.progressStyle).toBeUndefined();
     });
 
+    it('keeps the advance through publishing; "by time" is saved as missing (Plan.md 124 B)', async () => {
+        const { editor, repository, playlistId } = await setup();
+        editor.setAdvance('click');
+        expect(await editor.publish()).toBe(true);
+        expect((await repository.loadPlaylist(playlistId)).playlist.advance).toBe('click');
+        editor.setAdvance('time-click');
+        expect(await editor.publish()).toBe(true);
+        expect((await repository.loadPlaylist(playlistId)).playlist.advance).toBe('time-click');
+        editor.setAdvance('time');
+        expect(editor.draft!.playlist).not.toHaveProperty('advance', 'time');
+        expect(await editor.publish()).toBe(true);
+        expect((await repository.loadPlaylist(playlistId)).playlist.advance).toBeUndefined();
+    });
+
     it('stops at a conflict and lets the user decide', async () => {
         const { editor, repository, playlistId } = await setup();
         // Another designer saves in between.

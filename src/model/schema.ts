@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 69 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 70 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -795,6 +795,8 @@ export const PlaylistDraftDoc = v.object({
     progressPlacement: v.optional(v.picklist(['inset', 'edge'])),
     /** Since 1.50, as on the playlist. */
     progressStyle: v.optional(v.picklist(['bar', 'segments'])),
+    /** Since 1.70, as on the playlist. */
+    advance: v.optional(v.picklist(['time', 'time-click', 'click'])),
     /** Counts up with every save; the second designer saving against an older one gets a conflict. */
     revision: v.pipe(v.number(), v.integer(), v.minValue(1)),
     updatedBy: v.string(),
@@ -863,6 +865,11 @@ export const PlaylistDoc = v.object({
     progressPlacement: v.optional(v.picklist(['inset', 'edge'])),
     /** Since 1.50 (Plan.md 109): `segments` draws one segment per slide instead of the bar with the slide number. Missing = the bar. */
     progressStyle: v.optional(v.picklist(['bar', 'segments'])),
+    /**
+     * Since 1.70 (Plan.md 124 B): how the presentation moves on – `time` by the display duration, `time-click` by time with clicks (from the
+     * phone or a presenter) jumping in, `click` only by click (no duration, no progress). Missing = `time`.
+     */
+    advance: v.optional(v.picklist(['time', 'time-click', 'click'])),
     /** The designers save against it; missing counts as 0. */
     revision: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
     updatedBy: v.optional(v.string()),
@@ -1140,6 +1147,12 @@ export const SettingsDoc = v.object({
     rehearsalScreenIds: v.optional(v.pipe(v.array(Id), v.maxLength(50))),
     /** Since 1.68 (Plan.md 125 A): the ids (`PlaylistDoc.id`) of the rehearsal presentations (a song sheet with the source "Probe") the musicians may choose. Missing or empty = none released. */
     rehearsalPlaylistIds: v.optional(v.pipe(v.array(Id), v.maxLength(50))),
+    /**
+     * Since 1.70 (Plan.md 124 B): the ids (`ScreenDoc.id`) of the screens the musicians steer from the phone with clicks (presentations with
+     * the advance `click` or `time-click`). The player follows clicks only for a screen in this list. Saving gives the device group "Daten
+     * sehen" on the category `steuerung` and the musicians' group on `status` as long as the list is not empty. Missing or empty = none released.
+     */
+    clickScreenIds: v.optional(v.pipe(v.array(Id), v.maxLength(50))),
     /** Since 1.40: calendars that are not public but released for screens by an administrator (Plan.md 85 b). Missing = none. */
     screenCalendarIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
 });

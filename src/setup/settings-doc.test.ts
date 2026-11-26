@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readSettings } from '../model/read';
 import { SCHEMA_VERSION, type SettingsDoc } from '../model/schema';
-import { releasedRehearsalScreens, settingsToSave } from './settings-doc';
+import { releasedClickScreens, releasedRehearsalScreens, settingsToSave } from './settings-doc';
 
 const stored: SettingsDoc = {
     schema: { major: 1, minor: 19 },
@@ -53,6 +53,22 @@ describe('settingsToSave', () => {
         expect(settingsToSave(withRelease, { allowedServiceIds: [7] })).toMatchObject({ rehearsalScreenIds: ['s1'], rehearsalPlaylistIds: ['p1'] });
         expect(settingsToSave(withRelease, { rehearsalScreenIds: undefined }).rehearsalScreenIds).toBeUndefined();
         expect(readSettings({ ...stored }).rehearsalScreenIds).toBeUndefined();
+    });
+
+    it('keeps the rest when the click screens are saved, and the click screens when the rest is (schema 1.70, Plan.md 124 B)', () => {
+        const saved = settingsToSave(stored, { clickScreenIds: ['s1'] });
+        expect(saved).toMatchObject({ designerGroupId: 11, allowedServiceIds: [3, 7], clickScreenIds: ['s1'] });
+        expect(readSettings({ ...saved, id: 'settings', kind: 'settings' }).clickScreenIds).toEqual(['s1']);
+        const withClick: SettingsDoc = { ...stored, clickScreenIds: ['s1'] };
+        expect(settingsToSave(withClick, { allowedServiceIds: [7] })).toMatchObject({ clickScreenIds: ['s1'] });
+        expect(settingsToSave(withClick, { clickScreenIds: undefined }).clickScreenIds).toBeUndefined();
+        expect(readSettings({ ...stored }).clickScreenIds).toBeUndefined();
+    });
+
+    it('reads the click screens only for screens that still exist (Plan.md 124 B)', () => {
+        expect(releasedClickScreens({ clickScreenIds: ['a', 'gone', 'b'] }, [{ id: 'a' }, { id: 'b' }])).toEqual(['a', 'b']);
+        expect(releasedClickScreens({}, [{ id: 'a' }])).toEqual([]);
+        expect(releasedClickScreens(null, [{ id: 'a' }])).toEqual([]);
     });
 
     it('reads the rehearsal release only for screens that still exist (Plan.md 125 A)', () => {

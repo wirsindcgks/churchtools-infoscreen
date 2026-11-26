@@ -243,6 +243,17 @@ Nächstes öffnet, arbeitet daran weiter.
 Eine Präsentation kann auf mehreren Bildschirmen laufen. Beim Duplizieren entstehen eigene Folien oder auf Wunsch
 verknüpfte, die sich gemeinsam ändern. Auf Wunsch zeigt ein Fortschrittsbalken, wie lange die Folie noch steht.
 
+**Weiterschalten.** Im Editor unter **Präsentation → Weiterschalten** legst du fest, wie die Präsentation von Folie zu Folie geht:
+
+- **Nach Zeit** – wie bisher: Jede Folie steht so lange wie ihre Anzeigedauer.
+- **Nach Zeit, Klicks greifen ein** – dasselbe, aber ein Klick vom Handy oder von einem Presenter springt sofort weiter; danach läuft die Zeit normal weiter.
+- **Per Klick** – die Folie bleibt stehen, bis weitergeschaltet wird. Die Anzeigedauer gilt dann nicht (der Wert bleibt erhalten), und es gibt keinen
+  Fortschrittsbalken; die Einstellungen dazu sind ausgegraut.
+
+Die Vorschau im Editor läuft bei „Per Klick“ nicht von selbst weiter – mit den Pfeilen schaltest du von Hand. Klicks wirken nur auf Bildschirmen, die
+auf der Einstellungsseite „Musiker“ für die Klicksteuerung freigegeben sind (siehe [Einrichtung](Einrichtung.md)).
+<!-- bis Stück C: Der Bildschirm selbst reagiert noch nicht auf Klicks; „Per Klick“ und „Klicks greifen ein“ wirken erst im Editor (Vorschau). Diesen Absatz und den Hinweis auf die Freigabe vor dem Release prüfen. -->
+
 ![Präsentationen als Kacheln mit Format, Zahl der Folien und den Bildschirmen, die sie zeigen](bilder/playlists.png)
 
 ### Präsentation einbetten

@@ -1225,6 +1225,33 @@ test('the preview plays the unsaved draft like the TV, and saves nothing', async
     await expect(page.locator('.editor-stage')).toContainText('Nur in der Vorschau'); // the block is still there
 });
 
+test('the presentation moves on "per Klick": greyed-out progress, a note at the duration, and the preview holds (Plan.md 124 B)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await openSection(page, 'playlist');
+    await page.getByTestId('playlist-progress').check();
+    await pickOption(page, 'playlist-advance', 'Per Klick');
+    await expect(page.getByTestId('playlist-progress')).toBeDisabled();
+    await expect(page.getByTestId('advance-progress-hint')).toContainText('Bei „Per Klick“ gibt es keinen Fortschritt.');
+    await openSection(page, 'slide');
+    await expect(page.getByTestId('duration-click-hint')).toContainText('gilt die Anzeigedauer nicht');
+    await expect(page.getByTestId('duration-input')).toBeEnabled();
+
+    await page.getByTestId('open-preview').click();
+    await expect(page.getByTestId('preview-where')).toContainText('1/3 · Willkommen · per Klick');
+    await expect(page.getByTestId('playlist-preview').getByTestId('slide-progress')).toHaveCount(0);
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByTestId('preview-where')).toContainText('2/3');
+    await page.keyboard.press('Escape');
+
+    await openSection(page, 'playlist');
+    await pickOption(page, 'playlist-advance', 'Nach Zeit, Klicks greifen ein');
+    await expect(page.getByTestId('playlist-progress')).toBeEnabled();
+    await page.getByTestId('open-preview').click();
+    await expect(page.getByTestId('preview-where')).toContainText(' s');
+    await expect(page.getByTestId('preview-where')).not.toContainText('per Klick');
+});
+
 test('in the preview a long appointment list turns its pages, with a bar filling up per page (Plan.md 23)', async ({ page }) => {
     test.setTimeout(60_000);
     // ChurchTools' answer is simulated: 20 appointments, one a day from tomorrow.

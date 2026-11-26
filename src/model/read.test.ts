@@ -699,6 +699,25 @@ describe('the rehearsal release of the settings (schema 1.68, Plan.md 125 A)', (
     });
 });
 
+describe('the advance of a presentation and the click screens (schema 1.70, Plan.md 124 B)', () => {
+    const settings = { schema: { ...SCHEMA_VERSION }, kind: 'settings' as const, id: 'settings' };
+
+    it('is optional on the playlist, and a 1.69 document stays valid', () => {
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(70);
+        expect(v.parse(PlaylistDoc, makePlaylist({ advance: 'click' })).advance).toBe('click');
+        expect(v.parse(PlaylistDoc, makePlaylist({ advance: 'time-click' })).advance).toBe('time-click');
+        expect(v.parse(PlaylistDoc, makePlaylist({ schema: { major: 1, minor: 69 } })).advance).toBeUndefined();
+        expect(v.safeParse(PlaylistDoc, makePlaylist({ advance: 'tap' as 'click' })).success).toBe(false);
+    });
+
+    it('lists the click screens of the settings as ids, and may miss them', () => {
+        expect(v.parse(SettingsDoc, { ...settings, clickScreenIds: ['a', 'b'] }).clickScreenIds).toEqual(['a', 'b']);
+        expect(v.parse(SettingsDoc, settings).clickScreenIds).toBeUndefined();
+        expect(v.safeParse(SettingsDoc, { ...settings, clickScreenIds: [3] }).success).toBe(false);
+        expect(v.safeParse(SettingsDoc, { ...settings, clickScreenIds: Array.from({ length: 51 }, (_, i) => `s${i}`) }).success).toBe(false);
+    });
+});
+
 describe('embedded presentations (schema 1.69, Plan.md 120)', () => {
     it('reads them on the playlist and its draft, and may be missing', () => {
         expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(69);
