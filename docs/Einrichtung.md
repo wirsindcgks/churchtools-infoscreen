@@ -384,6 +384,8 @@ Player deshalb in einem **Inkognito-Fenster** oder eigenen Browserprofil öffnen
 
 - **Raspberry Pi:** gut geeignet ist **FullPageOS**; die Startadresse steht in `fullpageos.txt` auf der
   Boot-Partition.
+- **Presenter am Gerät:** Soll ein Presenter am Raspberry Pi weiterschalten (Einstellung „Presenter am Gerät“ an der Kachel, siehe
+  [Funktionen](Funktionen.md)), muss der Browser im Vordergrund den Fokus haben – ein geöffneter Dialog oder ein anderes Fenster schluckt die Tasten.
 - **Ton bei Videos:** Chromium braucht die Startoption `--autoplay-policy=no-user-gesture-required`, sonst laufen
   Videos stumm.
 - **Schneidet der Fernseher den Rand ab**, an der Kachel unter „…" → „Einstellungen" die **Overscan-Korrektur**

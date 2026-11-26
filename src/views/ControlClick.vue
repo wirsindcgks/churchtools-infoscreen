@@ -27,7 +27,7 @@ import {
     type StepDecision,
     type StepSources,
 } from './click-steering';
-import { usePresenterKeys } from './presenter-keys';
+import { usePresenterKeys } from '../player/presenter-keys';
 
 const props = defineProps<{ repository: ScreenRepository; author: string; timeZone: string; screens: { id: string; name: string }[] }>();
 
@@ -266,7 +266,14 @@ const clickable = computed(() => !!position.value && !!screen.value);
 const black = computed(() => !!shown.value?.black);
 const decision = (by: 1 | -1) => (position.value ? decideStep(songsheet.value, black.value, sources.value, by) : null);
 /** While an own click on the slides is unconfirmed the slide on show is not the one of the position: its songsheet is unknown, only slides are clicked. */
-const stepsBlocked = (by: 1 | -1) => !clickable.value || decision(by) === null;
+const stepsBlocked = (by: 1 | -1) => !clickable.value || decision(by) === null || decision(by)?.kind === 'none';
+/** Why a button stands grey: the song ends there. The slides never grey a button – the phone does not know the pages of a block, the player decides. */
+const endNote = computed(() => {
+    if (!clickable.value) return '';
+    const rehearsal = songsheet.value && songsheet.value !== true && songsheet.value.source === 'rehearsal';
+    if (decision(1)?.kind === 'none') return rehearsal ? t.control.clickEndRehearsal : t.control.clickEnd;
+    return decision(-1)?.kind === 'none' ? t.control.clickStart : '';
+});
 
 /** Writes the click value of the screen: reads it first, adds the action, writes it – one after the other (`enqueue`), so that no `seq` is given twice. */
 function sendClick(action: { do: 'next' | 'previous' | 'black' } | { do: 'goto'; slideId: string }, over: Omit<Pending, 'token' | 'seq' | 'at'>): void {
@@ -311,8 +318,9 @@ function after(step: { do: 'next' | 'previous' } | { do: 'goto'; slideId: string
     }
     const by = step.do === 'next' ? 1 : -1;
     const target = movedSlide(now, by);
-    if (target === null || now.total < 1) return { slideId: now.slideId, number: now.number, black: false };
-    return { slideId: target, number: ((now.number - 1 + by + now.total) % now.total) + 1, black: false };
+    // At the ends nothing moves in the display – the player stays there, unless a block on the slide still has a page (the phone cannot know).
+    if (target === null) return { slideId: now.slideId, number: now.number, black: false };
+    return { slideId: target, number: now.number + by, black: false };
 }
 
 function writePart(decided: Extract<StepDecision, { kind: 'part' | 'section' }>): void {
@@ -353,6 +361,7 @@ function step(by: 1 | -1): void {
     // Unconfirmed click on the slides: the slide on show may not be the one of the position, so no parts are stepped – only slides.
     const decided = pending.value ? decideStep(undefined, black.value, {}, by) : decision(by);
     if (!decided) return;
+    if (decided.kind === 'none') return;
     if (decided.kind === 'slide') {
         const action = { do: decided.do };
         sendClick(action, after(action));
@@ -408,6 +417,7 @@ onBeforeUnmount(() => {
                     </button>
                 </li>
             </ul>
+            <p v-if="endNote" class="note" data-testid="click-end">{{ endNote }}</p>
             <p v-if="presenter" class="note" data-testid="click-presenter">{{ t.control.presenterDetectedClick }}</p>
         </template>
         <p v-else class="note" data-testid="click-none">{{ t.control.clickNone }}</p>

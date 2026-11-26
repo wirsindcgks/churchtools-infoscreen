@@ -24,3 +24,10 @@ export function songsheetOf(slide: Pick<SlideDoc, 'blocks'>, events: Readonly<Re
     const eventId = events[block.id];
     return eventId === undefined ? true : { source: 'agenda', eventId };
 }
+
+/** Whether "Vor" (`by` 1) or "Zurück" (-1) from slide `index` of `count` still moves: the ends hold, there is no wrap-around (Plan.md 124). */
+export function canStepSlide(index: number, count: number, by: number): boolean {
+    if (count < 1) return false;
+    const at = ((index % count) + count) % count;
+    return by > 0 ? at < count - 1 : by < 0 ? at > 0 : true;
+}

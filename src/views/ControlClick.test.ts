@@ -170,7 +170,7 @@ describe('ControlClick (Plan.md 124 D)', () => {
         expect(wrapper.get('[data-testid="click-slide"]').text()).toContain('Folie 2 von 3');
     });
 
-    it('steps the sections of the rehearsal song first, then the screen (a songsheet with the source "Probe")', async () => {
+    it('steps the sections of the rehearsal song first, then stays at the last part (a songsheet with the source "Probe")', async () => {
         vi.spyOn(console, 'warn').mockImplementation(() => {});
         const rehearsal = { kind: 'rehearsal' as const, songId: 9, arrangementId: 4, section: 0, at: NOW.toISOString() };
         const read = { position: position({ songsheet: { source: 'rehearsal' } }), click: null as ClickDoc | null, rehearsal: rehearsal as RehearsalDoc | null };
@@ -183,9 +183,25 @@ describe('ControlClick (Plan.md 124 D)', () => {
         await flushPromises();
         expect(repository.writeRehearsal).toHaveBeenCalledWith(expect.objectContaining({ songId: 9, arrangementId: 4, section: 1, by: 'Max' }));
         expect(repository.writeClick).not.toHaveBeenCalled();
-        // The last part: forward clicks the screen.
+        // The last part: forward stays – the button is grey and says why, nothing is written (Plan.md 124).
         await wrapper.get('[data-testid="click-forward"]').trigger('click');
         await flushPromises();
+        await vi.advanceTimersByTimeAsync(4000);
+        await flushPromises();
+        expect(wrapper.get('[data-testid="click-forward"]').attributes('disabled')).toBeDefined();
+        expect(wrapper.get('[data-testid="click-end"]').text()).toContain('Letzter Teil');
+        expect(repository.writeClick).not.toHaveBeenCalled();
+    });
+
+    it('keeps the buttons usable at the first and last slide, and does not move the display there (the player decides)', async () => {
+        const read = { position: position({ slideId: 'c', number: 3 }), click: null as ClickDoc | null };
+        const { wrapper, repository } = mountWith(read);
+        await flushPromises();
+        const forward = wrapper.get('[data-testid="click-forward"]');
+        expect(forward.attributes('disabled')).toBeUndefined();
+        await forward.trigger('click');
+        await flushPromises();
         expect(repository.writeClick.mock.calls[0]![0].actions).toEqual([{ seq: 1, do: 'next' }]);
+        expect(wrapper.get('[data-testid="click-slide"]').text()).toContain('Folie 3 von 3');
     });
 });

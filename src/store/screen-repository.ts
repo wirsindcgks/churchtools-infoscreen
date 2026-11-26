@@ -97,7 +97,12 @@ const SETTINGS_ID = 'settings';
  * The settings of an interactive screen (Plan.md 127 B) with what a missing one means; a change to any of them is one word
  * "Bedienung" in the history – compared with these, so the first save of an older screen does not count as one.
  */
-const INTERACTION_DEFAULTS = { interactive: false, interactionWaitSeconds: INTERACTION_WAIT_SECONDS, interactionArrows: 'always' } as const;
+const INTERACTION_DEFAULTS = {
+    interactive: false,
+    interactionWaitSeconds: INTERACTION_WAIT_SECONDS,
+    interactionArrows: 'always',
+    presenterKeys: false,
+} as const;
 const INTERACTION_KEYS = Object.keys(INTERACTION_DEFAULTS) as (keyof typeof INTERACTION_DEFAULTS)[];
 
 /** Orphans younger than this may belong to a save in progress and are kept. */
@@ -1524,7 +1529,7 @@ export class ScreenRepository {
      */
     async saveScreenSettings(
         screenId: string,
-        patch: Partial<Pick<ScreenDoc, 'name' | 'overscanPercent' | 'interactive' | 'interactionWaitSeconds' | 'interactionArrows'>>,
+        patch: Partial<Pick<ScreenDoc, 'name' | 'overscanPercent' | 'interactive' | 'interactionWaitSeconds' | 'interactionArrows' | 'presenterKeys'>>,
         options: SaveOptions,
     ): Promise<ScreenDoc> {
         const ids = await this.ensureCategories();

@@ -16,7 +16,7 @@ import ControlClick from './ControlClick.vue';
 import ControlRehearsal from './ControlRehearsal.vue';
 import ControlSong from './ControlSong.vue';
 import { controlMemory } from './control-memory';
-import { usePresenterKeys } from './presenter-keys';
+import { usePresenterKeys } from '../player/presenter-keys';
 import { useWakeLock } from './useWakeLock';
 import Icon from '../designer/Icon.vue';
 import { useOffsetTop } from '../designer/useOffsetTop';

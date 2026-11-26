@@ -224,6 +224,11 @@ describe('readSlide – tolerant towards newer data', () => {
         expect(old.interactionArrows).toBeUndefined();
     });
 
+    it('reads the presenter setting of a screen (schema 1.71, Plan.md 124 E): optional, old screens stay without', () => {
+        expect(readScreen({ ...makeScreen(), presenterKeys: true }).presenterKeys).toBe(true);
+        expect(readScreen(makeScreen()).presenterKeys).toBeUndefined();
+    });
+
     it('fills defaults for optional fields', () => {
         const raw = makeSlide();
         delete (raw as { enabled?: boolean }).enabled;
