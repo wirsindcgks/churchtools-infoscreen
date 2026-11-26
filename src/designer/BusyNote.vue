@@ -5,7 +5,7 @@ defineProps<{ text: string }>();
 
 <template>
     <p class="busy-note" role="status" aria-live="polite">
-        <span class="ring" aria-hidden="true" />
+        <span class="busy-ring" aria-hidden="true" />
         <span>{{ text }}</span>
     </p>
 </template>
@@ -18,7 +18,7 @@ defineProps<{ text: string }>();
     margin: 0;
     color: var(--d-text-muted);
 }
-.ring {
+.busy-ring {
     flex: none;
     width: 18px;
     height: 18px;
@@ -33,7 +33,7 @@ defineProps<{ text: string }>();
     }
 }
 @media (prefers-reduced-motion: reduce) {
-    .ring {
+    .busy-ring {
         animation-duration: 2.4s;
     }
 }
