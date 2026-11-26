@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { EXTENSION_KEY } from '../config';
 import { t } from '../i18n/designer';
+import BusyNote from '../designer/BusyNote.vue';
 import Icon, { type IconName } from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
@@ -781,13 +782,17 @@ watch(page, () => {
  * of the router, not `onBeforeRouteLeave`: that one stays with the route this instance first showed.
  */
 const removeLeaveGuard = router.beforeEach(async (to) => {
+    // Between the settings pages the work goes on; leaving them while rights are set would leave them half done (user, 2026-11-26).
+    if (assistant.running && !String(to.name ?? '').startsWith('setup')) {
+        return await confirm({ message: t.setup.groups.leaveWhileWorking, confirmLabel: t.setup.groups.leaveAnyway, danger: true });
+    }
     if (String(to.name ?? '').startsWith('setup') || !anyDirty()) return true;
     if (!(await confirm({ message: t.editor.discardChanges, confirmLabel: t.common.discard, danger: true }))) return false;
     for (const form of FORM_PAGES) discardForm(form as FormPage);
     return true;
 });
 function onBeforeUnload(event: BeforeUnloadEvent): void {
-    if (anyDirty()) event.preventDefault();
+    if (anyDirty() || assistant.running) event.preventDefault();
 }
 window.addEventListener('beforeunload', onBeforeUnload);
 onBeforeUnmount(() => {
@@ -1936,6 +1941,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                     {{ t.setup.groups.removeSetup }}
                                 </button>
                             </div>
+                            <BusyNote v-if="assistant.running" :text="t.setup.groups.working" data-testid="assistant-busy" />
                             <p v-for="button in (['refresh', 'remove'] as const).filter((b) => abilityHint(b))" :key="button" class="muted small" :data-testid="`ability-hint-${button}`">
                                 {{ abilityHint(button) }}
                             </p>
@@ -1979,8 +1985,8 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                 >
                                     {{ t.setup.groups.create }}
                                 </button>
-                                <span v-if="assistant.running" class="muted">{{ t.setup.groups.working }}</span>
                             </div>
+                            <BusyNote v-if="assistant.running" :text="t.setup.groups.working" data-testid="assistant-busy" />
                             <p v-if="abilityHint('create')" class="muted small" data-testid="ability-hint-create">{{ abilityHint('create') }}</p>
                             <p v-if="settingsWritable === false" class="muted small" data-testid="no-settings-right">{{ t.setup.groups.noSettingsRight }}</p>
                         </template>
@@ -2162,6 +2168,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                             {{ t.setup.addPeople.finishButton }}
                                         </button>
                                     </div>
+                                    <BusyNote v-if="assistant.running" :text="t.setup.groups.working" />
                                     <p v-if="settingsWritable === false" class="muted small" data-testid="people-no-settings-right">{{ t.setup.groups.noSettingsRight }}</p>
                                 </template>
                                 <template v-else>
@@ -2177,6 +2184,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                             {{ t.setup.addPeople.button }}
                                         </button>
                                     </div>
+                                    <BusyNote v-if="assistant.running" :text="t.setup.groups.working" />
                                     <p v-if="settingsWritable === false" class="muted small" data-testid="people-no-settings-right">{{ t.setup.groups.noSettingsRight }}</p>
                                 </template>
                             </template>
@@ -2275,6 +2283,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                         {{ t.setup.musicians.button }}
                                     </button>
                                 </div>
+                                <BusyNote v-if="assistant.running" :text="t.setup.groups.working" />
                                 <p v-if="settingsWritable === false" class="muted small" data-testid="musician-no-settings-right">{{ t.setup.groups.noSettingsRight }}</p>
                             </template>
                             <div v-else class="control-address" data-testid="musician-address">
