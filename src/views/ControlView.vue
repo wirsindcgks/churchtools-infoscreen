@@ -303,7 +303,7 @@ onBeforeUnmount(() => {
 <template>
     <main class="infoscreen-designer control">
         <header class="head" data-testid="control-head">
-            <a href="/" class="back" data-testid="control-back" @click.prevent="leaveControl">{{ t.control.backToChurchTools }}</a>
+            <a href="/" class="back" data-testid="control-back" :aria-label="t.control.backAria" @click.prevent="leaveControl"><Icon name="back" :size="18" /><span>{{ t.control.backToChurchTools }}</span></a>
             <h1>{{ t.control.title }}</h1>
             <div ref="areaBox" class="area-box">
                 <button
@@ -457,16 +457,26 @@ h1 {
     min-width: 0;
     padding: 8px 12px;
 }
+/* Like "zurück" in the editor – a framed button with the arrow (user, 2026-11-26) –, in the dark of this page, like the area button. */
 .back {
     display: inline-flex;
     align-items: center;
-    flex: 1;
+    gap: 6px;
+    flex: none;
+    box-sizing: border-box;
     min-height: 44px;
-    min-width: 0;
-    color: #b8bcc4;
-    font-size: 1rem;
+    margin-right: auto;
+    padding: 0 14px 0 10px;
+    border: 1px solid #3a3f4a;
+    border-radius: 10px;
+    background: #1d2027;
+    color: #f1f2f4;
+    font-size: 1.05rem;
     text-decoration: none;
     white-space: nowrap;
+}
+.back:active {
+    border-color: #6b7180;
 }
 .middle {
     flex: 1;

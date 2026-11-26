@@ -121,7 +121,8 @@ for (const [name, viewport] of [
             // The head stands at the top, and what lies there is the page, not the bar.
             await expect.poll(async () => (await head.boundingBox())!.y).toBeLessThan(8);
             const back = page.getByTestId('control-back');
-            await expect(back).toHaveText('‹ ChurchTools');
+            await expect(back).toHaveText('ChurchTools');
+            await expect(back).toHaveAttribute('aria-label', 'Zurück zu ChurchTools');
             const box = (await back.boundingBox())!;
             expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[data-testid="control-back"]') !== null, { x: box.x + 4, y: box.y + box.height / 2 })).toBe(true);
             // Nothing to scroll: the page fits the window, only its middle may scroll inside.
