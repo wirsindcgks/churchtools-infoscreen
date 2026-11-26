@@ -123,7 +123,7 @@ for (const [name, viewport] of [
             const back = page.getByTestId('control-back');
             await expect(back).toHaveText('‹ ChurchTools');
             const box = (await back.boundingBox())!;
-            expect(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('[data-testid="control-back"]') !== null, [box.x + 4, box.y + box.height / 2])).toBe(true);
+            expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[data-testid="control-back"]') !== null, { x: box.x + 4, y: box.y + box.height / 2 })).toBe(true);
             // Nothing to scroll: the page fits the window, only its middle may scroll inside.
             expect(await page.evaluate(() => document.scrollingElement!.scrollHeight <= window.innerHeight)).toBe(true);
             // The demo has no event, so the bar below is empty and hidden: the middle reaches down to the edge of the window and not past it.
