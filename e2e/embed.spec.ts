@@ -34,7 +34,7 @@ test('embeds a presentation as one entry, shows it in the preview, publishes and
     await expect(page.getByTestId('embed-playlist')).toBeDisabled();
 
     // The number on the editor's progress bar counts the embedded slides in their place: the second own slide is 5 of 6.
-    await openSection(page, 'progress');
+    await openSection(page, 'playlist');
     await page.getByTestId('playlist-progress').check();
     await expect(page.getByTestId('slide-number')).toHaveText('1/6');
     await page.getByTestId('slide-item').nth(1).click();

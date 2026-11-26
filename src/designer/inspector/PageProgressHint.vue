@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * The line under the "Fortschritt" switch of a block (Plan.md 105): the presentation has a bar of its own, set in the slide's
- * section "Fortschritt". The line leads there in both cases – it lets go of the block and opens the section. While the
+ * The line under the "Fortschritt" switch of a block (Plan.md 105): the presentation has a bar of its own, set in the section
+ * "Präsentation" (Plan.md 132 A). The line leads there in both cases – it lets go of the block and opens the section. While the
  * presentation's bar is on, the blocks show none of their own (Plan.md 109).
  */
 import { t } from '../../i18n/designer';
@@ -14,7 +14,7 @@ const mode = useInspectorMode();
 
 function openSection(): void {
     editor.selectBlock(null);
-    sectionState.progress = true;
+    sectionState.playlist = true;
 }
 </script>
 

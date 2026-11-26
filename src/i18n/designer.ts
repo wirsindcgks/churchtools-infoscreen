@@ -974,20 +974,18 @@ export const t = {
             'Auf welchem Bildschirm sie wann läuft, legt der Zeitplan des Bildschirms fest – unter „Zeitpläne" oder an ' +
             'der Kachel des Bildschirms. Veröffentlichen ändert alle Bildschirme, die sie zeigen.',
         progress: 'Fortschrittsbalken',
-        progressSection: 'Fortschritt',
-        progressSectionInfo: 'Gilt für alle Folien dieser Präsentation.',
-        progressOn: 'An',
-        progressOff: 'Aus',
+        progressShort: 'Fortschritt',
         progressEdgeShort: 'am Rand',
         progressStyle: 'Form',
         progressStyles: { bar: 'Balken', segments: 'Segmente' },
         progressPlacement: 'Lage',
         progressPlacements: { inset: 'Abgesetzt', edge: 'Am Rand' },
         pageProgressHintOn: 'Die Präsentation zeigt ihren Fortschritt – ',
-        pageProgressHintOff: 'Für die ganze Folie: ',
-        pageProgressHintLink: 'Abschnitt „Fortschritt“ der Folie.',
+        pageProgressHintOff: 'Ein Balken für die ganze Präsentation: ',
+        pageProgressHintLink: 'Abschnitt „Präsentation“.',
         progressInfo:
-            'Ein dünner Balken am unteren Rand zeigt, wie lange die Folie noch steht, daneben die wievielte Folie es ist. ' +
+            'Gilt für alle Folien dieser Präsentation: Ein dünner Balken am unteren Rand zeigt, wie lange die Folie noch steht, ' +
+            'daneben die wievielte Folie es ist. ' +
             'Als Segmente gibt es je Folie einen Abschnitt, ohne Zahl.',
         bannerRunningBefore: (text: string) => `Hinweisband: „${text}" – bearbeiten unter`,
         bannerNoneBefore: 'Kein Hinweisband – anlegen unter',
