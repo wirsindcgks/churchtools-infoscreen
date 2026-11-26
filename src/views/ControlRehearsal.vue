@@ -274,14 +274,17 @@ onBeforeUnmount(() => {
                 <ul class="songs" data-testid="rehearsal-song">
                     <ControlSong :title="song.name ?? ''" :song-key="sheet.key" :parts="sheet.sections" open bare :active="section" :disabled="false" @choose="choose" />
                 </ul>
-                <nav class="steps">
-                    <button type="button" :disabled="previous === null" @click="previous !== null && choose(previous)">
-                        {{ t.control.back }}
-                    </button>
-                    <button type="button" :disabled="following === null" @click="following !== null && choose(following)">
-                        {{ t.control.next }}
-                    </button>
-                </nav>
+                <!-- In the fixed zone below the middle of the page (Plan.md 135 A). -->
+                <Teleport defer to="#control-bar">
+                    <nav class="steps">
+                        <button type="button" :disabled="previous === null" @click="previous !== null && choose(previous)">
+                            {{ t.control.back }}
+                        </button>
+                        <button type="button" :disabled="following === null" @click="following !== null && choose(following)">
+                            {{ t.control.next }}
+                        </button>
+                    </nav>
+                </Teleport>
                 <p v-if="presenter" class="note" data-testid="rehearsal-presenter">{{ t.control.presenterDetected }}</p>
             </template>
             <p v-else class="note" data-testid="rehearsal-nosheet">
@@ -431,20 +434,13 @@ button:disabled {
     opacity: 0.4;
 }
 .steps {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-    background: #101114;
-    border-top: 1px solid #3a3f4a;
 }
 /* Back and next are what a hand on stage reaches for blind: tall and in big letters, like the page of the service. */
 .steps button {
-    min-height: 96px;
+    min-height: 80px;
     font-size: 1.5rem;
     font-weight: 600;
     text-align: center;

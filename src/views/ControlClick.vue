@@ -271,8 +271,8 @@ const stepsBlocked = (by: 1 | -1) => !clickable.value || decision(by) === null |
 const endNote = computed(() => {
     if (!clickable.value) return '';
     const rehearsal = songsheet.value && songsheet.value !== true && songsheet.value.source === 'rehearsal';
-    if (decision(1)?.kind === 'none') return rehearsal ? t.control.clickEndRehearsal : t.control.clickEnd;
-    return decision(-1)?.kind === 'none' ? t.control.clickStart : '';
+    // Only the end of a song needs words – the next song comes another way; at its first part the grey "Zurück" says enough (user, 2026-11-26).
+    return decision(1)?.kind === 'none' ? (rehearsal ? t.control.clickEndRehearsal : t.control.clickEnd) : '';
 });
 
 /** Writes the click value of the screen: reads it first, adds the action, writes it – one after the other (`enqueue`), so that no `seq` is given twice. */
@@ -404,7 +404,7 @@ onBeforeUnmount(() => {
         <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
         <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
         <template v-if="shown">
-            <p class="head" data-testid="click-slide">
+            <p class="where control-card" data-testid="click-slide">
                 <strong>{{ t.control.clickSlide(shown.number, shown.total, slideName) }}</strong>
                 <small>{{ t.control.clickScreenName(screen!.name) }}</small>
             </p>
@@ -421,13 +421,16 @@ onBeforeUnmount(() => {
             <p v-if="presenter" class="note" data-testid="click-presenter">{{ t.control.presenterDetectedClick }}</p>
         </template>
         <p v-else class="note" data-testid="click-none">{{ t.control.clickNone }}</p>
-        <nav class="steps">
-            <button type="button" :disabled="stepsBlocked(-1)" data-testid="click-back" @click="step(-1)">{{ t.control.back }}</button>
-            <button type="button" :disabled="stepsBlocked(1)" data-testid="click-forward" @click="step(1)">{{ t.control.clickForward }}</button>
-            <button type="button" class="black" :class="{ on: black }" :disabled="!clickable" :aria-pressed="black" data-testid="click-black" @click="blackClick">
-                {{ black ? t.control.clickBlackOff : t.control.clickBlack }}
-            </button>
-        </nav>
+        <!-- In the fixed zone below the middle of the page (Plan.md 135 A). -->
+        <Teleport defer to="#control-bar">
+            <nav class="steps">
+                <button type="button" :disabled="stepsBlocked(-1)" data-testid="click-back" @click="step(-1)">{{ t.control.back }}</button>
+                <button type="button" :disabled="stepsBlocked(1)" data-testid="click-forward" @click="step(1)">{{ t.control.clickForward }}</button>
+                <button type="button" class="black" :class="{ on: black }" :disabled="!clickable" :aria-pressed="black" data-testid="click-black" @click="blackClick">
+                    {{ black ? t.control.clickBlackOff : t.control.clickBlack }}
+                </button>
+            </nav>
+        </Teleport>
     </div>
 </template>
 
@@ -456,17 +459,16 @@ p {
     color: inherit;
     font-size: 1.1rem;
 }
-.head {
+.where {
     display: grid;
     gap: 2px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    background: #1d2027;
 }
-.head strong {
+/* ChurchTools colours `strong` dark blue: on the dark page the line was hardly to read (user, 2026-11-26). */
+.where strong {
+    color: #f1f2f4;
     font-size: 1.25rem;
 }
-.head small {
+.where small {
     color: #b8bcc4;
     font-size: 0.85rem;
 }
@@ -519,20 +521,13 @@ button:disabled {
     opacity: 0.4;
 }
 .steps {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
     display: grid;
     grid-template-columns: 1fr 1fr 0.8fr;
     gap: 8px;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-    background: #101114;
-    border-top: 1px solid #3a3f4a;
 }
 /* Back and forward are what a hand on stage reaches for blind: tall and in big letters, like the other areas. */
 .steps button {
-    min-height: 96px;
+    min-height: 80px;
     font-size: 1.5rem;
     font-weight: 600;
     text-align: center;

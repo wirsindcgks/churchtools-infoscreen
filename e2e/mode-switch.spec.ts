@@ -97,29 +97,42 @@ test.describe('between designer and phone page on a phone', () => {
     });
 });
 
-// The bar of ChurchTools hid the head while the stage page lay fixed over the window (user, 2026-11-13, PC and phone); now the page
-// stands in the flow like the designer. The dev server has no bar: a sticky one of 56 px comes first in the body, after the page has
-// mounted, as ChurchTools does (Befunde G55).
-for (const [name, viewport] of [['desktop', { width: 1280, height: 900 }], ['phone', { width: 390, height: 844 }]] as const) {
-    test.describe(`the stage page below the bar of ChurchTools on a ${name}`, () => {
+// The phone page lies over the whole window, above the bar of ChurchTools (Plan.md 135 A, user, 2026-11-26: "alles auf die Handygröße, ohne
+// dass gescrollt werden muss … vielleicht blenden wir das CT-Menü oben aus"). The dev server has no bar: a sticky one of 56 px with the
+// z-index of ChurchTools comes first in the body, after the page has mounted, as ChurchTools does (Befunde G55, G57).
+for (const [name, viewport] of [
+    ['desktop', { width: 1280, height: 900 }],
+    ['phone', { width: 390, height: 844 }],
+    ['small phone', { width: 375, height: 667 }],
+] as const) {
+    test.describe(`the stage page over the bar of ChurchTools on a ${name}`, () => {
         test.use({ viewport });
 
-        test('starts below the bar, the head can be clicked', async ({ page }) => {
+        test('covers the bar, does not scroll, and gives the page back on leaving', async ({ page }) => {
             await page.goto('steuerung');
-            const stageSwitch = page.getByTestId('control-head');
-            await expect(stageSwitch).toBeVisible();
+            const head = page.getByTestId('control-head');
+            await expect(head).toBeVisible();
             await page.evaluate(() => {
                 const bar = document.createElement('div');
-                bar.style.cssText = 'position:sticky;top:0;height:56px;z-index:1000;background:#1e3a8a';
+                bar.id = 'navigation';
+                bar.style.cssText = 'position:sticky;top:0;height:56px;z-index:1040;background:#1e3a8a';
                 document.body.prepend(bar);
             });
-            await expect.poll(async () => (await stageSwitch.boundingBox())!.y).toBeGreaterThanOrEqual(56);
-            // No white frame: the margins of the host page are dark while the page is open, and light again after it.
-            const body = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-            expect(await body()).toBe('rgb(16, 17, 20)');
-            await stageSwitch.getByTestId('mode-designer').click();
+            // The head stands at the top, and what lies there is the page, not the bar.
+            await expect.poll(async () => (await head.boundingBox())!.y).toBeLessThan(8);
+            const back = page.getByTestId('control-back');
+            await expect(back).toHaveText('‹ ChurchTools');
+            const box = (await back.boundingBox())!;
+            expect(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('[data-testid="control-back"]') !== null, [box.x + 4, box.y + box.height / 2])).toBe(true);
+            // Nothing to scroll: the page fits the window, only its middle may scroll inside.
+            expect(await page.evaluate(() => document.scrollingElement!.scrollHeight <= window.innerHeight)).toBe(true);
+            // The demo has no event, so the bar below is empty and hidden: the middle reaches down to the edge of the window and not past it.
+            const middle = (await page.getByTestId('control-middle').boundingBox())!;
+            expect(middle.y + middle.height).toBeLessThanOrEqual(viewport.height + 1);
+            await head.getByTestId('mode-designer').click();
             await expect(page.getByTestId('screens-heading')).toBeVisible();
-            expect(await body()).not.toBe('rgb(16, 17, 20)');
+            // The page behind may scroll again.
+            expect(await page.evaluate(() => document.body.style.overflow)).toBe('');
         });
     });
 }

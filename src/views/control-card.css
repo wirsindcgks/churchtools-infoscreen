@@ -1,0 +1,9 @@
+/* A section of the phone page's middle zone (Plan.md 135 A): one frame for the plan, the song, the screen box, the slides. Not scoped – the
+   child components of the page use it, too. The name is no utility of the host (G43). */
+.control-card {
+    box-sizing: border-box;
+    padding: 12px;
+    border: 1px solid #3a3f4a;
+    border-radius: 12px;
+    background: #1d2027;
+}
