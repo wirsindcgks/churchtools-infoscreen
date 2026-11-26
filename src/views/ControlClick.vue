@@ -12,7 +12,7 @@ import { REHEARSAL_MAX_AGE_MS, sheetOf, songsLeft, songsheetPick, type SongSheet
 import { fetchCalendars, fetchSong } from '../ct/api';
 import { t } from '../i18n/designer';
 import { appointmentWindow, churchToolsPlayerData, loadArrangementSheet } from '../player/data';
-import type { PositionDoc } from '../model/position';
+import { hasSlides, type ClickPosition } from '../model/position';
 import type { ScreenRepository } from '../store/screen-repository';
 import { controlMemory } from './control-memory';
 import {
@@ -33,7 +33,7 @@ const props = defineProps<{ repository: ScreenRepository; author: string; timeZo
 
 const chosenId = ref<string | null>(controlMemory.clickScreenId);
 const screen = computed(() => props.screens.find((s) => s.id === chosenId.value) ?? props.screens[0] ?? null);
-const position = shallowRef<PositionDoc | null>(null);
+const position = shallowRef<ClickPosition | null>(null);
 const failure = ref<string | null>(null);
 const notSaved = ref(false);
 /** A second of its own for "vor 5 s" and the clock of the agenda. */
@@ -182,8 +182,10 @@ async function read(): Promise<void> {
     const id = screen.value?.id;
     if (!id) return;
     const r = run;
-    const read = await props.repository.readPosition(id);
+    const raw = await props.repository.readPosition(id);
     if (r !== run) return;
+    // Without slides – the presentation runs by time – there is nothing to click: as without a position (Plan.md 135 B; the look follows with C).
+    const read = raw && hasSlides(raw) ? raw : null;
     position.value = read;
     const over = pending.value;
     if (over && (positionSettled(read, over.seq) || Date.now() - over.at > OPTIMISTIC_MAX_MS)) pending.value = null;

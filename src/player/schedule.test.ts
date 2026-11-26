@@ -4,6 +4,7 @@ import type { Appointment } from '../appointments/normalize';
 import { makeScreen } from '../model/testing';
 import type { ScreenDoc } from '../model/schema';
 import type { OverrideDoc } from '../agenda/control';
+import { rehearsalPlaylists } from '../agenda/songsheet';
 import { activeOverride, activePlaylistId, agendaRuleBufferMs, agendaRuleCalendars, matchingRuleIndex, OVERRIDE_MAX_MS, type ScheduleContext } from './schedule';
 
 const START = Date.parse('2026-11-10T10:00:00Z');
@@ -129,6 +130,15 @@ describe('an override by the musicians (Plan.md 125 B)', () => {
     it('applies when everything fits', () => {
         expect(id(screen(), doc(), 0)).toBe('probe');
         expect(activeOverride(screen(), doc(), release, ctx(0))).toEqual(doc());
+    });
+    it('follows the choice only to a presentation with a rehearsal sheet (Plan.md 135 B, finding 2)', () => {
+        // The release the player works with is what `loadScreen` makes of the settings: only presentations that have a rehearsal sheet.
+        const sheet = (source?: 'rehearsal') => ({ id: 'b', type: 'songsheet', x: 0, y: 0, width: 10, height: 10, ...(source ? { source } : {}) }) as never;
+        const playlists = [{ id: 'probe', slideIds: ['s1'] }];
+        const released = (slides: { id: string; blocks: never[] }[]) => ({ screenIds: ['screen-1'], playlistIds: rehearsalPlaylists(playlists, slides).map((p) => p.id) });
+        expect(id(screen(), doc(), 0, released([{ id: 's1', blocks: [sheet('rehearsal')] }]))).toBe('probe');
+        // Renamed, rebuilt – the sheet of the agenda only: the screen stays with its schedule.
+        expect(id(screen(), doc(), 0, released([{ id: 's1', blocks: [sheet()] }]))).toBe('standard');
     });
     it('does not apply without confirmed clock, release, or matching screen and presentation', () => {
         expect(id(screen(), doc(), 0, release, { clockConfirmed: false })).toBe('standard');

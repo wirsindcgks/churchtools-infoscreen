@@ -25,6 +25,24 @@ export function songsheetOf(slide: Pick<SlideDoc, 'blocks'>, events: Readonly<Re
     return eventId === undefined ? true : { source: 'agenda', eventId };
 }
 
+/**
+ * What the position says of the songsheet where the presentation runs by time (Plan.md 135 B): the one of the presentation, not of the slide
+ * on show – the first block of the first slide that has one. The slide changes all the time and the position is not written for that; a
+ * value that followed the slide would change with every round of a presentation of which one slide has a songsheet.
+ */
+export function songsheetOfSlides(slides: readonly Pick<SlideDoc, 'blocks'>[], events: Readonly<Record<string, number>>): PositionSongsheet | undefined {
+    for (const slide of slides) {
+        const sheet = songsheetOf(slide, events);
+        if (sheet) return sheet;
+    }
+    return undefined;
+}
+
+/** Whether this screen reports where it stands (Plan.md 135 B): when the settings release it for the rehearsal override or the click steering. */
+export function reportsPosition(screenId: string, rehearsalScreenIds: readonly string[] | undefined, clickScreenIds: readonly string[] | undefined): boolean {
+    return !!rehearsalScreenIds?.includes(screenId) || !!clickScreenIds?.includes(screenId);
+}
+
 /** Whether "Vor" (`by` 1) or "Zurück" (-1) from slide `index` of `count` still moves: the ends hold, there is no wrap-around (Plan.md 124). */
 export function canStepSlide(index: number, count: number, by: number): boolean {
     if (count < 1) return false;

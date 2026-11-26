@@ -37,7 +37,7 @@ describe('what a screen shows right now (Plan.md 17)', () => {
             playlistId: 'probe',
             override: doc,
         });
-        // Not released, ended or run out: the schedule decides.
+        // Not released (also a presentation that lost its rehearsal sheet: the overview leaves it out of the release), ended or run out: the schedule decides.
         for (const override of [
             { doc, release: { screenIds: [screen.id], playlistIds: [] } },
             { doc: { ...doc, ended: true as const }, release },

@@ -938,7 +938,9 @@ describe('player controller', () => {
         player.stop();
     });
 
-    describe('after half an hour of nothing but errors', () => {
+    // These run 40 to 90 minutes of the player's time with every cycle (data, clicks, position …); on a loaded machine that took longer than the
+    // default 5 s and failed now and then (2026-11-26) – so they get more time, the fake clock stays exact.
+    describe('after half an hour of nothing but errors', { timeout: 30_000 }, () => {
         const offline = () => Promise.reject(new Error('Network Error'));
         /** A clock that moves with the fake timers. */
         function movingDeps(canReload: boolean) {
@@ -1499,6 +1501,7 @@ describe('the click steering (Plan.md 124 C)', () => {
     describe('the position (Plan.md 124 C)', () => {
         const position = (over: Partial<Omit<PositionDoc, 'kind' | 'screenId' | 'at'>> = {}): Omit<PositionDoc, 'kind' | 'screenId' | 'at'> => ({
             playlistId: 'demo-playlist',
+            advance: 'click',
             slideId: 'a',
             number: 1,
             total: 2,
@@ -1576,6 +1579,49 @@ describe('the click steering (Plan.md 124 C)', () => {
             await vi.advanceTimersByTimeAsync(INTERVALS.aliveForbiddenMs);
             expect(reportPosition).toHaveBeenCalledTimes(2);
             expect(reportPosition.mock.calls[1]![0]).toMatchObject({ slideId: 'b' });
+            player.stop();
+        });
+
+        it('reports for a screen released for the rehearsal or the clicks, not for another (Plan.md 135 B)', async () => {
+            const run = async (screen: LoadedScreen): Promise<number> => {
+                const reportPosition = vi.fn<PlayerData['reportPosition']>(async () => {});
+                const player = createPlayer('demo', fakeData({ reportPosition, loadScreen: vi.fn(async () => screen) }), fakeDeps());
+                await player.start();
+                player.reportPosition(position());
+                await vi.advanceTimersByTimeAsync(400);
+                player.stop();
+                return reportPosition.mock.calls.length;
+            };
+            const base = loaded();
+            expect(await run(base)).toBe(0);
+            expect(await run({ ...base, clickScreenIds: [base.screen.id] })).toBe(1);
+            expect(await run({ ...base, rehearsalScreenIds: [base.screen.id] })).toBe(1);
+            expect(await run({ ...base, rehearsalScreenIds: ['other'], clickScreenIds: ['other'] })).toBe(0);
+        });
+
+        it('by time writes presentation, mode, rehearsal and songsheet – and nothing for the slides it leaves out (Plan.md 135 B)', async () => {
+            const reportPosition = vi.fn<PlayerData['reportPosition']>(async () => {});
+            const base = loaded();
+            const player = createPlayer('demo', fakeData({ reportPosition, loadScreen: vi.fn(async () => ({ ...base, rehearsalScreenIds: [base.screen.id] })) }), fakeDeps());
+            await player.start();
+            const byTime = (over: Partial<Omit<PositionDoc, 'kind' | 'screenId' | 'at'>> = {}): Omit<PositionDoc, 'kind' | 'screenId' | 'at'> => ({ playlistId: 'demo-playlist', playlistName: 'Ablauf', advance: 'time', seq: 0, ...over });
+            player.reportPosition(byTime());
+            await vi.advanceTimersByTimeAsync(400);
+            expect(reportPosition).toHaveBeenCalledTimes(1);
+            expect(reportPosition.mock.calls[0]![0]).toMatchObject({ playlistName: 'Ablauf', advance: 'time' });
+            expect(reportPosition.mock.calls[0]![0].slides).toBeUndefined();
+            // The same value again, as with every slide of the round: no write.
+            player.reportPosition(byTime());
+            await vi.advanceTimersByTimeAsync(400);
+            expect(reportPosition).toHaveBeenCalledTimes(1);
+            // Rehearsal, songsheet and presentation each are a write of their own.
+            player.reportPosition(byTime({ rehearsal: { until: '2026-11-26T12:00:00Z', by: 'Anna' } }));
+            await vi.advanceTimersByTimeAsync(400);
+            player.reportPosition(byTime({ rehearsal: { until: '2026-11-26T12:00:00Z', by: 'Anna' }, songsheet: { source: 'rehearsal' } }));
+            await vi.advanceTimersByTimeAsync(400);
+            player.reportPosition(byTime({ playlistId: 'other', playlistName: 'Andere' }));
+            await vi.advanceTimersByTimeAsync(400);
+            expect(reportPosition).toHaveBeenCalledTimes(4);
             player.stop();
         });
 

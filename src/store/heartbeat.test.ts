@@ -137,6 +137,7 @@ describe('the position of a screen (Plan.md 124 C)', () => {
         kind: 'position',
         screenId: 's1',
         playlistId: 'p1',
+        advance: 'click',
         slideId: 'sl1',
         number: 1,
         total: 2,
@@ -166,7 +167,7 @@ describe('the position of a screen (Plan.md 124 C)', () => {
         expect(kv.writes.filter((w) => w.op === 'createValue')).toHaveLength(2);
         const read = await repo.readPosition('s1');
         expect(read).toMatchObject({ slideId: 'sl2', number: 2, total: 2, black: true, songsheet: true, seq: 1 });
-        expect(read!.slides.map((s) => s.name)).toEqual(['Eins', 'Zwei']);
+        expect(read!.slides!.map((s) => s.name)).toEqual(['Eins', 'Zwei']);
     });
 
     it('is skipped by the signs of life – and skips them', async () => {
@@ -188,7 +189,7 @@ describe('the position of a screen (Plan.md 124 C)', () => {
         expect(stored.length).toBeLessThanOrEqual(10_000);
         const read = await repo.readPosition('s1');
         expect(read!.total).toBe(300);
-        expect(read!.slides.length).toBeGreaterThan(20);
-        expect(read!.slides[0]!.name).toHaveLength(40);
+        expect(read!.slides!.length).toBeGreaterThan(20);
+        expect(read!.slides![0]!.name).toHaveLength(40);
     });
 });

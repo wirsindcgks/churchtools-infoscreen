@@ -17,6 +17,7 @@ const position = (over: Partial<PositionDoc> = {}): PositionDoc => ({
     kind: 'position',
     screenId: 's1',
     playlistId: 'p1',
+    advance: 'click',
     slideId: 'b',
     number: 2,
     total: 3,

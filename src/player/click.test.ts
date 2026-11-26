@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SlideDoc } from '../model/schema';
-import { canStepSlide, songsheetOf } from './click';
+import { canStepSlide, reportsPosition, songsheetOf, songsheetOfSlides } from './click';
 
 const block = (id: string, type: string, extra: Record<string, unknown> = {}) => ({ id, type, ...extra }) as unknown as SlideDoc['blocks'][number];
 
@@ -19,6 +19,30 @@ describe('songsheetOf (Plan.md 124 D)', () => {
 
     it('is unknown (true) where the block has not reported an event', () => {
         expect(songsheetOf({ blocks: [block('a', 'songsheet')] }, {})).toBe(true);
+    });
+});
+
+describe('songsheetOfSlides (Plan.md 135 B)', () => {
+    const slides = [{ blocks: [block('t', 'text')] }, { blocks: [block('a', 'songsheet')] }, { blocks: [block('b', 'songsheet', { source: 'rehearsal' })] }];
+
+    it('is the first songsheet of any slide – the presentation\'s, not the slide\'s on show', () => {
+        expect(songsheetOfSlides(slides, { a: 3 })).toEqual({ source: 'agenda', eventId: 3 });
+        expect(songsheetOfSlides([slides[0]!, slides[2]!], {})).toEqual({ source: 'rehearsal' });
+    });
+
+    it('is unknown where the block has not reported an event, and none without a songsheet', () => {
+        expect(songsheetOfSlides(slides, {})).toBe(true);
+        expect(songsheetOfSlides([slides[0]!], { a: 3 })).toBeUndefined();
+        expect(songsheetOfSlides([], {})).toBeUndefined();
+    });
+});
+
+describe('reportsPosition (Plan.md 135 B)', () => {
+    it('is true for a screen released for the rehearsal or for the clicks', () => {
+        expect(reportsPosition('s1', ['s1'], undefined)).toBe(true);
+        expect(reportsPosition('s1', undefined, ['s1', 's2'])).toBe(true);
+        expect(reportsPosition('s1', ['s2'], ['s2'])).toBe(false);
+        expect(reportsPosition('s1', undefined, undefined)).toBe(false);
     });
 });
 
