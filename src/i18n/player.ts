@@ -10,6 +10,8 @@ export const LOCALE = 'de-DE';
 export const tp = {
     /** Shown instead of the stage when the address names no screen. */
     noScreen: 'Kein Bildschirm angegeben (Parameter „screen" fehlt).',
+    /** The name a click of the presenter at the device carries in the position (Plan.md 124 E). */
+    presenterBy: 'Presenter am Bildschirm',
     noActiveSlide: 'Diese Präsentation enthält keine aktive Folie.',
     /** The tooltip of the dot that marks old content. */
     noConnection: 'Keine Verbindung zu ChurchTools',

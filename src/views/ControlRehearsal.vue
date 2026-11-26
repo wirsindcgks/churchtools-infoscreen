@@ -15,7 +15,7 @@ import Icon from '../designer/Icon.vue';
 import ControlScreen from './ControlScreen.vue';
 import ControlSong from './ControlSong.vue';
 import { arrangementLabels } from './arrangement-labels';
-import { usePresenterKeys } from './presenter-keys';
+import { usePresenterKeys } from '../player/presenter-keys';
 
 const props = defineProps<{ repository: ScreenRepository; author: string; timeZone: string }>();
 

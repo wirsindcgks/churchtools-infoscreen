@@ -38,6 +38,13 @@ nach dem ersten Tippen. Auf Folien, die Seiten blättern (Beiträge, Gruppen, Pe
 blättert ein Tippen zuerst die Seiten, erst an der letzten bzw. ersten Seite die Folie; mehrere blätternde Bausteine
 blättern gemeinsam. Bildschirme ohne Eingabegerät bleiben aus.
 
+Unter „Bedienung“ gibt es außerdem **„Presenter am Gerät“**: Ein Presenter (USB oder Bluetooth), der am Gerät dieses Bildschirms hängt – etwa am
+Raspberry Pi –, schaltet dort sofort weiter, ohne Umweg übers Handy. Bild ab und Pfeil rechts schalten vor, Bild auf und Pfeil links zurück, `b` und der
+Punkt (die Schwarz-Taste der meisten Presenter) legen Schwarz über den Bildschirm. Das wirkt nur bei Präsentationen mit „Per Klick“ oder „Klicks greifen ein“
+auf einem für die Klicksteuerung freigegebenen Bildschirm; bei „Nach Zeit“ geschieht nichts. Am Gerät schaltet der Presenter **Folien und die Seiten
+blätternder Bausteine, nicht die Liedteile** im Ablauf – die wählen die Musiker über das Handy (dort geht auch ein Presenter). Das Handy zeigt den Klick
+wie einen eigenen („zuletzt Presenter am Bildschirm, vor 5 s“).
+
 ![Startseite: zwei Bildschirme als Kacheln, quer und hochkant, jeweils mit der laufenden Folie](bilder/startseite.png)
 
 ## Der Editor
@@ -260,6 +267,12 @@ darunter springt ein Tipp auf eine Folie. Darunter steht, wer zuletzt geklickt h
 Bildschirm an. Steht der Bildschirm auf einer Folie mit **Liedblatt**, schalten Vor und Zurück erst die Teile des Liedes (wie im Bereich „Gottesdienst“ bzw. „Probe“) und
 danach die Folie. Auch hier geht ein **Bluetooth-Presenter**: Bild ab und Pfeil rechts wirken wie Vor, Bild auf und Pfeil links wie Zurück. Läuft auf dem
 Bildschirm keine Präsentation mit Klicksteuerung, steht das da, und die Knöpfe ruhen.
+
+**An den Enden bleibt es stehen.** Auf der letzten Folie bewirkt Vor nichts, auf der ersten Zurück nichts – es gibt keinen Umlauf (der Lauf nach Zeit
+läuft dagegen weiter im Kreis). Ebenso bleibt es am letzten Teil eines Liedes: Vor geht weder zum nächsten Lied noch zur nächsten Folie, am ersten Teil
+geht Zurück nicht weiter; der Knopf ist dann ausgegraut, mit dem Hinweis „Letzter Teil“. Das Lied wechselt, wenn der Ablauf zum nächsten Programmpunkt
+geht oder ein Musiker im Bereich „Gottesdienst“ (bzw. „Probe“) ein anderes wählt. Auf Folien ohne Liedblatt bleiben die Knöpfe bedienbar: Ob ein
+blätternder Baustein dort noch eine Seite hat, weiß nur der Bildschirm. Die Bereiche „Gottesdienst“ und „Probe“ laufen weiter über die Grenze eines Liedes.
 
 ```mermaid
 flowchart LR

@@ -32,6 +32,20 @@ export function presenterStep(event: PresenterKey): 1 | -1 | null {
     return null;
 }
 
+/** The keys a presenter sends for a black screen (`b` and the full stop, as in a slide show program) – only the player listens for them. */
+const BLACK = new Set(['b', 'B', '.']);
+
+/**
+ * What a key does at the device of a screen (Plan.md 124 E): the steps of {@link presenterStep} and black. `null` for a key that is no click
+ * – held down, with a modifier or while typing.
+ */
+export function presenterAction(event: PresenterKey): 'next' | 'previous' | 'black' | null {
+    const by = presenterStep(event);
+    if (by !== null) return by === 1 ? 'next' : 'previous';
+    if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || typing(event.target)) return null;
+    return BLACK.has(event.key) ? 'black' : null;
+}
+
 /**
  * Listens for the presenter while the component lives; `step` gets 1 or -1. Returns whether a presenter key came – the page then
  * says so once, so the musician knows the presenter reaches it.

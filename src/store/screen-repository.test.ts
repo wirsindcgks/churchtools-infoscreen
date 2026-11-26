@@ -571,6 +571,18 @@ describe('ScreenRepository', () => {
             expect((await detailsOf()).flat()).not.toContain('interaction');
         });
 
+        it('logs "interaction" when the presenter setting changes (Plan.md 124 E)', async () => {
+            const { screen } = await created();
+            const record = vi.spyOn(repo.changelog, 'record');
+            const off = await repo.saveScreenSettings(screen.id, { presenterKeys: false }, { expectedRevision: screen.revision, updatedBy: 'Admin' });
+            await repo.changelogSettled();
+            expect(record.mock.calls.flatMap(([entry]) => entry.details ?? [])).not.toContain('interaction');
+            const on = await repo.saveScreenSettings(screen.id, { presenterKeys: true }, { expectedRevision: off.revision, updatedBy: 'Admin' });
+            await repo.changelogSettled();
+            expect(on.presenterKeys).toBe(true);
+            expect(record.mock.calls.flatMap(([entry]) => entry.details ?? [])).toContain('interaction');
+        });
+
         it('collects the schedule of a deleted screen, but keeps its playlists', async () => {
             const { screen } = await created();
             await repo.saveSchedule(screen.id, { defaultPlaylistId: makePlaylist().id, rules: [] }, { expectedRevision: null, updatedBy: 'Gestalterin' });

@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 70 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 71 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -938,6 +938,11 @@ export const ScreenDoc = v.object({
     interactionWaitSeconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(5), v.maxValue(300))),
     /** Since 1.66: the arrows that show paging is possible – always, or only after the first tap until the wait has passed. Missing = `always`. */
     interactionArrows: v.optional(v.picklist(['always', 'after-tap'])),
+    /**
+     * Since 1.71 (Plan.md 124 E): a presenter (USB or Bluetooth) at the device of this screen steps on – only for presentations "Per Klick"
+     * or "Klicks greifen ein" at a screen released for the click steering. Missing = off.
+     */
+    presenterKeys: v.optional(v.boolean()),
     /** Mandatory: "no rule matches" must never mean a black screen. */
     defaultPlaylistId: Id,
     /** Earlier rules win on overlap. */

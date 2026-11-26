@@ -212,7 +212,7 @@ test('"per Klick" at a released screen: the first slide stays, no bar; at an unr
         const key = 'infoscreen-designer.demo-store';
         const state = JSON.parse(localStorage.getItem(key) ?? '');
         const settings = state.categories.find((c: { shorty: string }) => c.shorty === 'settings');
-        const text = JSON.stringify({ schema: { major: 1, minor: 70 }, id: 'settings', kind: 'settings', clickScreenIds: ['demo-screen'] });
+        const text = JSON.stringify({ schema: { major: 1, minor: 71 }, id: 'settings', kind: 'settings', clickScreenIds: ['demo-screen'] });
         const list = state.values.find(([id]: [number]) => id === settings.id)[1];
         list.push({ id: state.nextId++, value: text });
         localStorage.setItem(key, JSON.stringify(state));
@@ -224,4 +224,57 @@ test('"per Klick" at a released screen: the first slide stays, no bar; at an unr
     await page.waitForTimeout(10_000);
     await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
     await expect(page.getByTestId('slide-progress')).toHaveCount(0);
+});
+
+test('presenter at the device: page keys step, the ends hold, nothing happens by time or without the setting (Plan.md 124 E)', async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await openSection(page, 'playlist');
+    await pickOption(page, 'playlist-advance', 'Per Klick');
+    await page.getByTestId('save').click();
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
+    // Release the screen (the page for it needs a ChurchTools session).
+    await page.evaluate(() => {
+        const key = 'infoscreen-designer.demo-store';
+        const state = JSON.parse(localStorage.getItem(key) ?? '');
+        const settings = state.categories.find((c: { shorty: string }) => c.shorty === 'settings');
+        const text = JSON.stringify({ schema: { major: 1, minor: 71 }, id: 'settings', kind: 'settings', clickScreenIds: ['demo-screen'] });
+        const list = state.values.find(([id]: [number]) => id === settings.id)[1];
+        list.push({ id: state.nextId++, value: text });
+        localStorage.setItem(key, JSON.stringify(state));
+    });
+
+    // Without the setting the keys do nothing.
+    await page.goto('./player?screen=demo');
+    await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
+    await page.keyboard.press('PageDown');
+    await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
+
+    await page.goto('./');
+    await page.getByTestId('screen-menu').first().click();
+    await page.getByTestId('screen-settings-open').click();
+    await page.getByTestId('section-screen-interaction-toggle').click();
+    await page.getByTestId('settings-presenter').check();
+    await page.getByTestId('settings-save').click();
+    await expect(page.getByTestId('screen-settings')).toHaveCount(0);
+
+    await page.goto('./player?screen=demo');
+    await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
+    // The first slide holds at the start: back does nothing.
+    await page.keyboard.press('PageUp');
+    await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
+    await page.keyboard.press('PageDown');
+    await expect(page.getByText('Nächster Termin')).toBeVisible();
+    await page.keyboard.press('b');
+    await expect(page.locator('.stage-black')).toBeVisible();
+    await page.keyboard.press('PageDown');
+    await expect(page.locator('.stage-black')).toHaveCount(0);
+    await expect(page.getByText('Nächster Termin')).toBeVisible();
+    await page.keyboard.press('PageUp');
+    await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
+    // Forward to the end: the last slide stays, there is no wrap-around to the first.
+    for (let i = 0; i < 20; i++) await page.keyboard.press('PageDown');
+    await page.waitForTimeout(500);
+    await expect(page.getByText('Herzlich willkommen!')).toHaveCount(0);
 });

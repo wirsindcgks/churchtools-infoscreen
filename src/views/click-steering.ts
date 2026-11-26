@@ -49,7 +49,12 @@ export function createQueue(): <T>(task: () => Promise<T>) => Promise<T> {
 }
 
 /** What a click of "Vor" or "Zurück" does. */
-export type StepDecision = { kind: 'part'; part: PartRef } | { kind: 'section'; section: number } | { kind: 'slide'; do: 'next' | 'previous' };
+export type StepDecision =
+    | { kind: 'part'; part: PartRef }
+    | { kind: 'section'; section: number }
+    | { kind: 'slide'; do: 'next' | 'previous' }
+    /** The song ends here (Plan.md 124): the click stays – neither the next song nor the next slide. */
+    | { kind: 'none' };
 
 /**
  * Where the parts of a songsheet come from, as far as the phone page has read them. A missing entry is "not read yet": no decision then.
@@ -63,23 +68,28 @@ export interface StepSources {
 
 /**
  * Whether a click goes to the parts of a song or to the screen. On a slide with a songsheet whose source the position names, "Vor" and
- * "Zurück" step the parts first (`stepPart` for the agenda, `stepSection` for the rehearsal) – only when there is none further (`null`)
- * the click goes to the screen. Without a songsheet, with an unknown one (`true`, the value of before) or while the screen is black
- * (a click then only lifts the black) it only clicks the slides. `null` where the parts are not read yet.
+ * "Zurück" step the parts first (`stepPart` for the agenda, `stepSection` for the rehearsal). At the last part of a song "Vor" stays
+ * (`none`), at the first "Zurück" too – the song changes with the agenda or by the choice of a musician, not by a click. Only where
+ * there are no parts to step (no event, nothing left in the agenda, no song) the click goes to the screen. Without a songsheet, with an
+ * unknown one (`true`, the value of before) or while the screen is black (a click then only lifts the black) it only clicks the slides.
+ * `null` where the parts are not read yet.
  */
 export function decideStep(songsheet: PositionDoc['songsheet'], black: boolean, sources: StepSources, direction: 1 | -1): StepDecision | null {
     const slide: StepDecision = { kind: 'slide', do: direction === 1 ? 'next' : 'previous' };
+    const NONE: StepDecision = { kind: 'none' };
     if (black || !songsheet || songsheet === true) return slide;
     if (songsheet.source === 'agenda') {
         if (sources.agenda === undefined) return null;
         if (sources.agenda === null) return slide;
-        const part = stepPart(sources.agenda.event, sources.agenda.part, direction);
-        return part ? { kind: 'part', part } : slide;
+        const current = sources.agenda.part;
+        const part = stepPart(sources.agenda.event, current, direction);
+        // Not over the border of a song – from a part outside the flow forward `stepPart` would lead to the next song, which stays too.
+        return part && (!current || part.itemIndex === current.itemIndex) ? { kind: 'part', part } : NONE;
     }
     if (sources.rehearsal === undefined) return null;
     if (sources.rehearsal === null) return slide;
     const section = stepSection(sources.rehearsal.sheet, sources.rehearsal.section, direction);
-    return section === null ? slide : { kind: 'section', section };
+    return section === null ? NONE : { kind: 'section', section };
 }
 
 /** Whether the position the screen reported has caught up with the own click: its `seq` is the own one or higher. */
@@ -87,9 +97,8 @@ export function positionSettled(position: Pick<PositionDoc, 'seq'> | null, ownSe
     return ownSeq !== null && position !== null && position.seq >= ownSeq;
 }
 
-/** The slide of `position` moved by `by` (wrapping round like the player's rotation); `null` where the slide is not in the list. */
+/** The slide of `position` moved by `by`; `null` where the slide is not in the list or at its ends – the player does not wrap round (Plan.md 124). */
 export function movedSlide(position: Pick<PositionDoc, 'slideId' | 'slides'>, by: 1 | -1): string | null {
     const at = position.slides.findIndex((s) => s.id === position.slideId);
-    if (at < 0 || !position.slides.length) return null;
-    return position.slides[(at + by + position.slides.length) % position.slides.length]!.id;
+    return at < 0 ? null : (position.slides[at + by]?.id ?? null);
 }

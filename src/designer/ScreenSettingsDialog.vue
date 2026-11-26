@@ -21,6 +21,7 @@ const emit = defineEmits<{ close: []; saved: [] }>();
 const name = ref(props.screen.name);
 const overscan = ref(props.screen.overscanPercent);
 const interactive = ref(props.screen.interactive ?? false);
+const presenterKeys = ref(props.screen.presenterKeys ?? false);
 const waitSeconds = ref<number | string>(props.screen.interactionWaitSeconds ?? INTERACTION_WAIT_SECONDS);
 const arrows = ref<'always' | 'after-tap'>(props.screen.interactionArrows ?? 'always');
 const error = ref<string | null>(null);
@@ -33,9 +34,13 @@ const wait = computed(() => {
     const n = Number(waitSeconds.value);
     return waitSeconds.value === '' || !Number.isFinite(n) ? INTERACTION_WAIT_SECONDS : Math.min(300, Math.max(5, Math.round(n)));
 });
-const interactionSummary = computed(() =>
-    interactive.value ? t.home.settings.interactionOn(wait.value, arrows.value === 'always') : t.home.settings.interactionOff,
-);
+const interactionSummary = computed(() => {
+    const parts = [
+        ...(interactive.value ? [t.home.settings.interactionOn(wait.value, arrows.value === 'always')] : []),
+        ...(presenterKeys.value ? [t.home.settings.presenterOn] : []),
+    ];
+    return parts.length ? parts.join(', ') : t.home.settings.interactionOff;
+});
 const canSave = computed(() => name.value.trim() !== '' && !busy.value);
 
 onMounted(() => {
@@ -53,7 +58,7 @@ async function save(): Promise<void> {
             {
                 name: name.value.trim(),
                 overscanPercent: Math.min(20, Math.max(0, Number(overscan.value) || 0)),
-                ...(props.mode === 'settings' && { interactive: interactive.value, interactionWaitSeconds: wait.value, interactionArrows: arrows.value }),
+                ...(props.mode === 'settings' && { interactive: interactive.value, interactionWaitSeconds: wait.value, interactionArrows: arrows.value, presenterKeys: presenterKeys.value }),
             },
             { expectedRevision: props.screen.revision, updatedBy: props.author },
         );
@@ -116,6 +121,8 @@ async function save(): Promise<void> {
                         <small class="hint">{{ t.home.settings.arrowsInfo }}</small>
                     </label>
                 </template>
+                <ToggleField v-model="presenterKeys" :label="t.home.settings.presenterKeys" testid="settings-presenter" />
+                <small class="hint">{{ t.home.settings.presenterKeysInfo }}</small>
             </InspectorSection>
             <dl v-if="mode === 'settings'">
                 <dt>{{ t.common.format }}</dt>

@@ -16,7 +16,8 @@ import { createVideoCache } from '../player/video-cache';
 import { screenVideoUrls } from '../player/video';
 import { createPreloader } from '../player/preload';
 import { turnsWithin } from '../player/paging';
-import { effectiveAdvance, songsheetOf } from '../player/click';
+import { canStepSlide, effectiveAdvance, songsheetOf } from '../player/click';
+import { presenterAction } from '../player/presenter-keys';
 import { placeInRotation, useRotation } from '../player/rotation';
 import { activePlaylistId } from '../player/schedule';
 import { keepPlayerStorage, registerPlayerServiceWorker, watchForNewVersion } from '../player/service-worker';
@@ -259,7 +260,8 @@ function clickBy(by: number): void {
         step(0);
         return;
     }
-    step(by);
+    // The ends hold (Plan.md 124): no wrap-around – the song changes with the agenda or by the choice of a musician.
+    if (canStepSlide(index.value, slides.value.length, by)) step(by);
 }
 function applyClick(action: ClickAction): void {
     // Black goes with any click and nothing else happens, as in a slide show program.
@@ -276,6 +278,19 @@ function applyClick(action: ClickAction): void {
     } else {
         clickBy(action.do === 'next' ? 1 : -1);
     }
+}
+/**
+ * A presenter at the device of this screen (Plan.md 124 E): the keys do what a click from the phone does, and the position says so. Only
+ * where clicks count at all – at a released screen with a presentation that is not "by time"; the song parts stay with the phone.
+ */
+const presenterOn = computed(() => (state?.screen?.screen.presenterKeys ?? false) && advance.value !== 'time');
+function onPresenterKey(event: KeyboardEvent): void {
+    if (!presenterOn.value) return;
+    const action = presenterAction(event);
+    if (!action) return;
+    event.preventDefault();
+    appliedBy.value = { by: tp.presenterBy, at: new Date().toISOString() };
+    applyClick({ seq: appliedSeq.value, do: action });
 }
 /** Batches wait for each other, and each action for the blocks to have settled: two clicks in a row page a list twice. */
 let clickQueue: Promise<void> = Promise.resolve();
@@ -336,6 +351,7 @@ let ticker: ReturnType<typeof setInterval> | undefined;
 let unsubscribe: () => void = () => {};
 onMounted(() => {
     window.addEventListener('resize', onResize);
+    window.addEventListener('keydown', onPresenterKey);
     ticker = setInterval(() => (context.now = new Date()), 1000);
     scheduleNext();
     void player?.start();
@@ -343,6 +359,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
     window.removeEventListener('resize', onResize);
+    window.removeEventListener('keydown', onPresenterKey);
     clearInterval(ticker);
     clearTimeout(engagedTimer);
     player?.stop();

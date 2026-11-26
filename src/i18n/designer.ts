@@ -1108,6 +1108,11 @@ export const t = {
             interactive: 'Interaktiv (Touch oder Maus)',
             interactiveInfo:
                 'Betrachter blättern am Bildschirm selbst: Tippen oder Klicken links blättert zurück, rechts vor. Nur für Bildschirme mit Touch oder Maus.',
+            presenterOn: 'Presenter am Gerät',
+            presenterKeys: 'Presenter am Gerät',
+            presenterKeysInfo:
+                'Ein Presenter (USB oder Bluetooth) am Gerät dieses Bildschirms schaltet weiter – wirkt bei Präsentationen mit „Per Klick“ oder „Klicks greifen ein“. ' +
+                'Am Gerät schaltet er Folien und Seiten blätternder Bausteine, nicht die Liedteile im Ablauf; die schaltet man vom Handy. Der Browser des Geräts braucht den Fokus.',
             wait: 'Wartezeit (Sekunden)',
             waitInfo: 'So lange bleibt eine Folie nach dem letzten Tippen mindestens stehen; danach läuft die Präsentation von selbst weiter.',
             arrows: 'Pfeile',
@@ -1683,6 +1688,9 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         clickScreenName: (name: string) => `Bildschirm: ${name}`,
         clickNone: 'Auf diesem Bildschirm läuft gerade keine Präsentation mit Klicksteuerung.',
         clickForward: 'Vor',
+        clickEnd: 'Letzter Teil – das nächste Lied kommt mit dem Ablauf oder über „Gottesdienst“.',
+        clickEndRehearsal: 'Letzter Teil – ein anderes Lied wählst du im Bereich „Probe“.',
+        clickStart: 'Erster Teil – zurück geht es hier nicht weiter.',
         clickBlack: 'Schwarz',
         clickBlackOff: 'Schwarz aufheben',
         clickSlides: 'Folien',

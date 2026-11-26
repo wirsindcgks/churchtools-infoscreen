@@ -92,12 +92,12 @@ describe('positionSettled, movedSlide', () => {
         expect(positionSettled({ seq: 9 }, null)).toBe(false);
     });
 
-    it('moves the slide round the list', () => {
+    it('moves the slide along the list and stops at its ends (Plan.md 124)', () => {
         const position = { slideId: 'b', slides: [{ id: 'a', name: '' }, { id: 'b', name: '' }, { id: 'c', name: '' }] };
         expect(movedSlide(position, 1)).toBe('c');
         expect(movedSlide(position, -1)).toBe('a');
-        expect(movedSlide({ ...position, slideId: 'c' }, 1)).toBe('a');
-        expect(movedSlide({ ...position, slideId: 'a' }, -1)).toBe('c');
+        expect(movedSlide({ ...position, slideId: 'c' }, 1)).toBeNull();
+        expect(movedSlide({ ...position, slideId: 'a' }, -1)).toBeNull();
         expect(movedSlide({ ...position, slideId: 'zz' }, 1)).toBeNull();
     });
 });
@@ -108,18 +108,29 @@ describe('decideStep: part of a song or slide (Plan.md 124 D)', () => {
     const song = (title: string, parts: string[]): LiveItem => ({ title, song: true, sheet: sheet(parts), duration: 0 }) as unknown as LiveItem;
     const event = { eventId: 5, calendarId: 1, startMs: 0, endMs: 1, items: [{ title: 'Start' } as unknown as LiveItem, song('Eins', ['V', 'C']), song('Zwei', ['V'])] } as AgendaEvent;
 
-    it('steps the parts of the agenda first, over the border of a song', () => {
+    it('steps the parts of the agenda within a song', () => {
         const at = (itemIndex: number, section: number) => ({ agenda: { event, part: { itemIndex, section } } });
         const agenda = { source: 'agenda' as const, eventId: 5 };
         expect(decideStep(agenda, false, at(1, 0), 1)).toEqual({ kind: 'part', part: { itemIndex: 1, section: 1 } });
-        expect(decideStep(agenda, false, at(1, 1), 1)).toEqual({ kind: 'part', part: { itemIndex: 2, section: 0 } });
-        expect(decideStep(agenda, false, at(2, 0), -1)).toEqual({ kind: 'part', part: { itemIndex: 1, section: 1 } });
+        expect(decideStep(agenda, false, at(1, 1), -1)).toEqual({ kind: 'part', part: { itemIndex: 1, section: 0 } });
     });
 
-    it('clicks the screen once there is no further part', () => {
+    it('stays at the last part of a song forward and at the first back: no next song, no next slide (Plan.md 124)', () => {
         const agenda = { source: 'agenda' as const, eventId: 5 };
-        expect(decideStep(agenda, false, { agenda: { event, part: { itemIndex: 2, section: 0 } } }, 1)).toEqual({ kind: 'slide', do: 'next' });
-        expect(decideStep(agenda, false, { agenda: { event, part: { itemIndex: 1, section: 0 } } }, -1)).toEqual({ kind: 'slide', do: 'previous' });
+        const at = (itemIndex: number, section: number) => ({ agenda: { event, part: { itemIndex, section } } });
+        expect(decideStep(agenda, false, at(2, 0), 1)).toEqual({ kind: 'none' });
+        expect(decideStep(agenda, false, at(1, 1), 1)).toEqual({ kind: 'none' });
+        expect(decideStep(agenda, false, at(1, 0), -1)).toEqual({ kind: 'none' });
+        expect(decideStep(agenda, false, at(2, 0), -1)).toEqual({ kind: 'none' });
+        expect(decideStep(agenda, false, { agenda: { event, part: null } }, -1)).toEqual({ kind: 'none' });
+    });
+
+    it('stays at a part outside the flow forward (the next song would follow), and goes back to the song\'s last step', () => {
+        const extraEvent = { ...event, items: [event.items[0]!, { title: 'Eins', song: true, sheet: sheet(['V', 'E'], [1]), duration: 0 } as unknown as LiveItem, song('Zwei', ['V'])] } as AgendaEvent;
+        const agenda = { source: 'agenda' as const, eventId: 5 };
+        const at = { agenda: { event: extraEvent, part: { itemIndex: 1, section: 1 } } };
+        expect(decideStep(agenda, false, at, 1)).toEqual({ kind: 'none' });
+        expect(decideStep(agenda, false, at, -1)).toEqual({ kind: 'part', part: { itemIndex: 1, section: 0 } });
     });
 
     it('steps the sections of the rehearsal song, then the screen', () => {
@@ -127,8 +138,8 @@ describe('decideStep: part of a song or slide (Plan.md 124 D)', () => {
         const state = (section: number | null) => ({ rehearsal: { sheet: sheet(['V', 'C', 'B']), section } });
         expect(decideStep(rehearsal, false, state(0), 1)).toEqual({ kind: 'section', section: 1 });
         expect(decideStep(rehearsal, false, state(null), 1)).toEqual({ kind: 'section', section: 0 });
-        expect(decideStep(rehearsal, false, state(2), 1)).toEqual({ kind: 'slide', do: 'next' });
-        expect(decideStep(rehearsal, false, state(0), -1)).toEqual({ kind: 'slide', do: 'previous' });
+        expect(decideStep(rehearsal, false, state(2), 1)).toEqual({ kind: 'none' });
+        expect(decideStep(rehearsal, false, state(0), -1)).toEqual({ kind: 'none' });
     });
 
     it('skips parts outside the flow, as the other areas do', () => {
