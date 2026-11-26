@@ -131,26 +131,30 @@ const progressPlacementOptions = [
     { value: 'inset', label: t.inspector.progressPlacements.inset },
     { value: 'edge', label: t.inspector.progressPlacements.edge },
 ];
+/** The bar in the folded summary of "Präsentation" (Plan.md 132 A): only while it is on, with its form and placement. */
 const progressSummary = computed(() => {
     const playlist = editor.draft?.playlist;
-    if (!playlist?.progress) return t.inspector.progressOff;
+    if (!playlist?.progress) return [];
     return [
-        t.inspector.progressOn,
+        t.inspector.progressShort,
         ...(playlist.progressStyle === 'segments' ? [t.inspector.progressStyles.segments] : []),
         ...(playlist.progressPlacement === 'edge' ? [t.inspector.progressEdgeShort] : []),
-    ].join(' · ');
+    ];
 });
-const progressHelp = { intro: t.inspector.progressSectionInfo, items: [{ term: t.inspector.progress, text: t.inspector.progressInfo }, th.pageProgressStyle, th.pageProgressPlacement] };
 const playlistHelp = {
     items: [
         { term: t.inspector.schedule, text: t.inspector.scheduleInfo },
         { term: t.inspector.interaction, text: t.inspector.interactionInfo },
+        { term: t.inspector.progress, text: t.inspector.progressInfo },
+        th.pageProgressStyle,
+        th.pageProgressPlacement,
     ],
 };
 
 const playlistSummary = computed(() =>
     editor.screens.length ? editor.screens.map((s) => s.name).join(', ') : t.inspector.noScreen,
 );
+const playlistSectionSummary = computed(() => [playlistSummary.value, ...progressSummary.value].join(' · '));
 const backgroundSummary = computed(() => {
     const background = slide.value?.background;
     if (!background) return '';
@@ -197,37 +201,6 @@ const backgroundColors = computed(() => {
         <p v-if="runsLonger" class="hint" data-testid="duration-hint">
             {{ t.inspector.runsLonger(runsLonger) }}
         </p>
-        <!-- The bar belongs to the presentation, not to the slide: first, where the designer looks for it (Plan.md 105). -->
-        <InspectorSection
-            v-if="editor.draft"
-            id="progress"
-            :title="t.inspector.progressSection"
-            :summary="progressSummary"
-            :help="progressHelp"
-        >
-            <ToggleField
-                :model-value="!!editor.draft.playlist.progress"
-                :label="t.inspector.progress"
-                testid="playlist-progress"
-                @update:model-value="editor.setProgress($event)"
-            />
-            <SegmentField
-                v-if="editor.draft.playlist.progress"
-                :model-value="editor.draft.playlist.progressStyle ?? 'bar'"
-                :options="progressStyleOptions"
-                :label="t.inspector.progressStyle"
-                testid="playlist-progress-style"
-                @update:model-value="editor.setProgressStyle($event === 'segments' ? 'segments' : 'bar')"
-            />
-            <SegmentField
-                v-if="editor.draft.playlist.progress"
-                :model-value="editor.draft.playlist.progressPlacement ?? 'inset'"
-                :options="progressPlacementOptions"
-                :label="t.inspector.progressPlacement"
-                testid="playlist-progress-placement"
-                @update:model-value="editor.setProgressPlacement($event === 'edge' ? 'edge' : 'inset')"
-            />
-        </InspectorSection>
         <InspectorSection id="layout" :title="t.inspector.layout" :summary="layoutSummary" :help="layoutHelp">
             <TileField
                 :model-value="splitValue(layout)"
@@ -280,7 +253,7 @@ const backgroundColors = computed(() => {
 
     <!-- The playlist is the designers' own (schema 1.4); where it runs, the screens' schedules decide. -->
     <section v-if="editor.draft">
-        <InspectorSection id="playlist" :title="t.inspector.playlist" :summary="playlistSummary" :help="playlistHelp">
+        <InspectorSection id="playlist" :title="t.inspector.playlist" :summary="playlistSectionSummary" :help="playlistHelp">
             <div data-testid="playlist-info" class="playlist-info">
                 <TextField
                     :model-value="editor.draft.playlist.name"
@@ -298,6 +271,29 @@ const backgroundColors = computed(() => {
                     <dt>{{ t.inspector.runsOn }}</dt>
                     <dd data-testid="playlist-screens">{{ playlistSummary }}</dd>
                 </dl>
+                <!-- The bar belongs to the presentation, not to the slide (Plan.md 132 A): here, not among the slide's settings. -->
+                <ToggleField
+                    :model-value="!!editor.draft.playlist.progress"
+                    :label="t.inspector.progress"
+                    testid="playlist-progress"
+                    @update:model-value="editor.setProgress($event)"
+                />
+                <SegmentField
+                    v-if="editor.draft.playlist.progress"
+                    :model-value="editor.draft.playlist.progressStyle ?? 'bar'"
+                    :options="progressStyleOptions"
+                    :label="t.inspector.progressStyle"
+                    testid="playlist-progress-style"
+                    @update:model-value="editor.setProgressStyle($event === 'segments' ? 'segments' : 'bar')"
+                />
+                <SegmentField
+                    v-if="editor.draft.playlist.progress"
+                    :model-value="editor.draft.playlist.progressPlacement ?? 'inset'"
+                    :options="progressPlacementOptions"
+                    :label="t.inspector.progressPlacement"
+                    testid="playlist-progress-placement"
+                    @update:model-value="editor.setProgressPlacement($event === 'edge' ? 'edge' : 'inset')"
+                />
                 <p class="hint" data-testid="schedule-hint">
                     {{ t.inspector.scheduleBefore }}
                     <RouterLink :to="{ name: 'schedules' }">{{ t.inspector.scheduleLink }}</RouterLink>
