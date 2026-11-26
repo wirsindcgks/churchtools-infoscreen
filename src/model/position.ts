@@ -18,21 +18,42 @@ export interface PositionDoc {
     total: number;
     /** The slides shown, in order, for the list to tap. */
     slides: { id: string; name: string }[];
-    /** The slide has a block `songsheet` – the phone then steps through its parts first. */
-    songsheet?: true;
+    /**
+     * The slide has a block `songsheet` – the phone then steps through its parts first; the first such block counts. Says where the parts
+     * come from: the event of the agenda (`agenda`) or the song of the rehearsal (`rehearsal`). `true` – the value of before, or a block
+     * whose event is not known – means "unknown": the phone clicks the slides only.
+     */
+    songsheet?: PositionSongsheet;
     /** The stage is black. */
     black?: true;
     /** The `seq` of the click applied last; 0 where none was. */
     seq: number;
+    /** Name of the musician who clicked last (`ClickDoc.by`); missing = unknown. */
+    by?: string;
+    /** ISO time of that click (`ClickDoc.at`), for "zuletzt Anna, vor 5 s"; missing = unknown. */
+    clickAt?: string;
     /** ISO time of ChurchTools, not of the device clock. */
     at: string;
 }
+
+/** Where the parts of a `songsheet` block on the slide come from (Plan.md 124 D). */
+export type PositionSongsheet = true | { source: 'agenda'; eventId: number } | { source: 'rehearsal' };
 
 /** The longest name of a slide in the value. */
 const NAME_MAX = 40;
 
 function whole(value: unknown, least: number): number | null {
     return typeof value === 'number' && Number.isInteger(value) && value >= least ? value : null;
+}
+
+/** `true` and anything unreadable that is set count as unknown, `undefined` where there is no block. */
+function readSongsheet(raw: unknown): PositionSongsheet | undefined {
+    if (typeof raw === 'object' && raw !== null) {
+        const r = raw as Record<string, unknown>;
+        if (r.source === 'rehearsal') return { source: 'rehearsal' };
+        if (r.source === 'agenda') return typeof r.eventId === 'number' && Number.isInteger(r.eventId) && r.eventId > 0 ? { source: 'agenda', eventId: r.eventId } : true;
+    }
+    return raw === true ? true : undefined;
 }
 
 /** Reads one value tolerantly: `null` for anything that is not a usable position; entries of `slides` without an id are left out; never throws. */
@@ -62,7 +83,10 @@ export function readPosition(raw: unknown): PositionDoc | null {
         slides.push({ id: e.id, name: typeof e.name === 'string' ? e.name : '' });
     }
     const doc: PositionDoc = { kind: 'position', screenId: r.screenId, playlistId: r.playlistId, slideId: r.slideId, number, total, slides, seq: whole(r.seq, 0) ?? 0, at: r.at };
-    if (r.songsheet === true) doc.songsheet = true;
+    const sheet = readSongsheet(r.songsheet);
+    if (sheet) doc.songsheet = sheet;
+    if (typeof r.by === 'string' && r.by) doc.by = r.by;
+    if (typeof r.clickAt === 'string' && !Number.isNaN(Date.parse(r.clickAt))) doc.clickAt = r.clickAt;
     if (r.black === true) doc.black = true;
     return doc;
 }

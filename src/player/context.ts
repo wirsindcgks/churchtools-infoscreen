@@ -47,6 +47,8 @@ export interface StageContext {
     songExample?: LiveItem;
     /** Where the blocks that turn pages stand right now, by block id; a block enters while it turns (two pages or more, paging on) and leaves when it stops or goes (Plan.md 127 D). The designer sets none. */
     turns?: Record<string, { page: number; count: number }>;
+    /** The event each `songsheet` block of the agenda follows, by block id – the blocks report it, the player passes it on in its position for the phone (Plan.md 124 D). The designer sets none. */
+    songsheetEvents?: Record<string, number>;
     /** The last tap that pages within the slide: the player sets it, the turning blocks watch it and move by `by` pages (Plan.md 127 D). */
     pageStep?: { by: number; at: number };
     /** Whether paged lists turn their pages; the designer preview holds page 1. */

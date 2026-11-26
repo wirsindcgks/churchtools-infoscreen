@@ -12,6 +12,7 @@ import { currentPerson, displayName } from '../ct/client';
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
 import { appointmentWindow, churchToolsPlayerData } from '../player/data';
+import ControlClick from './ControlClick.vue';
 import ControlRehearsal from './ControlRehearsal.vue';
 import ControlSong from './ControlSong.vue';
 import { controlMemory } from './control-memory';
@@ -66,11 +67,15 @@ watch(area, (value) => (controlMemory.area = value));
 /** The list under the button in the head: "Gottesdienst" and "Probe". A tap beside it and Escape close it. */
 const areaOpen = ref(false);
 const areaBox = ref<HTMLElement | null>(null);
+/** The screens released for the click steering (Plan.md 124 D), from the list in `steuerung`; the area "Bildschirm" is offered only with at least one. */
+const clickScreens = ref<{ id: string; name: string }[]>([]);
 const areaEntries = computed(() => [
     { value: 'service' as const, text: t.control.service, hint: t.control.areaServiceHint },
     { value: 'rehearsal' as const, text: t.control.rehearsal, hint: t.control.areaRehearsalHint },
+    ...(clickScreens.value.length ? [{ value: 'click' as const, text: t.control.click, hint: t.control.areaClickHint }] : []),
 ]);
-function chooseArea(value: 'service' | 'rehearsal'): void {
+const areaText = computed(() => areaEntries.value.find((entry) => entry.value === area.value)?.text ?? t.control.service);
+function chooseArea(value: 'service' | 'rehearsal' | 'click'): void {
     area.value = value;
     areaOpen.value = false;
 }
@@ -258,6 +263,14 @@ onMounted(async () => {
         const [person, handle, zone] = await Promise.all([currentPerson(), getRepository(), fetchTimeZone()]);
         repository = handle.repository;
         rehearsalRepository.value = handle.repository;
+        void handle.repository
+            .readRehearsalScreens()
+            .then(({ catalog }) => {
+                clickScreens.value = catalog?.clickScreens ?? [];
+                // The remembered area is gone with the release of the screens.
+                if (area.value === 'click' && !clickScreens.value.length) area.value = 'service';
+            })
+            .catch(() => null);
         author = displayName(person);
         timeZone.value = zone;
         if ((await repository.controlCategoryId()) === null) {
@@ -304,7 +317,7 @@ onBeforeUnmount(() => {
                     @click="areaOpen = !areaOpen"
                 >
                     <span class="area-prefix">{{ t.control.title }} ·</span>
-                    <strong>{{ area === 'service' ? t.control.service : t.control.rehearsal }}</strong>
+                    <strong>{{ areaText }}</strong>
                     <Icon name="chevron-down" :size="18" />
                 </button>
                 <ul v-if="areaOpen" class="area-list" role="group" :aria-label="t.control.areaChoose">
@@ -323,6 +336,7 @@ onBeforeUnmount(() => {
         <p v-else-if="unavailable" class="note">{{ t.control.unavailable }}</p>
         <template v-else>
             <ControlRehearsal v-if="area === 'rehearsal' && rehearsalRepository" :repository="rehearsalRepository" :author="author" :time-zone="timeZone" />
+            <ControlClick v-else-if="area === 'click' && rehearsalRepository && clickScreens.length" :repository="rehearsalRepository" :author="author" :time-zone="timeZone" :screens="clickScreens" />
             <template v-else-if="area === 'service'">
                 <p v-if="failure && !event" class="note" role="alert">{{ failure }}</p>
                 <p v-else-if="!events.length" class="note">{{ t.control.noEvents }}</p>

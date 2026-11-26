@@ -5,11 +5,12 @@ import type { AgendaEvent } from '../agenda/live';
  * Without it every way from the designer to the stage page showed "Wird geladen …" and the head only once the rights were read – it looked
  * like a reload of the whole page (user, 2026-11-13). `designerToo` is also set by the menu entry "Steuerung": who comes from the designer is a designer.
  */
-export const controlMemory: { area: 'service' | 'rehearsal'; designerToo: boolean; events: AgendaEvent[] | null; eventId: number | null; timeZone: string | null; screenId: string | null } = {
+export const controlMemory: { area: 'service' | 'rehearsal' | 'click'; designerToo: boolean; events: AgendaEvent[] | null; eventId: number | null; timeZone: string | null; screenId: string | null; clickScreenId: string | null } = {
     area: 'service',
     designerToo: false,
     events: null,
     eventId: null,
     timeZone: null,
     screenId: null,
+    clickScreenId: null,
 };

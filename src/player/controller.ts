@@ -48,9 +48,10 @@ export interface PlayerState {
     override?: OverrideDoc | null;
     /**
      * The clicks to apply (Plan.md 124 C): a new object with every read that brings clicks or moves `seq` – the first read after the start or
-     * a change of the presentation brings none and only sets `seq`. Not in the offline cache.
+     * a change of the presentation brings none and only sets `seq`. `by` and `at` are those of the click value, for "zuletzt Anna, vor 5 s" on
+     * the phone page (Plan.md 124 D). Not in the offline cache.
      */
-    clicks?: { playlistId: string; seq: number; actions: ClickAction[] };
+    clicks?: { playlistId: string; seq: number; actions: ClickAction[]; by?: string; at?: string };
     rooms: RoomBookings[];
     timeZone: string;
     churchName: string;
@@ -683,7 +684,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                     const result = pendingClicks(doc, clickSeq, playlistId, deps.now().getTime() + clockSkewMs);
                     if (clickPlaylistId === playlistId && (result.seq !== clickSeq || result.actions.length)) {
                         clickSeq = result.seq;
-                        state.clicks = { playlistId, seq: result.seq, actions: result.actions };
+                        state.clicks = { playlistId, seq: result.seq, actions: result.actions, ...(doc?.by ? { by: doc.by } : {}), ...(doc ? { at: doc.at } : {}) };
                     }
                 }
             }

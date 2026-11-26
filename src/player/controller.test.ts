@@ -1440,22 +1440,25 @@ describe('the click steering (Plan.md 124 C)', () => {
     });
 
     it('asks every second when released and not by time, catches nothing up at first, then hands on what is new', async () => {
-        let current = doc([4, 5]);
+        let current = doc([4, 5], { by: 'Anna' });
         const click = vi.fn<PlayerData['click']>(async () => current);
         const player = createPlayer('demo', fakeData({ click, loadScreen: vi.fn(async () => clickScreen('click')) }), fakeDeps());
         await player.start();
         await vi.advanceTimersByTimeAsync(3_100);
         expect(click.mock.calls.length).toBeGreaterThanOrEqual(3);
         expect(click).toHaveBeenCalledWith('demo-screen');
-        expect(player.state.clicks).toEqual({ playlistId: 'demo-playlist', seq: 5, actions: [] });
+        // The name and time of the click value go along, for "zuletzt Anna" on the phone page (Plan.md 124 D).
+        expect(player.state.clicks).toEqual({ playlistId: 'demo-playlist', seq: 5, actions: [], by: 'Anna', at: current.at });
         const first = player.state.clicks;
         await vi.advanceTimersByTimeAsync(2_000);
         expect(player.state.clicks).toBe(first);
-        current = doc([4, 5, 6, 7]);
+        current = doc([4, 5, 6, 7], { by: 'Ben' });
         await vi.advanceTimersByTimeAsync(1_100);
         expect(player.state.clicks).toEqual({
             playlistId: 'demo-playlist',
             seq: 7,
+            by: 'Ben',
+            at: current.at,
             actions: [
                 { seq: 6, do: 'next' },
                 { seq: 7, do: 'next' },
@@ -1532,6 +1535,20 @@ describe('the click steering (Plan.md 124 C)', () => {
             player.reportPosition(position({ slideId: 'b', number: 2, black: true, seq: 3 }));
             player.reportPosition(position());
             player.reportPosition(position({ slideId: 'b', number: 2, black: true, seq: 3 }));
+            await vi.advanceTimersByTimeAsync(400);
+            expect(reportPosition).toHaveBeenCalledTimes(2);
+            player.stop();
+        });
+
+        it('writes name and time of the last click and the source of the songsheet as they are (Plan.md 124 D)', async () => {
+            const reportPosition = vi.fn<PlayerData['reportPosition']>(async () => {});
+            const player = createPlayer('demo', fakeData({ reportPosition, loadScreen: vi.fn(async () => clickScreen('click')) }), fakeDeps());
+            await player.start();
+            player.reportPosition(position({ by: 'Anna', clickAt: '2026-11-26T10:00:00.000Z', songsheet: { source: 'agenda', eventId: 7 } }));
+            await vi.advanceTimersByTimeAsync(400);
+            expect(reportPosition.mock.calls[0]![0]).toMatchObject({ by: 'Anna', clickAt: '2026-11-26T10:00:00.000Z', songsheet: { source: 'agenda', eventId: 7 } });
+            // Another source of the songsheet is a change of its own.
+            player.reportPosition(position({ by: 'Anna', clickAt: '2026-11-26T10:00:00.000Z', songsheet: { source: 'rehearsal' } }));
             await vi.advanceTimersByTimeAsync(400);
             expect(reportPosition).toHaveBeenCalledTimes(2);
             player.stop();

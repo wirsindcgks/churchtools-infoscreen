@@ -62,6 +62,9 @@ test.describe('between designer and phone page on a desktop', () => {
         await button.click();
         await expect(button).toHaveAttribute('aria-expanded', 'true');
         await expect(page.getByTestId('control-area-service')).toHaveAttribute('aria-pressed', 'true');
+        // Without a screen released for the click steering the list has no "Bildschirm" (Plan.md 124 D); the demo store has no such list.
+        await expect(page.getByTestId('control-area-rehearsal')).toBeVisible();
+        await expect(page.getByTestId('control-area-click')).toHaveCount(0);
         await page.keyboard.press('Escape');
         await expect(page.getByTestId('control-area-rehearsal')).toHaveCount(0);
 

@@ -1294,6 +1294,17 @@ describe('the block "Liedblatt" (schema 1.63, Plan.md 121 B)', () => {
         expect(draw(songsheet()).find('[data-testid="songsheet"]').exists()).toBe(false);
     });
 
+    it('reports the event it follows for the position of the screen, and takes it back once it is gone (Plan.md 124 D)', async () => {
+        const songsheetEvents: Record<string, number> = {};
+        const wrapper = draw(songsheet(), { agenda: feed(), songsheetEvents });
+        expect(songsheetEvents).toEqual({ s: feed().events[0]!.eventId });
+        wrapper.unmount();
+        expect(songsheetEvents).toEqual({});
+        // The rehearsal has no event of the agenda.
+        draw(songsheet({ source: 'rehearsal' }), { agenda: feed(), songsheetEvents });
+        expect(songsheetEvents).toEqual({});
+    });
+
     it('draws a faint note without text where there is no event today, and nothing where the agenda has no song left (Plan.md 123)', () => {
         expect(draw(songsheet()).find('[data-testid="songsheet-empty"]').exists()).toBe(false);
         const note = draw(songsheet(), { agenda: { events: [], positions: {} } }).get('[data-testid="songsheet-empty"]');
