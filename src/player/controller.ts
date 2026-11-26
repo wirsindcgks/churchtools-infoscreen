@@ -9,7 +9,9 @@ import { reactive } from 'vue';
 import { POLL_AFTER_MS, pollableEvents, type AgendaFeed, type LivePositions } from '../agenda/live';
 import { isRehearsalSheet, REHEARSAL_MAX_AGE_MS, type RehearsalState } from '../agenda/songsheet';
 import type { Appointment } from '../appointments/normalize';
-import type { OverrideDoc } from '../agenda/control';
+import { pendingClicks, type ClickAction, type OverrideDoc } from '../agenda/control';
+import type { PositionDoc } from '../model/position';
+import { effectiveAdvance } from './click';
 import { httpStatus, NotAuthenticatedError, retryAfterMs, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
 import { shownSlideIds, shownStand } from '../model/embeds';
@@ -44,6 +46,11 @@ export interface PlayerState {
     rehearsal?: RehearsalState | null;
     /** The override of this screen by the musicians (Plan.md 125 B); `undefined` = not read, `null` = none. Not in the offline cache. */
     override?: OverrideDoc | null;
+    /**
+     * The clicks to apply (Plan.md 124 C): a new object with every read that brings clicks or moves `seq` – the first read after the start or
+     * a change of the presentation brings none and only sets `seq`. Not in the offline cache.
+     */
+    clicks?: { playlistId: string; seq: number; actions: ClickAction[] };
     rooms: RoomBookings[];
     timeZone: string;
     churchName: string;
@@ -647,6 +654,102 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         later(wait, controlCycle);
     }
 
+    /** The `seq` of the click applied last for the presentation `clickPlaylistId`; `null` before the first read of it. */
+    let clickSeq: number | null = null;
+    let clickPlaylistId = '';
+
+    /**
+     * The clicks of the musicians (Plan.md 124 C): only while this screen is released for the click steering **and** the running
+     * presentation is not "by time" – otherwise not a single request. What is new goes to the player in `state.clicks`; a failure keeps the
+     * state and waits as long as `retryAfterMs` asks.
+     */
+    async function clickCycle(): Promise<void> {
+        let wait = withJitter(INTERVALS.controlMs);
+        try {
+            const loaded = state.screen;
+            if (loaded && !blocked) {
+                const playlistId = playlistNow(loaded);
+                const playlist = loaded.playlists.find((p) => p.id === playlistId);
+                if (effectiveAdvance(playlist, loaded.screen.id, loaded.clickScreenIds) === 'time') {
+                    clickSeq = null;
+                    clickPlaylistId = '';
+                } else {
+                    // Another presentation starts afresh: what was clicked before it began is not caught up.
+                    if (clickPlaylistId !== playlistId) {
+                        clickPlaylistId = playlistId;
+                        clickSeq = null;
+                    }
+                    const doc = await data.click(loaded.screen.id);
+                    const result = pendingClicks(doc, clickSeq, playlistId, deps.now().getTime() + clockSkewMs);
+                    if (clickPlaylistId === playlistId && (result.seq !== clickSeq || result.actions.length)) {
+                        clickSeq = result.seq;
+                        state.clicks = { playlistId, seq: result.seq, actions: result.actions };
+                    }
+                }
+            }
+        } catch (error) {
+            wait = Math.max(wait, retryAfterMs(error) ?? 0);
+        }
+        later(wait, clickCycle);
+    }
+
+    let positionTimer: ReturnType<typeof setTimeout> | undefined;
+    let positionPending: Omit<PositionDoc, 'kind' | 'screenId' | 'at'> | null = null;
+    let positionWritten = '';
+    /** Until when a write of the position waits after a `403` or another failure. */
+    let positionRetryAt = 0;
+
+    /**
+     * Where this screen stands (Plan.md 124 C), for the phone page: written to `status` only when it changed – slide, black, presentation or
+     * the last click applied; a page of a list does not count – and a little later, so that several clicks in a row are one write.
+     * Whatever goes wrong here touches nothing else: it is only logged, and after a `403` the player does not ask again for a while.
+     */
+    function reportPosition(position: Omit<PositionDoc, 'kind' | 'screenId' | 'at'>): void {
+        if (stopped || !state.screen) return;
+        const key = JSON.stringify(position);
+        if (positionPending && JSON.stringify(positionPending) === key) return;
+        if (key === positionWritten) {
+            // Back to what was written last: nothing pending is left to write.
+            positionPending = null;
+            return;
+        }
+        positionPending = position;
+        scheduleFlush(INTERVALS.positionDebounceMs);
+    }
+
+    function scheduleFlush(ms: number): void {
+        if (positionTimer) {
+            clearTimeout(positionTimer);
+            timers.delete(positionTimer);
+        }
+        positionTimer = later(ms, () => void flushPosition());
+    }
+
+    async function flushPosition(): Promise<void> {
+        const loaded = state.screen;
+        const position = positionPending;
+        if (!loaded || !position || blocked) return;
+        const now = deps.now();
+        if (now.getTime() < positionRetryAt) {
+            scheduleFlush(positionRetryAt - now.getTime());
+            return;
+        }
+        positionPending = null;
+        try {
+            await data.reportPosition({ kind: 'position', screenId: loaded.screen.id, ...position, at: new Date(now.getTime() + clockSkewMs).toISOString() });
+            positionWritten = JSON.stringify(position);
+        } catch (error) {
+            console.warn('Der Stand des Bildschirms konnte nicht gemeldet werden:', error);
+            // A passing failure is tried again soon – the musicians wait for the position on stage; a `403` only after a long while.
+            positionRetryAt = now.getTime() + (httpStatus(error) === 403 ? INTERVALS.aliveForbiddenMs : INTERVALS.positionRetryMs);
+            // A newer state has its own timer; otherwise this one is tried again later.
+            if (!positionPending) {
+                positionPending = position;
+                scheduleFlush(positionRetryAt - now.getTime());
+            }
+        }
+    }
+
     /**
      * Whether a reload would disturb now (Plan.md 117): while the musicians override the screen for a rehearsal, or while an event of
      * the calendars of the shown `agenda` and `songsheet` blocks – or of an agenda rule – is in the window of {@link pollableEvents}.
@@ -711,6 +814,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         later(withJitter(INTERVALS.agendaMs), agendaCycle);
         later(withJitter(INTERVALS.controlMs), controlCycle);
         later(withJitter(INTERVALS.controlMs), rehearsalCycle);
+        later(withJitter(INTERVALS.controlMs), clickCycle);
         await configCycle();
         // A reload in the middle of a rehearsal (the nightly one included) keeps it, instead of showing the schedule until the first quick check.
         await overrideCheck();
@@ -730,5 +834,5 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         timers.clear();
     }
 
-    return { state, start, stop, refreshNow, newVersion };
+    return { state, start, stop, refreshNow, newVersion, reportPosition };
 }

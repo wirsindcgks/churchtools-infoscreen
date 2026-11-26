@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect } from 'vue';
 import { useRoute } from 'vue-router';
 import { enableTokenLogin } from '../ct/client';
+import type { ClickAction } from '../agenda/control';
 import { shownSlideIds } from '../model/embeds';
 import { INTERACTION_WAIT_SECONDS, type MediaDoc, type SlideDoc } from '../model/schema';
 import { imageSource, provideStageContext, themeOf, type StageContext } from '../player/context';
@@ -15,7 +16,8 @@ import { createVideoCache } from '../player/video-cache';
 import { screenVideoUrls } from '../player/video';
 import { createPreloader } from '../player/preload';
 import { turnsWithin } from '../player/paging';
-import { useRotation } from '../player/rotation';
+import { effectiveAdvance } from '../player/click';
+import { placeInRotation, useRotation } from '../player/rotation';
 import { activePlaylistId } from '../player/schedule';
 import { keepPlayerStorage, registerPlayerServiceWorker, watchForNewVersion } from '../player/service-worker';
 import { INTERVALS } from '../player/timing';
@@ -168,9 +170,13 @@ const playlist = computed(() => {
     );
 });
 
-// With the presentation's progress on, the blocks show none of their own (Plan.md 109).
+/** How the presentation moves on at this screen (Plan.md 124 C); "by time" without the release for the click steering. */
+const advance = computed(() => effectiveAdvance(playlist.value, state?.screen?.screen.id ?? '', state?.screen?.clickScreenIds));
+// "Per click" shows no bar (like the editor's stage): the blocks then show their own progress, and they page only by a click.
 watchEffect(() => {
-    context.slideProgress = !!playlist.value?.progress;
+    context.slideProgress = !!playlist.value?.progress && advance.value !== 'click';
+    context.paging = advance.value !== 'click';
+    context.handPaging = advance.value === 'click';
 });
 
 const slides = computed<SlideDoc[]>(() => {
@@ -186,7 +192,9 @@ const banner = computed(() => {
     return bannerShown(band, context.now, context.timeZone) ? band : null;
 });
 
-const { index, current, scheduleNext, startedAt, heldAt, seconds, step } = useRotation(slides, () => context.pages ?? {});
+const { index, current, scheduleNext, startedAt, heldAt, seconds, step, setPaused } = useRotation(slides, () => context.pages ?? {});
+// "Per click" the rotation holds the slide, like a paused preview; only a click moves on.
+watch(() => advance.value === 'click', (held) => setPaused(held), { immediate: true });
 
 const preload = createPreloader();
 watch(
@@ -237,6 +245,80 @@ function pageBy(by: number): void {
     }
     step(by, waitSeconds.value);
 }
+
+/** The stage is black (Plan.md 124 C) – above banner and bar; a presentation of its own starts without it. */
+const black = ref(false);
+/** The `seq` of the click applied last, for the position written to `status`. */
+const appliedSeq = ref(0);
+/** One step of a click: a paged block on the slide turns first, else the slide moves; no least time and no `engage()`, unlike touch (Plan.md 124 C). */
+function clickBy(by: number): void {
+    if (current.value && turnsWithin(current.value, context.turns ?? {}, by)) {
+        context.pageStep = { by, at: Date.now() };
+        step(0);
+        return;
+    }
+    step(by);
+}
+function applyClick(action: ClickAction): void {
+    // Black goes with any click and nothing else happens, as in a slide show program.
+    if (black.value) {
+        black.value = false;
+        return;
+    }
+    if (action.do === 'black') {
+        black.value = true;
+    } else if (action.do === 'goto') {
+        const count = slides.value.length;
+        const target = slides.value.findIndex((s) => s.id === action.slideId);
+        if (target >= 0 && target !== index.value % count) step(target - (index.value % count));
+    } else {
+        clickBy(action.do === 'next' ? 1 : -1);
+    }
+}
+/** Batches wait for each other, and each action for the blocks to have settled: two clicks in a row page a list twice. */
+let clickQueue: Promise<void> = Promise.resolve();
+watch(
+    () => state?.clicks,
+    (batch) => {
+        if (!batch || batch.playlistId !== playlist.value?.id) return;
+        clickQueue = clickQueue.then(async () => {
+            for (const action of batch.actions) {
+                applyClick(action);
+                await nextTick();
+                await nextTick();
+            }
+            appliedSeq.value = batch.seq;
+        });
+    },
+);
+watch(
+    () => playlist.value?.id,
+    () => {
+        black.value = false;
+        appliedSeq.value = 0;
+    },
+);
+// Where the screen stands, for the phone page; only while the presentation does not run by time alone (the player drops what did not change).
+watch(
+    [advance, playlist, current, slides, black, appliedSeq],
+    () => {
+        const slide = current.value;
+        const running = playlist.value;
+        if (!player || advance.value === 'time' || !running || !slide) return;
+        const place = placeInRotation(slides.value, slide.id);
+        player.reportPosition({
+            playlistId: running.id,
+            slideId: slide.id,
+            number: place.number,
+            total: place.total,
+            slides: slides.value.map((s) => ({ id: s.id, name: s.name })),
+            ...(slide.blocks.some((b) => b.type === 'songsheet') ? { songsheet: true as const } : {}),
+            ...(black.value ? { black: true as const } : {}),
+            seq: appliedSeq.value,
+        });
+    },
+    { immediate: true },
+);
 function onResize(): void {
     viewport.width = window.innerWidth;
     viewport.height = window.innerHeight;
@@ -314,7 +396,7 @@ onBeforeUnmount(() => {
                 <p v-if="!current" class="stage-message">{{ tp.noActiveSlide }}</p>
                 <BannerView v-if="banner" :banner="banner" :stage-width="stage.width" />
                 <ProgressBar
-                    v-if="playlist?.progress && current"
+                    v-if="playlist?.progress && current && advance !== 'click'"
                     :started-at="startedAt"
                     :seconds="seconds"
                     :held="heldAt"
@@ -344,6 +426,7 @@ onBeforeUnmount(() => {
                         </Transition>
                     </div>
                 </template>
+                <div v-if="black" class="stage-black" data-testid="stage-black" />
             </StageView>
             <!-- Old content with a discreet marker beats a black screen. -->
             <span v-if="state.staleSince" class="stale" data-testid="stale" :title="tp.noConnection" />
@@ -352,6 +435,14 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+/* Black over the whole stage, banner and bar included (Plan.md 124 C); taps still reach the zones below. */
+.stage-black {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    background: #000;
+    pointer-events: none;
+}
 /* Invisible halves of the stage above everything else: left pages back, right forward. */
 .kiosk-zone {
     position: absolute;

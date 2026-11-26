@@ -119,11 +119,11 @@ function start(): void {
 watch(
     () => context.pageStep,
     (step) => {
-        if (!step || !turnSeconds.value) return;
+        if (!step || !(turnSeconds.value || context.handPaging)) return;
         const target = movePage(index.value, step.by, urls.value.length);
         if (target === index.value) return;
         clearInterval(timer);
-        timer = setInterval(() => void advance(), turnSeconds.value * 1000);
+        if (turnSeconds.value) timer = setInterval(() => void advance(), turnSeconds.value * 1000);
         void advance(target);
     },
 );

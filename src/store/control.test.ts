@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ControlDoc, OverrideDoc, RehearsalCatalogDoc, RehearsalDoc } from '../agenda/control';
+import type { ClickDoc, ControlDoc, OverrideDoc, RehearsalCatalogDoc, RehearsalDoc } from '../agenda/control';
 import { MemoryKv } from './memory-kv';
 import { ScreenRepository } from './screen-repository';
 
@@ -115,5 +115,48 @@ describe('writeOverride and readRehearsalScreens (Plan.md 125 C)', () => {
         expect(read.catalog?.screens[0]!.name).toBe('Probenraum');
         expect(Object.keys(read.overrides)).toEqual(['s1']);
         expect((await repo.readRehearsal())!.songId).toBe(7);
+    });
+});
+
+describe('writeClick and readClick (Plan.md 124 C)', () => {
+    const click = (screenId: string, seq: number, at: string): ClickDoc => ({ kind: 'click', screenId, playlistId: 'p1', actions: [{ seq, do: 'next' }], at });
+
+    it('fails without the category and reads nothing', async () => {
+        const repo = new ScreenRepository(new MemoryKv());
+        await expect(repo.writeClick(click('s1', 1, '2026-11-26T10:00:00Z'))).rejects.toThrow();
+        expect(await repo.readClick('s1')).toBeNull();
+    });
+
+    it('writes one value per screen and leaves the other values alone', async () => {
+        const kv = new MemoryKv();
+        const repo = new ScreenRepository(kv);
+        const id = (await repo.ensureControlCategory())!;
+        await repo.writeRehearsal({ kind: 'rehearsal', songId: 7, arrangementId: 3, section: 0, at: '2026-11-26T09:30:00Z' });
+        const soon = new Date(Date.now() + 3_600_000).toISOString();
+        await repo.writeOverride({ kind: 'override', screenId: 's1', playlistId: 'p1', until: soon, at: new Date().toISOString() });
+        await repo.writeClick(click('s1', 1, '2026-11-26T10:00:00Z'));
+        await repo.writeClick(click('s1', 2, '2026-11-26T10:00:05Z'));
+        await repo.writeClick(click('s2', 1, '2026-11-26T10:00:06Z'));
+        expect(await kv.listValues(id)).toHaveLength(4);
+        expect((await repo.readClick('s1'))!.actions).toEqual([{ seq: 2, do: 'next' }]);
+        expect((await repo.readClick('s2'))!.actions).toEqual([{ seq: 1, do: 'next' }]);
+        expect(await repo.readClick('s3')).toBeNull();
+        // The other readers pass the click values by.
+        expect((await repo.readRehearsal())!.songId).toBe(7);
+        expect(Object.keys((await repo.readRehearsalScreens()).overrides)).toEqual(['s1']);
+        expect(await repo.readControls()).toEqual({});
+        expect(await repo.readRehearsalCatalog()).toBeNull();
+        expect((await repo.readOverride('s1'))!.playlistId).toBe('p1');
+    });
+
+    it('removes doubles of the same screen', async () => {
+        const kv = new MemoryKv();
+        const repo = new ScreenRepository(kv);
+        const id = (await repo.ensureControlCategory())!;
+        await kv.createValue(id, JSON.stringify(click('s1', 1, '2026-11-26T10:00:00Z')));
+        await kv.createValue(id, JSON.stringify(click('s1', 2, '2026-11-26T10:00:05Z')));
+        await repo.writeClick(click('s1', 3, '2026-11-26T10:00:10Z'));
+        expect(await kv.listValues(id)).toHaveLength(1);
+        expect((await repo.readClick('s1'))!.actions[0]!.seq).toBe(3);
     });
 });

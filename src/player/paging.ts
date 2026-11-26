@@ -160,8 +160,9 @@ export function movePage(page: number, by: number, count: number): number {
 }
 
 /** Enters or removes a block in `context.turns`: it counts while it turns (`count` 2 or more), else it leaves. */
-export function reportTurn(context: { turns?: Record<string, PageTurn> }, id: string, page: number, count: number, turning: boolean): void {
+export function reportTurn(context: { turns?: Record<string, PageTurn>; handPaging?: boolean }, id: string, page: number, count: number, turning: boolean): void {
     if (!context.turns) return;
-    if (turning && count > 1) context.turns[id] = { page, count };
+    // Held "per click" (Plan.md 124 C) a block does not turn by itself, but a click pages it, so it counts all the same.
+    if ((turning || context.handPaging) && count > 1) context.turns[id] = { page, count };
     else delete context.turns[id];
 }

@@ -98,7 +98,7 @@ function turnPages(from = 0): void {
 watch(
     () => context.pageStep,
     (step) => {
-        if (step && turnSeconds.value) turnPages(movePage(page.value, step.by, pages.value.length));
+        if (step && (turnSeconds.value || context.handPaging)) turnPages(movePage(page.value, step.by, pages.value.length));
     },
 );
 watch(

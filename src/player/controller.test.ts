@@ -13,6 +13,8 @@ import { contentChanged, createCanReload, createPlayer, type PlayerDeps } from '
 import type { AgendaEvent, LivePosition } from '../agenda/live';
 import { liveItems } from '../agenda/live';
 import type { PlayerData } from './data';
+import type { ClickDoc } from '../agenda/control';
+import type { PositionDoc } from '../model/position';
 import { askServiceWorkerHasPage } from './service-worker';
 import { INTERVALS } from './timing';
 
@@ -160,9 +162,11 @@ function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
         controls: vi.fn(async () => ({})),
         rehearsal: vi.fn(async () => null),
         override: vi.fn(async () => null),
+        click: vi.fn(async () => null),
         rehearsalItem: vi.fn(async () => null),
         rooms: vi.fn(async () => []),
         reportAlive: vi.fn(async () => {}),
+        reportPosition: vi.fn(async () => {}),
         ...overrides,
     };
 }
@@ -1391,5 +1395,181 @@ describe('createCanReload (Plan.md, 37; G10)', () => {
         await vi.advanceTimersByTimeAsync(1000);
         await expect(result).resolves.toBe(false);
         vi.useRealTimers();
+    });
+});
+
+describe('the click steering (Plan.md 124 C)', () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+        vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.restoreAllMocks();
+    });
+
+    const clickScreen = (advance: 'time' | 'time-click' | 'click' | undefined, released = true): LoadedScreen => {
+        const base = loaded();
+        return { ...base, playlists: base.playlists.map((p) => ({ ...p, advance })), ...(released ? { clickScreenIds: [base.screen.id] } : {}) };
+    };
+    const doc = (seqs: number[], over: Partial<ClickDoc> = {}): ClickDoc => ({
+        kind: 'click',
+        screenId: 'demo-screen',
+        playlistId: 'demo-playlist',
+        actions: seqs.map((seq) => ({ seq, do: 'next' as const })),
+        at: new Date(NOW.getTime() - 10_000).toISOString(),
+        ...over,
+    });
+
+    it('does not ask for a screen that is not released, nor for a presentation by time', async () => {
+        const click = vi.fn<PlayerData['click']>(async () => doc([1]));
+        const unreleased = createPlayer('demo', fakeData({ click, loadScreen: vi.fn(async () => clickScreen('click', false)) }), fakeDeps());
+        await unreleased.start();
+        await vi.advanceTimersByTimeAsync(10_000);
+        unreleased.stop();
+        const byTime = createPlayer('demo', fakeData({ click, loadScreen: vi.fn(async () => clickScreen('time')) }), fakeDeps());
+        await byTime.start();
+        await vi.advanceTimersByTimeAsync(10_000);
+        byTime.stop();
+        const unset = createPlayer('demo', fakeData({ click, loadScreen: vi.fn(async () => clickScreen(undefined)) }), fakeDeps());
+        await unset.start();
+        await vi.advanceTimersByTimeAsync(10_000);
+        unset.stop();
+        expect(click).not.toHaveBeenCalled();
+        expect(unreleased.state.clicks).toBeUndefined();
+    });
+
+    it('asks every second when released and not by time, catches nothing up at first, then hands on what is new', async () => {
+        let current = doc([4, 5]);
+        const click = vi.fn<PlayerData['click']>(async () => current);
+        const player = createPlayer('demo', fakeData({ click, loadScreen: vi.fn(async () => clickScreen('click')) }), fakeDeps());
+        await player.start();
+        await vi.advanceTimersByTimeAsync(3_100);
+        expect(click.mock.calls.length).toBeGreaterThanOrEqual(3);
+        expect(click).toHaveBeenCalledWith('demo-screen');
+        expect(player.state.clicks).toEqual({ playlistId: 'demo-playlist', seq: 5, actions: [] });
+        const first = player.state.clicks;
+        await vi.advanceTimersByTimeAsync(2_000);
+        expect(player.state.clicks).toBe(first);
+        current = doc([4, 5, 6, 7]);
+        await vi.advanceTimersByTimeAsync(1_100);
+        expect(player.state.clicks).toEqual({
+            playlistId: 'demo-playlist',
+            seq: 7,
+            actions: [
+                { seq: 6, do: 'next' },
+                { seq: 7, do: 'next' },
+            ],
+        });
+        player.stop();
+    });
+
+    it('also asks in the mode "by time, clicks step in"', async () => {
+        const click = vi.fn<PlayerData['click']>(async () => null);
+        const player = createPlayer('demo', fakeData({ click, loadScreen: vi.fn(async () => clickScreen('time-click')) }), fakeDeps());
+        await player.start();
+        await vi.advanceTimersByTimeAsync(2_100);
+        expect(click).toHaveBeenCalled();
+        player.stop();
+    });
+
+    it('keeps the state on an error and waits as long as it is told to', async () => {
+        let fail = false;
+        const click = vi.fn<PlayerData['click']>(async () => {
+            if (fail) throw Object.assign(new Error('429'), { response: { status: 429, headers: { 'retry-after': '20' } } });
+            return doc([1]);
+        });
+        const player = createPlayer('demo', fakeData({ click, loadScreen: vi.fn(async () => clickScreen('click')) }), fakeDeps());
+        await player.start();
+        await vi.advanceTimersByTimeAsync(2_100);
+        const before = player.state.clicks;
+        expect(before?.seq).toBe(1);
+        fail = true;
+        await vi.advanceTimersByTimeAsync(1_100);
+        const calls = click.mock.calls.length;
+        await vi.advanceTimersByTimeAsync(10_000);
+        expect(click.mock.calls.length).toBeLessThanOrEqual(calls + 1);
+        expect(player.state.clicks).toBe(before);
+        player.stop();
+    });
+
+    describe('the position (Plan.md 124 C)', () => {
+        const position = (over: Partial<Omit<PositionDoc, 'kind' | 'screenId' | 'at'>> = {}): Omit<PositionDoc, 'kind' | 'screenId' | 'at'> => ({
+            playlistId: 'demo-playlist',
+            slideId: 'a',
+            number: 1,
+            total: 2,
+            slides: [
+                { id: 'a', name: 'Eins' },
+                { id: 'b', name: 'Zwei' },
+            ],
+            seq: 0,
+            ...over,
+        });
+
+        it('writes after a short while, only what changed, and one write for several changes in a row', async () => {
+            const reportPosition = vi.fn<PlayerData['reportPosition']>(async () => {});
+            const player = createPlayer('demo', fakeData({ reportPosition, loadScreen: vi.fn(async () => clickScreen('click')) }), fakeDeps());
+            await player.start();
+            player.reportPosition(position());
+            expect(reportPosition).not.toHaveBeenCalled();
+            await vi.advanceTimersByTimeAsync(400);
+            expect(reportPosition).toHaveBeenCalledTimes(1);
+            expect(reportPosition.mock.calls[0]![0]).toMatchObject({ kind: 'position', screenId: 'demo-screen', playlistId: 'demo-playlist', slideId: 'a', number: 1, total: 2, seq: 0 });
+            expect(Date.parse(reportPosition.mock.calls[0]![0].at)).not.toBeNaN();
+            // The same again – nothing.
+            player.reportPosition(position());
+            await vi.advanceTimersByTimeAsync(400);
+            expect(reportPosition).toHaveBeenCalledTimes(1);
+            // Two changes within the pause are one write.
+            player.reportPosition(position({ slideId: 'b', number: 2 }));
+            await vi.advanceTimersByTimeAsync(100);
+            player.reportPosition(position({ slideId: 'b', number: 2, black: true, seq: 3 }));
+            await vi.advanceTimersByTimeAsync(400);
+            expect(reportPosition).toHaveBeenCalledTimes(2);
+            expect(reportPosition.mock.calls[1]![0]).toMatchObject({ slideId: 'b', black: true, seq: 3 });
+            // Back to what was written: nothing is left to write.
+            player.reportPosition(position({ slideId: 'b', number: 2, black: true, seq: 3 }));
+            player.reportPosition(position());
+            player.reportPosition(position({ slideId: 'b', number: 2, black: true, seq: 3 }));
+            await vi.advanceTimersByTimeAsync(400);
+            expect(reportPosition).toHaveBeenCalledTimes(2);
+            player.stop();
+        });
+
+        it('only logs a failure, and after a 403 does not ask again for a while', async () => {
+            vi.spyOn(console, 'warn').mockImplementation(() => {});
+            const forbidden = Object.assign(new Error('403'), { response: { status: 403 } });
+            const reportPosition = vi.fn<PlayerData['reportPosition']>(async () => {
+                throw forbidden;
+            });
+            // A clock that moves with the fake timers: the pause is measured on it.
+            vi.setSystemTime(NOW);
+            const player = createPlayer('demo', fakeData({ reportPosition, loadScreen: vi.fn(async () => clickScreen('click')) }), { ...fakeDeps(), now: () => new Date() });
+            await player.start();
+            player.reportPosition(position());
+            await vi.advanceTimersByTimeAsync(400);
+            expect(reportPosition).toHaveBeenCalledTimes(1);
+            expect(player.state.error).toBeNull();
+            player.reportPosition(position({ slideId: 'b', number: 2 }));
+            await vi.advanceTimersByTimeAsync(10 * 60_000);
+            expect(reportPosition).toHaveBeenCalledTimes(1);
+            // The pause over, the newest state goes out – once.
+            reportPosition.mockImplementation(async () => {});
+            await vi.advanceTimersByTimeAsync(INTERVALS.aliveForbiddenMs);
+            expect(reportPosition).toHaveBeenCalledTimes(2);
+            expect(reportPosition.mock.calls[1]![0]).toMatchObject({ slideId: 'b' });
+            player.stop();
+        });
+
+        it('writes nothing after stop', async () => {
+            const reportPosition = vi.fn<PlayerData['reportPosition']>(async () => {});
+            const player = createPlayer('demo', fakeData({ reportPosition, loadScreen: vi.fn(async () => clickScreen('click')) }), fakeDeps());
+            await player.start();
+            player.reportPosition(position());
+            player.stop();
+            await vi.advanceTimersByTimeAsync(1_000);
+            expect(reportPosition).not.toHaveBeenCalled();
+        });
     });
 });

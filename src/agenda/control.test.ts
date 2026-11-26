@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { controlsByEvent, latestOverride, overridesByScreen, planOverrideWrite, latestRehearsal, latestRehearsalCatalog, planControlWrite, planRehearsalCatalogWrite, planRehearsalWrite, readControl, readOverride, readRehearsal, readRehearsalCatalog, stepPart, stepSection } from './control';
+import { CLICK_MAX_AGE_MS, controlsByEvent, latestClick, latestOverride, pendingClicks, planClickWrite, readClick, type ClickDoc, overridesByScreen, planOverrideWrite, latestRehearsal, latestRehearsalCatalog, planControlWrite, planRehearsalCatalogWrite, planRehearsalWrite, readControl, readOverride, readRehearsal, readRehearsalCatalog, stepPart, stepSection } from './control';
 import type { AgendaEvent, LiveItem } from './live';
 import type { SongSheet } from './songsheet';
 
@@ -285,5 +285,148 @@ describe('planOverrideWrite and overridesByScreen (Plan.md 125 C)', () => {
         ]);
         expect(Object.keys(by).sort()).toEqual(['s1', 's2']);
         expect(by.s1!.ended).toBe(true);
+    });
+});
+
+describe('the click value (Plan.md 124 C)', () => {
+    const click = (over: Partial<ClickDoc> = {}): ClickDoc => ({
+        kind: 'click',
+        screenId: 's1',
+        playlistId: 'p1',
+        actions: [
+            { seq: 4, do: 'next' },
+            { seq: 5, do: 'goto', slideId: 'sl2' },
+        ],
+        at: '2026-11-26T10:00:00Z',
+        by: 'Anna',
+        ...over,
+    });
+
+    it('reads a JSON string and an object', () => {
+        expect(readClick(JSON.stringify(click()))).toEqual(click());
+        expect(readClick(click())).toEqual(click());
+    });
+
+    it('leaves out damaged actions, sorts by seq and keeps the latest ten', () => {
+        const damaged = {
+            ...click(),
+            actions: [
+                { seq: 2, do: 'goto' },
+                { seq: 1.5, do: 'next' },
+                { seq: 3, do: 'jump' },
+                'x',
+                { seq: 7, do: 'black', slideId: 'ignored' },
+                { seq: 6, do: 'previous' },
+            ],
+        };
+        expect(readClick(damaged)!.actions).toEqual([
+            { seq: 6, do: 'previous' },
+            { seq: 7, do: 'black' },
+        ]);
+        const many = { ...click(), actions: Array.from({ length: 14 }, (_, i) => ({ seq: 14 - i, do: 'next' })) };
+        expect(readClick(many)!.actions.map((a) => a.seq)).toEqual([5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
+    });
+
+    it('is no click value without screen, presentation or time – and not fooled by the other values', () => {
+        expect(readClick({ ...click(), screenId: '' })).toBeNull();
+        expect(readClick({ ...click(), playlistId: undefined })).toBeNull();
+        expect(readClick({ ...click(), at: 'gestern' })).toBeNull();
+        expect(readClick('{kaputt')).toBeNull();
+        expect(readClick(null)).toBeNull();
+        expect(readClick({ kind: 'override', screenId: 's1', playlistId: 'p1', until: '2026-11-26T12:00:00Z', at: '2026-11-26T10:00:00Z' })).toBeNull();
+    });
+
+    it('is skipped by every other reader of steuerung, and skips theirs', () => {
+        const value = JSON.stringify(click());
+        expect(readControl(value)).toBeNull();
+        expect(readRehearsal(value)).toBeNull();
+        expect(readOverride(value)).toBeNull();
+        expect(readRehearsalCatalog(value)).toBeNull();
+        expect(controlsByEvent([{ value }])).toEqual({});
+        expect(latestRehearsal([{ value }])).toBeNull();
+        expect(latestOverride([{ value }], 's1')).toBeNull();
+        expect(overridesByScreen([{ value }])).toEqual({});
+        expect(latestRehearsalCatalog([{ value }])).toBeNull();
+        const other = JSON.stringify({ kind: 'override', screenId: 's1', playlistId: 'p1', until: '2026-11-26T12:00:00Z', at: '2026-11-26T10:00:00Z' });
+        expect(readClick(other)).toBeNull();
+        expect(planOverrideWrite([{ id: 1, value }], 's1', Date.parse('2026-11-26T10:00:00Z'))).toEqual({ updateId: null, removeIds: [] });
+        expect(planRehearsalWrite([{ id: 1, value }], 0)).toEqual({ updateId: null, removeIds: [] });
+        expect(planRehearsalCatalogWrite([{ id: 1, value }])).toEqual({ updateId: null, removeIds: [] });
+        expect(planControlWrite([{ id: 1, value }], { eventId: 5, itemIndex: 0, section: 0, at: '2026-11-26T10:00:00Z' }, Date.parse('2030-01-01'))).toEqual({ updateId: null, removeIds: [] });
+    });
+
+    it('finds the latest value of the screen', () => {
+        const values = [
+            { value: JSON.stringify(click({ at: '2026-11-26T10:00:00Z' })) },
+            { value: JSON.stringify(click({ at: '2026-11-26T10:05:00Z', playlistId: 'p2' })) },
+            { value: JSON.stringify(click({ screenId: 's2', at: '2026-11-26T11:00:00Z' })) },
+        ];
+        expect(latestClick(values, 's1')!.playlistId).toBe('p2');
+        expect(latestClick(values, 's3')).toBeNull();
+    });
+
+    it('plans a write: one value per screen, doubles go, the values of others stay', () => {
+        const value = (screenId: string, at: string) => JSON.stringify(click({ screenId, at }));
+        const plan = planClickWrite(
+            [
+                { id: 1, value: value('s1', '2026-11-26T10:00:00Z') },
+                { id: 2, value: value('s1', '2026-11-26T10:05:00Z') },
+                { id: 3, value: value('s2', '2026-11-26T09:00:00Z') },
+                { id: 4, value: '{"kind":"override"}' },
+            ],
+            's1',
+        );
+        expect(plan).toEqual({ updateId: 2, removeIds: [1] });
+        expect(planClickWrite([], 's1')).toEqual({ updateId: null, removeIds: [] });
+    });
+});
+
+describe('pendingClicks (Plan.md 124 C)', () => {
+    const now = Date.parse('2026-11-26T10:00:30Z');
+    const doc = (over: Partial<ClickDoc> = {}): ClickDoc => ({
+        kind: 'click',
+        screenId: 's1',
+        playlistId: 'p1',
+        actions: [
+            { seq: 3, do: 'next' },
+            { seq: 4, do: 'black' },
+            { seq: 5, do: 'previous' },
+        ],
+        at: '2026-11-26T10:00:20Z',
+        ...over,
+    });
+
+    it('catches nothing up at the first read, but counts the latest seq as applied', () => {
+        expect(pendingClicks(doc(), null, 'p1', now)).toEqual({ seq: 5, actions: [] });
+        expect(pendingClicks(null, null, 'p1', now)).toEqual({ seq: 0, actions: [] });
+        // Also for a value meant for another presentation: what was clicked before is no news later.
+        expect(pendingClicks(doc({ playlistId: 'p2' }), null, 'p1', now)).toEqual({ seq: 5, actions: [] });
+    });
+
+    it('gives the actions above the last seq, in order', () => {
+        expect(pendingClicks(doc(), 3, 'p1', now)).toEqual({
+            seq: 5,
+            actions: [
+                { seq: 4, do: 'black' },
+                { seq: 5, do: 'previous' },
+            ],
+        });
+        expect(pendingClicks(doc(), 5, 'p1', now)).toEqual({ seq: 5, actions: [] });
+        expect(pendingClicks(null, 5, 'p1', now)).toEqual({ seq: 5, actions: [] });
+    });
+
+    it('ignores a value for another presentation', () => {
+        expect(pendingClicks(doc({ playlistId: 'p2' }), 3, 'p1', now)).toEqual({ seq: 5, actions: [] });
+    });
+
+    it('ignores a click older than two minutes or more than five minutes ahead (clock)', () => {
+        const old = new Date(now - CLICK_MAX_AGE_MS - 1000).toISOString();
+        expect(pendingClicks(doc({ at: old }), 3, 'p1', now).actions).toEqual([]);
+        const justInTime = new Date(now - CLICK_MAX_AGE_MS + 1000).toISOString();
+        expect(pendingClicks(doc({ at: justInTime }), 3, 'p1', now).actions).toHaveLength(2);
+        const ahead = new Date(now + 5 * 60_000 + 1000).toISOString();
+        expect(pendingClicks(doc({ at: ahead }), 3, 'p1', now).actions).toEqual([]);
+        const slightlyAhead = new Date(now + 60_000).toISOString();
+        expect(pendingClicks(doc({ at: slightlyAhead }), 3, 'p1', now).actions).toHaveLength(2);
     });
 });
