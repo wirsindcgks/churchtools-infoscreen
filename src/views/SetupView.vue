@@ -10,7 +10,7 @@ import PageHeader from '../designer/PageHeader.vue';
 import SelectMenu from '../designer/SelectMenu.vue';
 import { fetchCalendars, fetchPersonFields, fetchPublicCalendars, fetchResourceMasterdata, fetchSecurityLevels, fetchServiceGroups, fetchServices, type Calendar, type PersonFieldInfo, type SecurityLevel } from '../ct/api';
 import { serviceChoices, type ServiceGroupResponse, type ServiceInfo } from '../appointments/services';
-import { currentPerson, httpStatus, instanceBaseUrl, personUrl, serverMessage } from '../ct/client';
+import { currentPerson, displayName, httpStatus, instanceBaseUrl, personUrl, serverMessage } from '../ct/client';
 import { controlUrl, playerUrl } from '../designer/player-url';
 import QrCode from '../designer/QrCode.vue';
 import { CONTROL_CATEGORY } from '../agenda/control';
@@ -78,6 +78,7 @@ import { isAdministrator } from '../designer/administrator';
 import { maySaveSettings, type ModulePermissions } from '../designer/rights';
 import { useConfirm } from '../designer/useConfirm';
 import { getRepository } from '../store/backend';
+import ScreenSettingsDialog from '../designer/ScreenSettingsDialog.vue';
 import { CATEGORIES, STATUS_CATEGORY, type CategoryKey, type ScreenRepository } from '../store/screen-repository';
 import { CHANGELOG_CATEGORY } from '../store/changelog';
 import { DRAFTS_CATEGORY } from '../store/drafts';
@@ -1749,6 +1750,23 @@ watch(page, (now) => {
  * can read; the address exists only on this page and in the kiosk browser.
  */
 const screens = ref<ScreenDoc[]>([]);
+
+/**
+ * The settings of a screen from here too (Plan.md 132 C, #407): the screen chosen for the address opens the dialog of its card on
+ * the start page. Both ways are the administrators' alone; the name of the one saving comes with the first opening.
+ */
+const configuringScreen = ref<ScreenDoc | null>(null);
+const settingsAuthor = ref<string | null>(null);
+async function openScreenSettings(): Promise<void> {
+    const screen = screens.value.find((sc) => sc.slug === device.slug);
+    if (!screen) return;
+    if (settingsAuthor.value === null) settingsAuthor.value = await currentPerson().then(displayName, () => '');
+    configuringScreen.value = screen;
+}
+async function screenSettingsSaved(): Promise<void> {
+    configuringScreen.value = null;
+    if (repository) screens.value = await repository.listScreens();
+}
 const device = reactive({
     slug: '',
     username: '',
@@ -2366,6 +2384,9 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                             >
                                 {{ t.setup.tv.create }}
                             </button>
+                            <button class="d-btn" type="button" :disabled="!device.slug" data-testid="tv-screen-settings" @click="openScreenSettings">
+                                {{ t.setup.tv.screenSettings }}
+                            </button>
                             <span v-if="device.busy" class="muted">{{ t.setup.tv.signingIn }}</span>
                         </div>
                     </form>
@@ -2381,6 +2402,14 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         </p>
                     </div>
                 </section>
+                <ScreenSettingsDialog
+                    v-if="page === 'tv' && configuringScreen && repository"
+                    :screen="configuringScreen"
+                    :repository="repository"
+                    :author="settingsAuthor ?? ''"
+                    @close="configuringScreen = null"
+                    @saved="screenSettingsSaved"
+                />
             </template>
             <p v-if="page === 'overview'" class="muted small version" data-testid="app-version">
                 {{ t.setup.version.before(APP_VERSION) }}

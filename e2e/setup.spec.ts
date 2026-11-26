@@ -129,6 +129,18 @@ test('the assistant explains itself in demo mode instead of offering to write', 
     await page.screenshot({ path: 'test-results/setup-assistant.png', fullPage: true });
 });
 
+test('the page of the TV addresses opens the settings of the chosen screen, as its card does (Plan.md 132 C)', async ({ page }) => {
+    await page.goto('./einstellungen/fernseher');
+    await page.getByTestId('tv-screen-settings').click();
+    const dialog = page.getByTestId('screen-settings');
+    await expect(page.getByTestId('settings-name')).toHaveValue('Demo – Foyer');
+    await page.getByTestId('settings-name').fill('Foyer links');
+    await page.getByTestId('settings-save').click();
+    await expect(dialog).toHaveCount(0);
+    // The list of the form follows the new name.
+    await expect(page.getByTestId('tv-screen')).toContainText('Foyer links');
+});
+
 test('the settings make a TV address that signs the device in, without keeping the password (way B)', async ({ page }) => {
     const bodies: unknown[] = [];
     // ChurchTools' answer is simulated: nothing is asked of the instance, nothing written.
