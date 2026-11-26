@@ -121,6 +121,19 @@ describe('the inspector of the slide (Plan.md 79, B2)', () => {
         expect(wrapper.get('[data-testid="section-playlist"] summary').text()).not.toContain('Fortschritt');
     });
 
+    it('gathers name, display time and "Anzeigen" under a section "Folie" of their own, open at first and outside the group (Plan.md 132 B)', async () => {
+        const { editor, wrapper } = await setup();
+        const section = wrapper.get('[data-testid="section-slide"]');
+        expect(section.attributes('open')).toBeDefined();
+        expect(section.attributes('name')).toBeUndefined();
+        for (const id of ['slide-name', 'duration-input', 'slide-enabled']) expect(section.find(`[data-testid="${id}"]`).exists()).toBe(true);
+        editor.updateSlide({ enabled: false, durationSeconds: 12 });
+        (section.element as HTMLDetailsElement).open = false;
+        section.element.dispatchEvent(new Event('toggle'));
+        await flushPromises();
+        expect(wrapper.get('[data-testid="section-slide"] summary').text()).toContain('12 s · ausgeblendet');
+    });
+
     it('says where the times of the playlist are set instead of a bare "Zeitplan" (Plan.md 98, D)', async () => {
         const { wrapper } = await setup();
         expect(wrapper.get('[data-testid="schedule-hint"]').text()).toContain('legt der Zeitplan des Bildschirms fest');

@@ -915,8 +915,12 @@ export const t = {
             'Änderungen an dieser Folie – auch Dauer und „Abgeschaltet" – gelten in allen genannten Präsentationen. ' +
             '„Verknüpfung lösen" macht daraus eine eigene Kopie nur für diese Präsentation.',
         unlink: 'Verknüpfung lösen',
+        slideSection: 'Folie',
         displaySeconds: 'Anzeigedauer',
+        displaySecondsInfo: 'Wie lange die Folie steht, bevor die nächste kommt. Bausteine mit mehreren Seiten können sie verlängern.',
         enabled: 'Anzeigen',
+        enabledInfo: 'Aus: Die Folie bleibt in der Präsentation, wird auf den Bildschirmen aber übersprungen.',
+        hiddenShort: 'ausgeblendet',
         runsLonger: (seconds: number) => `Läuft ${seconds} s – so lange braucht die Terminliste für alle Seiten.`,
         background: 'Hintergrund',
         // The division of the slide (Plan.md 87 B): the summary names it in words, the tiles in one or two.
