@@ -60,6 +60,24 @@ describe('useRotation – what a progress bar counts from (Plan.md 86)', () => {
         expect(rotation.startedAt.value).toBe(Date.now());
     });
 
+    it('held without end (per click, Plan.md 124 C) stays on its slide however long, and a step moves it on', () => {
+        const { rotation } = setup([makeSlide({ id: 'a', durationSeconds: 5 }), makeSlide({ id: 'b', durationSeconds: 5 }), makeSlide({ id: 'c', durationSeconds: 5 })]);
+        rotation.setPaused(true);
+        vi.advanceTimersByTime(3_600_000);
+        expect(rotation.current.value?.id).toBe('a');
+        rotation.step(1);
+        vi.advanceTimersByTime(3_600_000);
+        expect(rotation.current.value?.id).toBe('b');
+        // `step(0)` – a page turned within the slide – leaves it where it is, and so does a step back to the start.
+        rotation.step(0);
+        expect(rotation.current.value?.id).toBe('b');
+        rotation.step(-1);
+        rotation.step(-1);
+        expect(rotation.current.value?.id).toBe('c');
+        vi.advanceTimersByTime(3_600_000);
+        expect(rotation.current.value?.id).toBe('c');
+    });
+
     it('stands at the start on a slide stepped to while held', () => {
         const { rotation } = setup([makeSlide({ id: 'a', durationSeconds: 10 }), makeSlide({ id: 'b', durationSeconds: 10 })]);
         vi.advanceTimersByTime(4000);

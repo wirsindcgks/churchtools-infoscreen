@@ -279,6 +279,106 @@ export function planOverrideWrite(values: readonly { id: number; value: string }
     return { updateId: same[0]?.id ?? null, removeIds: [...removeIds, ...same.slice(1).map((v) => v.id)] };
 }
 
+/** One click of the click steering (Plan.md 124 C). */
+export interface ClickAction {
+    /** Rises with every click of the screen; the player applies what is above the last one it knows. */
+    seq: number;
+    do: 'next' | 'previous' | 'black' | 'goto';
+    /** `SlideDoc.id` – only at `goto`. */
+    slideId?: string;
+}
+
+/** How many of the latest clicks the value keeps – so that none is lost which came between two reads of the player. */
+export const CLICK_KEEP = 10;
+/** A click older than this does not count any more (a player that was off, a phone that waited for the network). */
+export const CLICK_MAX_AGE_MS = 2 * 60 * 1000;
+/** How far after `now` the time of a click may lie (clocks differ). */
+export const CLICK_CLOCK_TOLERANCE_MS = 5 * 60 * 1000;
+
+/**
+ * The clicks on a screen by the musicians (Plan.md 124 C): one value per screen in `steuerung`, written from the phone page, read by the
+ * player of a screen released for the click steering. Tells itself apart from the other values by `kind`.
+ */
+export interface ClickDoc {
+    kind: 'click';
+    /** `ScreenDoc.id`. */
+    screenId: string;
+    /** `PlaylistDoc.id` the clicks were meant for; the player applies them only while it runs this presentation. */
+    playlistId: string;
+    /** The latest clicks (at most {@link CLICK_KEEP}) by `seq`, rising. */
+    actions: ClickAction[];
+    /** ISO time of the latest click. */
+    at: string;
+    /** Name of the musician. */
+    by?: string;
+}
+
+/** Reads one value tolerantly: `null` for anything that is no click value; damaged actions are left out; never throws. */
+export function readClick(raw: unknown): ClickDoc | null {
+    let value = raw;
+    if (typeof value === 'string') {
+        try {
+            value = JSON.parse(value);
+        } catch {
+            return null;
+        }
+    }
+    if (typeof value !== 'object' || value === null) return null;
+    const r = value as Record<string, unknown>;
+    if (r.kind !== 'click') return null;
+    if (typeof r.screenId !== 'string' || !r.screenId || typeof r.playlistId !== 'string' || !r.playlistId || !isoTime(r.at)) return null;
+    const actions: ClickAction[] = [];
+    for (const entry of Array.isArray(r.actions) ? r.actions : []) {
+        if (typeof entry !== 'object' || entry === null) continue;
+        const e = entry as Record<string, unknown>;
+        const seq = whole(e.seq, 0);
+        if (seq === null) continue;
+        if (e.do === 'next' || e.do === 'previous' || e.do === 'black') actions.push({ seq, do: e.do });
+        else if (e.do === 'goto' && typeof e.slideId === 'string' && e.slideId) actions.push({ seq, do: 'goto', slideId: e.slideId });
+    }
+    actions.sort((a, b) => a.seq - b.seq);
+    const doc: ClickDoc = { kind: 'click', screenId: r.screenId, playlistId: r.playlistId, actions: actions.slice(-CLICK_KEEP), at: r.at };
+    if (typeof r.by === 'string' && r.by) doc.by = r.by;
+    return doc;
+}
+
+/** The click value of this screen with the latest `at`; `null` where there is none. */
+export function latestClick(values: readonly { value: string }[], screenId: string): ClickDoc | null {
+    let latest: ClickDoc | null = null;
+    for (const { value } of values) {
+        const doc = readClick(value);
+        if (doc && doc.screenId === screenId && (!latest || Date.parse(doc.at) > Date.parse(latest.at))) latest = doc;
+    }
+    return latest;
+}
+
+/** What a write of the click value of `screenId` does: the latest value of that screen is changed (none means create), its doubles go. Nothing else is touched. */
+export function planClickWrite(values: readonly { id: number; value: string }[], screenId: string): { updateId: number | null; removeIds: number[] } {
+    const same: { id: number; at: number }[] = [];
+    for (const { id, value } of values) {
+        const read = readClick(value);
+        if (read && read.screenId === screenId) same.push({ id, at: Date.parse(read.at) });
+    }
+    same.sort((a, b) => b.at - a.at);
+    return { updateId: same[0]?.id ?? null, removeIds: same.slice(1).map((v) => v.id) };
+}
+
+/**
+ * The clicks the player applies now (Plan.md 124 C) and the `seq` it has applied afterwards. `lastSeq` is `null` at the first read after
+ * the start or a change of the presentation: nothing is caught up, the latest `seq` counts as applied. Later, an action counts if its
+ * `seq` is above `lastSeq`, the value is meant for the running presentation and its `at` is no older than {@link CLICK_MAX_AGE_MS}
+ * and no further ahead than {@link CLICK_CLOCK_TOLERANCE_MS}. `nowMs` is the time of ChurchTools (the device clock corrected by the skew).
+ */
+export function pendingClicks(doc: ClickDoc | null, lastSeq: number | null, runningPlaylistId: string, nowMs: number): { seq: number; actions: ClickAction[] } {
+    const top = doc?.actions.reduce((most, a) => Math.max(most, a.seq), 0) ?? 0;
+    if (!doc || lastSeq === null) return { seq: lastSeq === null ? top : lastSeq, actions: [] };
+    const seq = Math.max(lastSeq, top);
+    if (doc.playlistId !== runningPlaylistId) return { seq, actions: [] };
+    const at = Date.parse(doc.at);
+    if (nowMs - at > CLICK_MAX_AGE_MS || at - nowMs > CLICK_CLOCK_TOLERANCE_MS) return { seq, actions: [] };
+    return { seq, actions: doc.actions.filter((a) => a.seq > lastSeq) };
+}
+
 /** What a write of a rehearsal choice does: the latest rehearsal value is changed (none means create), further ones go. Nothing else is touched. */
 export function planRehearsalWrite(values: readonly { id: number; value: string }[], nowMs: number): { updateId: number | null; removeIds: number[] } {
     void nowMs;

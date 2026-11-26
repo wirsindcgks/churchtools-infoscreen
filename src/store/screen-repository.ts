@@ -16,9 +16,10 @@
 import { needsAppointmentRooms } from '../appointments/rooms';
 import { appointmentServiceIds } from '../appointments/services';
 import { httpStatus } from '../ct/client';
-import { CONTROL_CATEGORY, controlsByEvent, latestOverride, overridesByScreen, planOverrideWrite, latestRehearsal, latestRehearsalCatalog, planControlWrite, planRehearsalCatalogWrite, planRehearsalWrite, type ControlDoc, type OverrideDoc, type RehearsalCatalogDoc, type RehearsalDoc } from '../agenda/control';
+import { CONTROL_CATEGORY, controlsByEvent, latestClick, latestOverride, planClickWrite, overridesByScreen, planOverrideWrite, latestRehearsal, latestRehearsalCatalog, planControlWrite, planRehearsalCatalogWrite, planRehearsalWrite, type ClickDoc, type ControlDoc, type OverrideDoc, type RehearsalCatalogDoc, type RehearsalDoc } from '../agenda/control';
 import { rehearsalPlaylists } from '../agenda/songsheet';
 import { heartbeatTime, readHeartbeat, type HeartbeatDoc } from '../model/heartbeat';
+import { fitPositionSlides, readPosition, type PositionDoc } from '../model/position';
 import {
     MAX_VALUE_LENGTH,
     ValueTooLargeError,
@@ -280,6 +281,8 @@ export interface LoadedScreen extends ScreenBundle {
      */
     rehearsalScreenIds?: string[];
     rehearsalPlaylistIds?: string[];
+    /** The screens released for the click steering (Plan.md 124 C); missing = none. Set only where this screen is released; an offline copy of an older player lacks it. */
+    clickScreenIds?: string[];
     /**
      * The services an administrator allows on screens (schema 1.20, Plan.md 58); empty without settings.
      * An offline copy of an older player lacks it – read it with `?? []`.
@@ -354,6 +357,8 @@ export class ScreenRepository {
     private controlId: number | null = null;
     /** Value ids of the signs of life by slug, to spare the read. */
     private readonly heartbeatValueIds = new Map<string, number>();
+    /** The value of the position of each screen (by `ScreenDoc.id`), once known – so that a write is one request. */
+    private readonly positionValueIds = new Map<string, number>();
     /** The drafts of playlists and slides (Plan.md 79, Paket E). */
     readonly drafts: DraftStore;
     /** The changelog (Plan.md 100): written after a save has succeeded, never part of it. */
@@ -553,6 +558,38 @@ export class ScreenRepository {
         }
     }
 
+    /** The click value of a screen (Plan.md 124 C); `null` where there is none, the category is missing or unreadable (`403`). */
+    async readClick(screenId: string): Promise<ClickDoc | null> {
+        try {
+            const categoryId = await this.controlCategoryId();
+            if (categoryId === null) return null;
+            return latestClick(await this.kv.listValues(categoryId), screenId);
+        } catch (error) {
+            if (httpStatus(error) === 403) return null;
+            throw error;
+        }
+    }
+
+    /**
+     * Writes the click value of a screen: changes the latest value of that screen or creates it, doubles go. Every other value of
+     * `steuerung` stays. Throws where the category is missing; a failed cleanup is only logged.
+     */
+    async writeClick(doc: ClickDoc): Promise<void> {
+        const categoryId = await this.controlCategoryId();
+        if (categoryId === null) throw new Error(tr.controlUnavailable);
+        const plan = planClickWrite(await this.kv.listValues(categoryId), doc.screenId);
+        const text = JSON.stringify(doc);
+        if (plan.updateId !== null) await this.kv.updateValue(categoryId, plan.updateId, text);
+        else await this.kv.createValue(categoryId, text);
+        for (const id of plan.removeIds) {
+            try {
+                await this.kv.deleteValue(categoryId, id);
+            } catch (error) {
+                console.warn('Ein doppelter Klickwert konnte nicht entfernt werden:', error);
+            }
+        }
+    }
+
     /** The latest rehearsal choice of the musicians (Plan.md 121, "Proben"); `null` where there is none, the category is missing or unreadable (`403`). */
     async readRehearsal(): Promise<RehearsalDoc | null> {
         try {
@@ -668,6 +705,57 @@ export class ScreenRepository {
         return new Map([...latest].map(([slug, { doc }]) => [slug, doc]));
     }
 
+    /**
+     * Writes where a screen stands (Plan.md 124 C): changes its value, or creates it when there is none yet. Does nothing without the
+     * category. Errors are the caller's – the player swallows them.
+     */
+    async writePosition(doc: PositionDoc): Promise<void> {
+        const categoryId = await this.statusCategoryId();
+        if (categoryId === null) return;
+        const text = JSON.stringify(fitPositionSlides(doc));
+        const known = this.positionValueIds.get(doc.screenId);
+        if (known !== undefined) {
+            try {
+                await this.kv.updateValue(categoryId, known, text);
+                return;
+            } catch (error) {
+                this.positionValueIds.delete(doc.screenId);
+                if (httpStatus(error) !== 404) throw error;
+            }
+        }
+        const current = (await this.readPositions(categoryId)).get(doc.screenId);
+        if (current) {
+            this.positionValueIds.set(doc.screenId, current.valueId);
+            await this.kv.updateValue(categoryId, current.valueId, text);
+            return;
+        }
+        this.positionValueIds.set(doc.screenId, (await this.kv.createValue(categoryId, text)).id);
+    }
+
+    /** Where a screen stands (Plan.md 124 C); `null` where there is no value or this person cannot see the category (`403`). */
+    async readPosition(screenId: string): Promise<PositionDoc | null> {
+        try {
+            const categoryId = await this.statusCategoryId();
+            if (categoryId === null) return null;
+            return (await this.readPositions(categoryId)).get(screenId)?.doc ?? null;
+        } catch (error) {
+            if (httpStatus(error) === 403) return null;
+            throw error;
+        }
+    }
+
+    /** By screen id, the value with the latest `at`; values that are no position are skipped. */
+    private async readPositions(categoryId: number): Promise<Map<string, { valueId: number; doc: PositionDoc }>> {
+        const latest = new Map<string, { valueId: number; doc: PositionDoc }>();
+        for (const value of await this.kv.listValues(categoryId)) {
+            const doc = readPosition(value.value);
+            if (!doc) continue;
+            const before = latest.get(doc.screenId);
+            if (!before || Date.parse(doc.at) > Date.parse(before.doc.at)) latest.set(doc.screenId, { valueId: value.id, doc });
+        }
+        return latest;
+    }
+
     /** By slug, the value with the latest `at`; values that are not signs of life are skipped. */
     private async readHeartbeats(categoryId: number): Promise<Map<string, { valueId: number; doc: HeartbeatDoc }>> {
         const latest = new Map<string, { valueId: number; doc: HeartbeatDoc }>();
@@ -762,6 +850,7 @@ export class ScreenRepository {
         // Settings that cannot be read allow no service: the strict side. The rooms then follow the type "Raum".
         const settings = await this.loadSettings().catch(() => null);
         const released = !!settings?.rehearsalScreenIds?.includes(screen.id);
+        const clickReleased = !!settings?.clickScreenIds?.includes(screen.id);
 
         const playlistIds = playlistIdsOf(screen);
         const byId = new Map(running.playlists.map((p) => [p.doc.id, p.doc]));
@@ -811,7 +900,7 @@ export class ScreenRepository {
 
         const allowedServiceIds = settings?.allowedServiceIds ?? [];
         const roomTypeIds = settings?.roomTypeIds;
-        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, templates, allowedServiceIds, roomTypeIds, screenCalendarIds: settings?.screenCalendarIds, peopleGroupId: settings?.peopleGroupId, peopleDeviceIds: settings?.peopleDeviceIds, peopleGroupIds: settings?.peopleGroupIds, personFieldKeys: settings?.personFields ?? settings?.personFieldKeys, ...(released ? { rehearsalScreenIds: settings!.rehearsalScreenIds, rehearsalPlaylistIds } : {}), issues };
+        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, templates, allowedServiceIds, roomTypeIds, screenCalendarIds: settings?.screenCalendarIds, peopleGroupId: settings?.peopleGroupId, peopleDeviceIds: settings?.peopleDeviceIds, peopleGroupIds: settings?.peopleGroupIds, personFieldKeys: settings?.personFields ?? settings?.personFieldKeys, ...(released ? { rehearsalScreenIds: settings!.rehearsalScreenIds, rehearsalPlaylistIds } : {}), ...(clickReleased ? { clickScreenIds: settings!.clickScreenIds } : {}), issues };
     }
 
     /**

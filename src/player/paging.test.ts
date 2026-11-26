@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeSlide } from '../model/testing';
 import type { Block } from '../model/schema';
-import { GROUP_SECONDS, PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressOn, movePage, paginateByHeight, PEOPLE_SECONDS, POST_SECONDS, slideSeconds, turnsWithin } from './paging';
+import { GROUP_SECONDS, PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressOn, movePage, paginateByHeight, PEOPLE_SECONDS, POST_SECONDS, slideSeconds, reportTurn, turnsWithin } from './paging';
 
 const style = { fontFamily: 'sans', fontSize: 40, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
 const list = (overrides: Partial<Extract<Block, { type: 'appointment-list' }>> = {}): Block => ({
@@ -285,6 +285,18 @@ describe('paging by a tap within the slide (Plan.md 127 D)', () => {
         expect(turnsWithin(slide, { c: { page: 0, count: 1 } }, 1)).toBe(false);
         expect(turnsWithin(slide, { other: { page: 0, count: 4 } }, 1)).toBe(false);
         expect(turnsWithin(slide, { a: { page: 0, count: 3 } }, 0)).toBe(false);
+    });
+
+    it('counts a block that does not turn by itself while the presentation is held "per click" (Plan.md 124 C)', () => {
+        const held: { turns: Record<string, { page: number; count: number }>; handPaging?: boolean } = { turns: {} };
+        reportTurn(held, 'a', 0, 3, false);
+        expect(held.turns).toEqual({});
+        held.handPaging = true;
+        reportTurn(held, 'a', 1, 3, false);
+        expect(held.turns).toEqual({ a: { page: 1, count: 3 } });
+        reportTurn(held, 'b', 0, 1, false);
+        expect(held.turns.b).toBeUndefined();
+        expect(turnsWithin(slide, held.turns, 1)).toBe(true);
     });
 
     it('moves a page within 0 … count - 1, without wrapping around', () => {

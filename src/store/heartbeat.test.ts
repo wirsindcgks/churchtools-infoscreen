@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { HeartbeatDoc } from '../model/heartbeat';
+import type { PositionDoc } from '../model/position';
 import { MemoryKv } from './memory-kv';
 import { ScreenRepository } from './screen-repository';
 
@@ -128,5 +129,66 @@ describe('listHeartbeats', () => {
         expect(list.get('foyer')!.at).toBe('2026-10-05T10:09:00Z');
         expect(list.get('saal')!.at).toBe('kein Datum');
         expect(list.size).toBe(2);
+    });
+});
+
+describe('the position of a screen (Plan.md 124 C)', () => {
+    const position = (seq: number, at: string, over: Partial<PositionDoc> = {}): PositionDoc => ({
+        kind: 'position',
+        screenId: 's1',
+        playlistId: 'p1',
+        slideId: 'sl1',
+        number: 1,
+        total: 2,
+        slides: [
+            { id: 'sl1', name: 'Eins' },
+            { id: 'sl2', name: 'Zwei' },
+        ],
+        seq,
+        at,
+        ...over,
+    });
+
+    it('does nothing without the category and reads nothing', async () => {
+        const kv = new MemoryKv();
+        const repo = new ScreenRepository(kv);
+        await repo.writePosition(position(0, '2026-11-26T10:00:00Z'));
+        expect(kv.writes).toEqual([]);
+        expect(await repo.readPosition('s1')).toBeNull();
+    });
+
+    it('creates one value per screen, then changes it with one request', async () => {
+        const { kv, repo, id } = await withStatus();
+        await repo.writePosition(position(0, '2026-11-26T10:00:00Z'));
+        await repo.writePosition(position(1, '2026-11-26T10:00:05Z', { slideId: 'sl2', number: 2, black: true, songsheet: true }));
+        await repo.writePosition(position(0, '2026-11-26T10:00:06Z', { screenId: 's2' }));
+        expect(await kv.listValues(id)).toHaveLength(2);
+        expect(kv.writes.filter((w) => w.op === 'createValue')).toHaveLength(2);
+        const read = await repo.readPosition('s1');
+        expect(read).toMatchObject({ slideId: 'sl2', number: 2, total: 2, black: true, songsheet: true, seq: 1 });
+        expect(read!.slides.map((s) => s.name)).toEqual(['Eins', 'Zwei']);
+    });
+
+    it('is skipped by the signs of life – and skips them', async () => {
+        const { repo } = await withStatus();
+        await repo.writeHeartbeat(beat('demo', '2026-11-26T10:00:00Z'));
+        await repo.writePosition(position(0, '2026-11-26T10:00:01Z'));
+        const beats = await repo.listHeartbeats();
+        expect([...beats!.keys()]).toEqual(['demo']);
+        await repo.writeHeartbeat(beat('demo', '2026-11-26T10:05:00Z'));
+        expect((await repo.readPosition('s1'))!.at).toBe('2026-11-26T10:00:01Z');
+        expect(await repo.readPosition('demo')).toBeNull();
+    });
+
+    it('keeps a value within the limit of a value by leaving slides out', async () => {
+        const { repo, kv, id } = await withStatus();
+        const slides = Array.from({ length: 300 }, (_, i) => ({ id: `slide-${i}-${'x'.repeat(20)}`, name: 'n'.repeat(80) }));
+        await repo.writePosition(position(0, '2026-11-26T10:00:00Z', { slides, total: 300 }));
+        const stored = (await kv.listValues(id))[0]!.value;
+        expect(stored.length).toBeLessThanOrEqual(10_000);
+        const read = await repo.readPosition('s1');
+        expect(read!.total).toBe(300);
+        expect(read!.slides.length).toBeGreaterThan(20);
+        expect(read!.slides[0]!.name).toHaveLength(40);
     });
 });

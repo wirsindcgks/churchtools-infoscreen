@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openSection, pickOption } from './helpers';
 
 test.use({ viewport: { width: 1280, height: 720 } });
 
@@ -189,4 +190,38 @@ test('kiosk: arrows set to "after the first tap" appear with it (Plan.md 127 C)'
     await expect(page.getByTestId('kiosk-arrow-forward')).toBeVisible();
     await expect(page.getByTestId('kiosk-arrow-back')).toBeVisible();
     await expect(page.getByTestId('player')).toHaveCSS('cursor', 'auto');
+});
+
+test('"per Klick" at a released screen: the first slide stays, no bar; at an unreleased one it runs by time (Plan.md 124 C)', async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await openSection(page, 'playlist');
+    await page.getByTestId('playlist-progress').check();
+    await pickOption(page, 'playlist-advance', 'Per Klick');
+    await page.getByTestId('save').click();
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
+
+    // Not released yet: nobody could ever click, so it runs by time – with its bar.
+    await page.goto('./player?screen=demo');
+    await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
+    await expect(page.getByTestId('slide-progress')).toBeVisible();
+
+    // Release the screen in the settings (the page for it needs a ChurchTools session).
+    await page.evaluate(() => {
+        const key = 'infoscreen-designer.demo-store';
+        const state = JSON.parse(localStorage.getItem(key) ?? '');
+        const settings = state.categories.find((c: { shorty: string }) => c.shorty === 'settings');
+        const text = JSON.stringify({ schema: { major: 1, minor: 70 }, id: 'settings', kind: 'settings', clickScreenIds: ['demo-screen'] });
+        const list = state.values.find(([id]: [number]) => id === settings.id)[1];
+        list.push({ id: state.nextId++, value: text });
+        localStorage.setItem(key, JSON.stringify(state));
+    });
+    await page.goto('./player?screen=demo');
+    await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
+    await expect(page.getByTestId('slide-progress')).toHaveCount(0);
+    // The first slide has 8 seconds; by time the second would be on by now.
+    await page.waitForTimeout(10_000);
+    await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
+    await expect(page.getByTestId('slide-progress')).toHaveCount(0);
 });

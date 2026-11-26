@@ -103,6 +103,34 @@ describe('an appointment list with every appointment, page by page (Plan.md, 23)
         wrapper.unmount();
     });
 
+    it('held "per click" does not turn by itself, but reports its pages and follows a click (Plan.md 124 C)', async () => {
+        const { wrapper, context } = render(list(), 8, false, { handPaging: true, turns: {} });
+        await flushPromises();
+        await vi.advanceTimersByTimeAsync(60_000);
+        expect(wrapper.find('[data-testid="list-page"]').text()).toBe('1/3');
+        expect(context.turns).toEqual({ liste: { page: 0, count: 3 } });
+        context.pageStep = { by: 1, at: Date.now() };
+        await flushPromises();
+        expect(wrapper.find('[data-testid="list-page"]').text()).toBe('2/3');
+        expect(context.turns).toEqual({ liste: { page: 1, count: 3 } });
+        await vi.advanceTimersByTimeAsync(60_000);
+        expect(wrapper.find('[data-testid="list-page"]').text()).toBe('2/3');
+        context.pageStep = { by: -1, at: Date.now() + 1 };
+        await flushPromises();
+        expect(wrapper.find('[data-testid="list-page"]').text()).toBe('1/3');
+        wrapper.unmount();
+    });
+
+    it('does not follow a click in the designer preview', async () => {
+        const { wrapper, context } = render(list(), 8, false, { turns: {} });
+        await flushPromises();
+        context.pageStep = { by: 1, at: Date.now() };
+        await flushPromises();
+        expect(wrapper.find('[data-testid="list-page"]').text()).toBe('1/3');
+        expect(context.turns).toEqual({});
+        wrapper.unmount();
+    });
+
     it('shares out a longer slide among its pages', async () => {
         const { wrapper } = render(list(), 60);
         await flushPromises();

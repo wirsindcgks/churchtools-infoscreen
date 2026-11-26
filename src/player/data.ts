@@ -3,7 +3,7 @@
  * replaced in tests. Every request has a time limit.
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
-import type { ControlDoc, OverrideDoc, RehearsalDoc } from '../agenda/control';
+import type { ClickDoc, ControlDoc, OverrideDoc, RehearsalDoc } from '../agenda/control';
 import { liveItems, parsePosition, type AgendaEvent, type UpcomingAgenda, type LiveItem, type LivePosition } from '../agenda/live';
 import { arrangementSheet, isRehearsalSheet, pickSheetFile, readSongSheet, type SheetKind, type SongSheet } from '../agenda/songsheet';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
@@ -40,6 +40,7 @@ import { currentPerson, ensureSignedIn, httpStatus, instanceBaseUrl, type TokenL
 import { deniedPeople, nameFormatKeys, normalizeMembers, personFieldFormats, personFieldValues, unreleasedPeople, withPersonFields, type PeopleGroup } from '../groups/members';
 import { normalizeHomepage, type HomepageGroups } from '../groups/normalize';
 import type { HeartbeatDoc } from '../model/heartbeat';
+import type { PositionDoc } from '../model/position';
 import type { ScreenDoc, SlideDoc } from '../model/schema';
 import { normalizePosts, type Post } from '../posts/normalize';
 import { normalizeBookings, roomsOf, type RoomBookings } from '../rooms/normalize';
@@ -110,6 +111,8 @@ export interface PlayerData {
     rehearsal(): Promise<RehearsalDoc | null>;
     /** The latest override of a screen by the musicians (Plan.md 125 B); `null` where there is none or it is not readable (`403`). Other errors fail. */
     override(screenId: string): Promise<OverrideDoc | null>;
+    /** The click value of a screen (Plan.md 124 C); `null` where there is none or it is not readable (`403`). Other errors fail. */
+    click(screenId: string): Promise<ClickDoc | null>;
     /**
      * The song of a rehearsal choice as a point the block "Liedblatt" draws: its arrangement with the raw file (`sheetOf` transposes and
      * applies the flow, as the phone page does, so the parts are the same on both). `null` where the song is gone or not readable (`403`/`404`);
@@ -127,6 +130,8 @@ export interface PlayerData {
      * this does nothing. Fails without the right to write it – the caller must not let that touch the display.
      */
     reportAlive(doc: HeartbeatDoc): Promise<void>;
+    /** Writes where this screen stands (Plan.md 124 C); like {@link reportAlive} only with a device login, and failing without the right. */
+    reportPosition(doc: PositionDoc): Promise<void>;
 }
 
 /** Data from ChurchTools; with `login`, only for that device account. */
@@ -142,11 +147,17 @@ export function createChurchToolsPlayerData(login?: TokenLogin): PlayerData {
             const { repository } = await withTimeout(getRepository());
             await withTimeout(repository.writeHeartbeat(doc));
         },
+        async reportPosition(doc) {
+            if (!login) return;
+            const { repository } = await withTimeout(getRepository());
+            await withTimeout(repository.writePosition(doc));
+        },
     };
 }
 
 export const churchToolsPlayerData: PlayerData = {
     reportAlive: () => Promise.resolve(),
+    reportPosition: () => Promise.resolve(),
     async assertSignedIn() {
         await withTimeout(ensureSignedIn());
     },
@@ -331,6 +342,10 @@ export const churchToolsPlayerData: PlayerData = {
     async override(screenId) {
         const { repository } = await withTimeout(getRepository());
         return withTimeout(repository.readOverride(screenId));
+    },
+    async click(screenId) {
+        const { repository } = await withTimeout(getRepository());
+        return withTimeout(repository.readClick(screenId));
     },
     async rehearsalItem(doc) {
         const memoKey = `${doc.songId}:${doc.arrangementId}`;

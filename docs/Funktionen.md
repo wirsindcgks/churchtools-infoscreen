@@ -252,7 +252,7 @@ verknüpfte, die sich gemeinsam ändern. Auf Wunsch zeigt ein Fortschrittsbalken
 
 Die Vorschau im Editor läuft bei „Per Klick“ nicht von selbst weiter – mit den Pfeilen schaltest du von Hand. Klicks wirken nur auf Bildschirmen, die
 auf der Einstellungsseite „Musiker“ für die Klicksteuerung freigegeben sind (siehe [Einrichtung](Einrichtung.md)).
-<!-- bis Stück C: Der Bildschirm selbst reagiert noch nicht auf Klicks; „Per Klick“ und „Klicks greifen ein“ wirken erst im Editor (Vorschau). Diesen Absatz und den Hinweis auf die Freigabe vor dem Release prüfen. -->
+<!-- bis Stück D: Der Bildschirm reagiert auf Klicks, aber es gibt noch keine Handyseite dafür (Stück D) und keinen Presenter am Gerät (Stück E). Diesen Absatz und den Hinweis auf die Freigabe vor dem Release prüfen; ist ein Bildschirm nicht freigegeben, läuft „Per Klick“ dort nach Zeit. -->
 
 ![Präsentationen als Kacheln mit Format, Zahl der Folien und den Bildschirmen, die sie zeigen](bilder/playlists.png)
 

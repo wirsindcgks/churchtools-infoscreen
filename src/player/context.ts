@@ -51,6 +51,11 @@ export interface StageContext {
     pageStep?: { by: number; at: number };
     /** Whether paged lists turn their pages; the designer preview holds page 1. */
     paging?: boolean;
+    /**
+     * The player holds the presentation "per click" (Plan.md 124 C): paged lists do not turn by themselves (`paging` off), but follow
+     * `pageStep` and count as turning, so that a click pages them before the slide. The designer sets none.
+     */
+    handPaging?: boolean;
     /** The presentation shows its own progress on this slide, so the blocks show none (Plan.md 109); missing = they do. */
     slideProgress?: boolean;
     /** Videos stay mute whatever their block says – the designer preview, which offers a button for the sound (Plan.md 52). */
