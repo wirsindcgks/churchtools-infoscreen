@@ -260,7 +260,7 @@ verknüpfte, die sich gemeinsam ändern. Auf Wunsch zeigt ein Fortschrittsbalken
 Die Vorschau im Editor läuft bei „Per Klick“ nicht von selbst weiter – mit den Pfeilen schaltest du von Hand. Klicks wirken nur auf Bildschirmen, die
 auf der Einstellungsseite „Musiker“ für die Klicksteuerung freigegeben sind (siehe [Einrichtung](Einrichtung.md)).
 
-**Vom Handy weiterschalten.** Auf der Handyseite „Steuerung“ gibt es neben „Gottesdienst“ und „Probe“ den Bereich **„Bildschirm“** – er erscheint nur,
+**Vom Handy weiterschalten.** Die Handyseite „Steuerung“ nimmt den ganzen Bildschirm ein, auch über der Leiste von ChurchTools; „ChurchTools“ oben links führt zurück – in den Designer, wenn man von dort kam, sonst zur vorigen Seite von ChurchTools. Nichts muss gescrollt werden: Zurück und Weiter stehen immer unten, nur eine lange Liste in der Mitte rollt. Auf der Handyseite gibt es neben „Gottesdienst“ und „Probe“ den Bereich **„Bildschirm“** – er erscheint nur,
 wenn mindestens ein Bildschirm für die Klicksteuerung freigegeben ist. Dort wählen die Musiker den Bildschirm und sehen, wo er steht („Folie 3 von 12 – Name“).
 Große Knöpfe schalten **Zurück** und **Vor**, **Schwarz** legt Schwarz über den Bildschirm (ein weiterer Tipp, auch auf Vor oder Zurück, nimmt es weg), und in der Liste
 darunter springt ein Tipp auf eine Folie. Darunter steht, wer zuletzt geklickt hat („zuletzt Anna, vor 5 s“) – ein Klick kommt nach ein bis zwei Sekunden am

@@ -45,6 +45,8 @@ function mountWith(read: { position: PositionDoc | null; click: ClickDoc | null;
     };
     const wrapper = mount(ControlClick, {
         props: { repository: repository as unknown as ScreenRepository, author: 'Max', timeZone: 'Europe/Berlin', screens: [{ id: 's1', name: 'Bühne' }] },
+        // The buttons go to the bar of the page (Plan.md 135 A) – here they stay in place, so the wrapper finds them.
+        global: { stubs: { teleport: true } },
     });
     return { wrapper, repository };
 }

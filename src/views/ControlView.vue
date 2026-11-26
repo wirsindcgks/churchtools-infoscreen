@@ -4,6 +4,7 @@
  * A tap writes a choice into the category `steuerung`; the player reads it. Built for a dark stage, thumbs and a narrow screen.
  */
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { stepPart, type ControlDoc, type PartRef } from '../agenda/control';
 import { agendaDisplay, clockText, pickEvent, type AgendaEvent, type AgendaPick, type LivePosition } from '../agenda/live';
 import { sheetOf, songsLeft, songsheetPick } from '../agenda/songsheet';
@@ -16,10 +17,11 @@ import ControlClick from './ControlClick.vue';
 import ControlRehearsal from './ControlRehearsal.vue';
 import ControlSong from './ControlSong.vue';
 import { controlMemory } from './control-memory';
+import { leaveControl } from './control-back';
+import './control-card.css';
 import { usePresenterKeys } from '../player/presenter-keys';
 import { useWakeLock } from './useWakeLock';
 import Icon from '../designer/Icon.vue';
-import { useOffsetTop } from '../designer/useOffsetTop';
 import { getRepository } from '../store/backend';
 import type { ScreenRepository } from '../store/screen-repository';
 
@@ -27,23 +29,18 @@ const POLL_MS = 2500;
 // On stage the phone must not lock while the page is open (user, 2026-11-13).
 useWakeLock();
 /**
- * The page stands in the flow of the host page like the designer: below the bar of ChurchTools and at the same place, with the same
- * margins – fixed over the window, the bar hid its first line and the switch moved from side to side (user, 2026-11-13). The margins
- * of the host page take the dark colour while the page is open, so no white frame shows (v0.59.1); they are given back on leaving.
+ * The page lies fixed over the whole window, above the bar of ChurchTools and the app banner of the iPad (Plan.md 135, Befunde G55 and
+ * G57): nothing of the host stays to hide or to scroll. While it is open the page behind must not scroll either; the old values come back
+ * on leaving.
  */
-const page = ref<HTMLElement | null>(null);
-const top = useOffsetTop(page);
-const STAGE_BACKGROUND = '#101114';
-let painted: { el: HTMLElement; background: string }[] = [];
+let scrollLocked: { el: HTMLElement; overflow: string }[] = [];
 onMounted(() => {
-    for (let el = page.value?.parentElement ?? null; el; el = el.parentElement) {
-        painted.push({ el, background: el.style.background });
-        el.style.background = STAGE_BACKGROUND;
-    }
+    scrollLocked = [document.documentElement, document.body].map((el) => ({ el, overflow: el.style.overflow }));
+    for (const { el } of scrollLocked) el.style.overflow = 'hidden';
 });
 onBeforeUnmount(() => {
-    for (const { el, background } of painted) el.style.background = background;
-    painted = [];
+    for (const { el, overflow } of scrollLocked) el.style.overflow = overflow;
+    scrollLocked = [];
 });
 
 const loading = ref(true);
@@ -176,6 +173,8 @@ const screenLine = computed(() => {
  * screen ignores such taps as well (`songsheetPick`).
  */
 const stepping = computed(() => !!event.value && !!pick.value && !(plan.value?.over ?? false) && songsLeft(pick.value));
+/** The buttons of the service stand in the bar whenever the service shows a plan. */
+const showSteps = computed(() => !loading.value && !unavailable.value && area.value === 'service' && events.value.length > 0 && !(failure.value && !event.value));
 const previous = computed(() => (stepping.value ? stepPart(event.value!, activePart.value, -1) : null));
 const following = computed(() => (stepping.value ? stepPart(event.value!, activePart.value, 1) : null));
 /** A presenter steps like "Zurück" and "Weiter" (Plan.md 124 A); the area "Probe" listens for itself. */
@@ -244,8 +243,8 @@ watch(eventId, async () => {
     }
 });
 
-/** Also in the designers' group (or an administrator): the button "Designer" in the head leads back. The same test as the start page's. */
-const designerToo = ref(controlMemory.designerToo);
+/** The way out (Plan.md 135): "ChurchTools" goes back into the module when the page was opened from it – the pencil went (user, 2026-11-26). */
+const router = useRouter();
 
 onMounted(async () => {
     // The last visit's state at once; the reading below replaces it.
@@ -255,10 +254,6 @@ onMounted(async () => {
         eventId.value = controlMemory.eventId;
         loading.value = false;
     }
-    void getRepository()
-        .then((handle) => handle.repository.visibleCategories())
-        .then((categories) => (designerToo.value = controlMemory.designerToo = Object.keys(categories).length > 0))
-        .catch(() => null);
     try {
         const [person, handle, zone] = await Promise.all([currentPerson(), getRepository(), fetchTimeZone()]);
         repository = handle.repository;
@@ -303,8 +298,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <main ref="page" class="infoscreen-designer control" :style="{ '--page-top': `${top}px` }">
+    <main class="infoscreen-designer control">
         <header class="head" data-testid="control-head">
+            <a href="/" class="back" data-testid="control-back" :aria-label="t.control.backAria" @click.prevent="leaveControl(!!router.options.history.state.back)"><Icon name="back" :size="18" /><span>{{ t.control.backToChurchTools }}</span></a>
             <h1>{{ t.control.title }}</h1>
             <div ref="areaBox" class="area-box">
                 <button
@@ -316,7 +312,6 @@ onBeforeUnmount(() => {
                     data-testid="control-area"
                     @click="areaOpen = !areaOpen"
                 >
-                    <span class="area-prefix">{{ t.control.title }} ·</span>
                     <strong>{{ areaText }}</strong>
                     <Icon name="chevron-down" :size="18" />
                 </button>
@@ -328,118 +323,117 @@ onBeforeUnmount(() => {
                     </li>
                 </ul>
             </div>
-            <RouterLink v-if="designerToo" :to="{ name: 'designer' }" class="to-designer" :aria-label="t.modeSwitch.designer" :title="t.modeSwitch.designer" data-testid="mode-designer">
-                <Icon name="pencil" :size="20" />
-            </RouterLink>
         </header>
-        <p v-if="loading" class="note">{{ t.control.loading }}</p>
-        <p v-else-if="unavailable" class="note">{{ t.control.unavailable }}</p>
-        <template v-else>
-            <ControlRehearsal v-if="area === 'rehearsal' && rehearsalRepository" :repository="rehearsalRepository" :author="author" :time-zone="timeZone" />
-            <ControlClick v-else-if="area === 'click' && rehearsalRepository && clickScreens.length" :repository="rehearsalRepository" :author="author" :time-zone="timeZone" :screens="clickScreens" />
-            <template v-else-if="area === 'service'">
-                <p v-if="failure && !event" class="note" role="alert">{{ failure }}</p>
-                <p v-else-if="!events.length" class="note">{{ t.control.noEvents }}</p>
-                <template v-else>
-                    <select v-if="events.length > 1" v-model="eventId" class="event" :aria-label="t.control.eventLabel">
-                        <option v-for="e in events" :key="e.eventId" :value="e.eventId">{{ eventLabel(e) }}</option>
-                    </select>
-                    <div v-if="plan" class="plan" data-testid="control-plan">
-                        <template v-if="plan.over">{{ t.control.planOver }}</template>
-                        <template v-else>
-                            <div class="plan-now">
-                                <span class="plan-label">{{ plan.soon ? t.control.planSoon : t.control.planNow }}</span>
-                                <span class="plan-title">{{ plan.title }}</span>
-                                <span v-if="plan.clock" class="plan-clock" :class="{ late: plan.late }">{{ plan.clock }}</span>
-                            </div>
-                            <div v-if="plan.next" class="plan-next">
-                                <span class="plan-label">{{ t.control.planNext }}</span>
-                                <span>{{ plan.next }}</span>
-                            </div>
-                        </template>
-                    </div>
-                    <p v-if="plan && !plan.over && !stepping" class="screen" data-testid="control-locked">{{ t.control.noSongsLeft }}</p>
-                    <p v-else class="screen">{{ screenLine }}</p>
-                    <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
-                    <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
-                    <ul v-if="current" class="songs" data-testid="control-current">
-                        <ControlSong
-                            :title="current.title"
-                            :song-key="current.key"
-                            :parts="current.parts"
-                            :open="true"
-                            :active="activePart?.itemIndex === current.index ? activePart.section : null"
-                            shown
-                            :disabled="!stepping"
-                            @choose="(n) => choose({ itemIndex: current!.index, section: n })"
-                        />
-                    </ul>
-                    <template v-if="upNext">
-                        <p class="label">{{ t.control.upNext }}</p>
-                        <ul class="songs" data-testid="control-next">
-                            <ControlSong
-                                :title="upNext.title"
-                                :song-key="upNext.key"
-                                :parts="upNext.parts"
-                                :open="opened === upNext.index"
-                                :active="null"
-                                :disabled="!stepping"
-                                @toggle="toggle(upNext.index)"
-                                @choose="(n) => choose({ itemIndex: upNext!.index, section: n })"
-                            />
-                        </ul>
+        <div class="middle" data-testid="control-middle">
+            <p v-if="loading" class="note">{{ t.control.loading }}</p>
+            <p v-else-if="unavailable" class="note">{{ t.control.unavailable }}</p>
+            <template v-else>
+                <ControlRehearsal v-if="area === 'rehearsal' && rehearsalRepository" :repository="rehearsalRepository" :author="author" :time-zone="timeZone" />
+                <ControlClick v-else-if="area === 'click' && rehearsalRepository && clickScreens.length" :repository="rehearsalRepository" :author="author" :time-zone="timeZone" :screens="clickScreens" />
+                <template v-else-if="area === 'service'">
+                    <p v-if="failure && !event" class="note" role="alert">{{ failure }}</p>
+                    <p v-else-if="!events.length" class="note">{{ t.control.noEvents }}</p>
+                    <template v-else>
+                        <select v-if="events.length > 1" v-model="eventId" class="event" :aria-label="t.control.eventLabel">
+                            <option v-for="e in events" :key="e.eventId" :value="e.eventId">{{ eventLabel(e) }}</option>
+                        </select>
+                        <div v-if="plan" class="plan control-card" data-testid="control-plan">
+                            <template v-if="plan.over">{{ t.control.planOver }}</template>
+                            <template v-else>
+                                <div class="plan-now">
+                                    <span class="plan-label">{{ plan.soon ? t.control.planSoon : t.control.planNow }}</span>
+                                    <span class="plan-title">{{ plan.title }}</span>
+                                    <span v-if="plan.clock" class="plan-clock" :class="{ late: plan.late }">{{ plan.clock }}</span>
+                                </div>
+                                <div v-if="plan.next" class="plan-next">
+                                    <span class="plan-label">{{ t.control.planNext }}</span>
+                                    <span>{{ plan.next }}</span>
+                                </div>
+                            </template>
+                        </div>
+                        <p v-if="plan && !plan.over && !stepping" class="screen control-card" data-testid="control-locked">{{ t.control.noSongsLeft }}</p>
+                        <p v-else class="screen control-card">{{ screenLine }}</p>
+                        <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
+                        <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
+                        <div v-if="current" class="control-card">
+                            <ul class="songs" data-testid="control-current">
+                                <ControlSong
+                                    :title="current.title"
+                                    :song-key="current.key"
+                                    :parts="current.parts"
+                                    :open="true"
+                                    :active="activePart?.itemIndex === current.index ? activePart.section : null"
+                                    shown
+                                    :disabled="!stepping"
+                                    @choose="(n) => choose({ itemIndex: current!.index, section: n })"
+                                />
+                            </ul>
+                        </div>
+                        <div v-if="upNext" class="control-card">
+                            <p class="label">{{ t.control.upNext }}</p>
+                            <ul class="songs" data-testid="control-next">
+                                <ControlSong
+                                    :title="upNext.title"
+                                    :song-key="upNext.key"
+                                    :parts="upNext.parts"
+                                    :open="opened === upNext.index"
+                                    :active="null"
+                                    :disabled="!stepping"
+                                    @toggle="toggle(upNext.index)"
+                                    @choose="(n) => choose({ itemIndex: upNext!.index, section: n })"
+                                />
+                            </ul>
+                        </div>
+                        <details v-if="others.length" class="all control-card" data-testid="control-all">
+                            <summary>{{ t.control.allSongs(others.length) }}</summary>
+                            <ul class="songs">
+                                <ControlSong
+                                    v-for="song in others"
+                                    :key="song.index"
+                                    :title="song.title"
+                                    :song-key="song.key"
+                                    :parts="song.parts"
+                                    :open="opened === song.index"
+                                    :active="null"
+                                    :played="played(song.index)"
+                                    :disabled="!stepping"
+                                    @toggle="toggle(song.index)"
+                                    @choose="(n) => choose({ itemIndex: song.index, section: n })"
+                                />
+                            </ul>
+                        </details>
+                        <p v-if="presenter" class="note" data-testid="control-presenter">{{ t.control.presenterDetected }}</p>
                     </template>
-                    <details v-if="others.length" class="all" data-testid="control-all">
-                        <summary>{{ t.control.allSongs(others.length) }}</summary>
-                        <ul class="songs">
-                            <ControlSong
-                                v-for="song in others"
-                                :key="song.index"
-                                :title="song.title"
-                                :song-key="song.key"
-                                :parts="song.parts"
-                                :open="opened === song.index"
-                                :active="null"
-                                :played="played(song.index)"
-                                :disabled="!stepping"
-                                @toggle="toggle(song.index)"
-                                @choose="(n) => choose({ itemIndex: song.index, section: n })"
-                            />
-                        </ul>
-                    </details>
-                    <nav class="steps">
-                        <button type="button" :disabled="!previous" @click="previous && choose(previous)">{{ t.control.back }}</button>
-                        <button type="button" :disabled="!following" @click="following && choose(following)">{{ t.control.next }}</button>
-                    </nav>
-                    <p v-if="presenter" class="note" data-testid="control-presenter">{{ t.control.presenterDetected }}</p>
                 </template>
             </template>
-        </template>
+        </div>
+        <div id="control-bar" class="bar" data-testid="control-bar">
+            <nav v-if="showSteps" class="steps">
+                <button type="button" :disabled="!previous" @click="previous && choose(previous)">{{ t.control.back }}</button>
+                <button type="button" :disabled="!following" @click="following && choose(following)">{{ t.control.next }}</button>
+            </nav>
+        </div>
     </main>
 </template>
 
 <style scoped>
+/* Lies over the whole window (Plan.md 135): the z-index is above the bar of ChurchTools (1040), its app banner and its dialogs (1100). */
 .control {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
     box-sizing: border-box;
-    /* Down to the window's visible lower edge, below the bar of ChurchTools – like the designer's frame (ModulePage). */
-    min-height: calc(100vh - var(--page-top, 0px));
-    min-height: calc(100dvh - var(--page-top, 0px));
-    /* The margins of the designer's frame, so that the switch stands at the same place; room for the big buttons fixed at the bottom. */
-    padding: var(--d-space-4) var(--d-space-4) calc(136px + env(safe-area-inset-bottom));
+    height: 100vh;
+    height: 100dvh;
+    /* Three zones: the head and the bar stand fixed, only the middle scrolls. */
+    display: flex;
+    flex-direction: column;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     background: #101114;
     color: #f2f2f2;
     font-size: 1.1rem;
-    display: grid;
-    align-content: start;
-    gap: 12px;
 }
-@media (max-width: 48rem) {
-    .control {
-        padding-inline: var(--d-space-3);
-        padding-top: var(--d-space-3);
-    }
-}
-/* The title stays for screen readers; the button in the head says it for the eyes. */
+/* The title stays for screen readers; the link and the button in the head say it for the eyes. */
 h1 {
     position: absolute;
     width: 1px;
@@ -449,14 +443,60 @@ h1 {
     white-space: nowrap;
 }
 .head {
+    flex: none;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
     min-width: 0;
+    padding: 8px 12px;
+}
+/* Like "zurück" in the editor – a framed button with the arrow (user, 2026-11-26) –, in the dark of this page, like the area button. */
+.back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    box-sizing: border-box;
+    min-height: 44px;
+    margin-right: auto;
+    padding: 0 14px 0 10px;
+    border: 1px solid #3a3f4a;
+    border-radius: 10px;
+    background: #1d2027;
+    color: #f1f2f4;
+    font-size: 1.05rem;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.back:active {
+    border-color: #6b7180;
+}
+.middle {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: grid;
+    align-content: start;
+    gap: 12px;
+    padding: 4px 12px 12px;
+}
+.middle > :deep(*) {
+    min-width: 0;
+}
+.bar {
+    flex: none;
+    padding: 10px 12px 12px;
+    border-top: 1px solid #3a3f4a;
+    background: #101114;
+}
+.bar:empty {
+    display: none;
 }
 .area-box {
     position: relative;
+    flex: 1;
     min-width: 0;
 }
 /* Looks like a choice (user, 2026-11-13: on the phone the dropdown was not to be recognised – no colour of its own, the dark blue of
@@ -464,7 +504,9 @@ h1 {
 .head .area-button {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 6px;
+    width: 100%;
     min-height: 44px;
     padding: 0 10px 0 14px;
     border: 1px solid #3a3f4a;
@@ -481,14 +523,11 @@ h1 {
 .head .area-button strong {
     color: #f1f2f4;
 }
-.area-prefix {
-    color: #b8bcc4;
-}
 .area-list {
     position: absolute;
     z-index: 5;
     top: 100%;
-    left: 0;
+    right: 0;
     margin: 4px 0 0;
     padding: 4px;
     min-width: 230px;
@@ -522,19 +561,6 @@ h1 {
     font-size: 0.8rem;
     font-weight: 400;
 }
-/* A light, neutral ring (user, 2026-11-13) – blue is kept for the running part alone. */
-.to-designer {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    box-sizing: border-box;
-    border: 2px solid #c9ccd3;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.06);
-    color: #f1f2f4;
-}
 p {
     margin: 0;
 }
@@ -547,12 +573,6 @@ p {
     background: #4a2020;
 }
 /* Where the plan stands: the running point big with its time, the next one below. */
-.plan {
-    margin-bottom: 8px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    background: #1d2027;
-}
 .plan-now,
 .plan-next {
     display: flex;
@@ -586,9 +606,6 @@ p {
     color: #f87171;
 }
 .screen {
-    padding: 10px 12px;
-    border-radius: 8px;
-    background: #1d2027;
     font-weight: 600;
 }
 .event {
@@ -608,18 +625,13 @@ p {
     gap: 8px;
 }
 .label {
-    margin-top: 4px;
+    margin: 0 0 8px;
     font-size: 0.75rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     opacity: 0.7;
 }
 /* The rest of a long service, folded away. */
-.all {
-    margin-top: 8px;
-    border-top: 1px solid #3a3f4a;
-    padding-top: 12px;
-}
 .all summary {
     min-height: 44px;
     display: flex;
@@ -643,20 +655,13 @@ button:disabled {
     opacity: 0.4;
 }
 .steps {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-    background: #101114;
-    border-top: 1px solid #3a3f4a;
 }
 /* Back and next are what a hand on stage reaches for blind: tall and in big letters (user, 2026-11-11). */
 .steps button {
-    min-height: 96px;
+    min-height: 80px;
     font-size: 1.5rem;
     font-weight: 600;
 }

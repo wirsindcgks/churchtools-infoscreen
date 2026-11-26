@@ -11,6 +11,7 @@ import { LOCALE } from '../i18n/player';
 import { OVERRIDE_MAX_MS } from '../player/schedule';
 import type { ScreenRepository } from '../store/screen-repository';
 import { controlMemory } from './control-memory';
+import Icon from '../designer/Icon.vue';
 
 const props = defineProps<{ repository: ScreenRepository; author: string; timeZone: string }>();
 
@@ -153,7 +154,10 @@ onBeforeUnmount(() => {
 
 <template>
     <details class="screen-box" data-testid="control-screen">
-        <summary data-testid="control-screen-summary">{{ summary }}</summary>
+        <summary data-testid="control-screen-summary">
+            <span>{{ summary }}</span>
+            <Icon class="fold" name="chevron-down" :size="20" />
+        </summary>
         <div class="body">
             <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
             <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
@@ -201,12 +205,32 @@ onBeforeUnmount(() => {
     border-radius: 10px;
     background: #1d2027;
 }
+/* A fold one sees as such: the arrow on the right turns when it opens (user, 2026-11-26); no marker of the browser. */
 summary {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     min-height: 56px;
     padding: 4px 14px;
     cursor: pointer;
+    list-style: none;
+}
+summary::-webkit-details-marker {
+    display: none;
+}
+.fold {
+    flex: none;
+    color: #b8bcc4;
+    transition: transform 0.15s;
+}
+details[open] .fold {
+    transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+    .fold {
+        transition: none;
+    }
 }
 .body {
     display: grid;
