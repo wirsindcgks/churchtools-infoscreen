@@ -15,6 +15,7 @@ import Icon from '../designer/Icon.vue';
 import ControlScreen from './ControlScreen.vue';
 import ControlSong from './ControlSong.vue';
 import { arrangementLabels } from './arrangement-labels';
+import { usePresenterKeys } from './presenter-keys';
 
 const props = defineProps<{ repository: ScreenRepository; author: string; timeZone: string }>();
 
@@ -64,6 +65,12 @@ function closeSearch(): void {
 const arrangements = computed(() => (song.value?.arrangements ?? []).filter((a): a is SongArrangementResponse & { id: number } => typeof a.id === 'number'));
 const previous = computed(() => (sheet.value ? stepSection(sheet.value, section.value, -1) : null));
 const following = computed(() => (sheet.value ? stepSection(sheet.value, section.value, 1) : null));
+/** A presenter steps like "Zurück" and "Weiter" (Plan.md 124 A) – once a sheet is there; in the search field the keys type. */
+const presenter = usePresenterKeys((by) => {
+    if (!sheet.value || sheetLoading.value) return;
+    const target = by === 1 ? following.value : previous.value;
+    if (target !== null) void choose(target);
+});
 
 const labels = computed(() => arrangementLabels(arrangements.value, t.control.arrangement));
 
@@ -275,6 +282,7 @@ onBeforeUnmount(() => {
                         {{ t.control.next }}
                     </button>
                 </nav>
+                <p v-if="presenter" class="note" data-testid="rehearsal-presenter">{{ t.control.presenterDetected }}</p>
             </template>
             <p v-else class="note" data-testid="rehearsal-nosheet">
                 {{ t.control.noRehearsalSheet }}

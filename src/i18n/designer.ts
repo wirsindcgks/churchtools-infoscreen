@@ -1634,6 +1634,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         allSongs: (n: number) => `Alle übrigen Lieder des Ablaufs (${n})`,
         back: 'Zurück',
         next: 'Weiter',
+        presenterDetected: 'Presenter erkannt: Vor und Zurück schalten die Liedteile wie „Weiter“ und „Zurück“.',
         notSaved: 'Nicht gespeichert – bitte noch einmal tippen',
         failed: (message: string | null) => `ChurchTools ist gerade nicht erreichbar${message ? ` (${message})` : ''}.`,
         area: 'Bereich',

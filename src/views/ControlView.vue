@@ -15,6 +15,7 @@ import { appointmentWindow, churchToolsPlayerData } from '../player/data';
 import ControlRehearsal from './ControlRehearsal.vue';
 import ControlSong from './ControlSong.vue';
 import { controlMemory } from './control-memory';
+import { usePresenterKeys } from './presenter-keys';
 import { useWakeLock } from './useWakeLock';
 import Icon from '../designer/Icon.vue';
 import { useOffsetTop } from '../designer/useOffsetTop';
@@ -172,6 +173,12 @@ const screenLine = computed(() => {
 const stepping = computed(() => !!event.value && !!pick.value && !(plan.value?.over ?? false) && songsLeft(pick.value));
 const previous = computed(() => (stepping.value ? stepPart(event.value!, activePart.value, -1) : null));
 const following = computed(() => (stepping.value ? stepPart(event.value!, activePart.value, 1) : null));
+/** A presenter steps like "Zurück" and "Weiter" (Plan.md 124 A); the area "Probe" listens for itself. */
+const presenter = usePresenterKeys((by) => {
+    if (area.value !== 'service') return;
+    const target = by === 1 ? following.value : previous.value;
+    if (target) void choose(target);
+});
 
 function preselected(list: AgendaEvent[]): AgendaEvent {
     const now = Date.now();
@@ -390,6 +397,7 @@ onBeforeUnmount(() => {
                         <button type="button" :disabled="!previous" @click="previous && choose(previous)">{{ t.control.back }}</button>
                         <button type="button" :disabled="!following" @click="following && choose(following)">{{ t.control.next }}</button>
                     </nav>
+                    <p v-if="presenter" class="note" data-testid="control-presenter">{{ t.control.presenterDetected }}</p>
                 </template>
             </template>
         </template>
