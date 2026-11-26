@@ -144,15 +144,16 @@ Medien und Einstellungen haben sie kein Recht. Die Beiträge der Gruppe sind abg
 | Steuerung der Musiker anlegen (Kategorie „Steuerung") | `create custom data` | nur Steuerung |
 | Steuerung der Musiker ändern (Kategorie „Steuerung") | `edit custom data` | nur Steuerung |
 | Steuerung der Musiker löschen (Kategorie „Steuerung") | `delete custom data` | nur Steuerung |
-| Stand der Bildschirme sehen (Kategorie „Status") | `view custom category`, `view custom data` | nur Status, und nur solange Bildschirme für die Klicksteuerung freigegeben sind |
+| Stand der Bildschirme sehen (Kategorie „Status") | `view custom category`, `view custom data` | nur Status, und nur solange Bildschirme für Proben oder die Klicksteuerung freigegeben sind |
 | Events sehen (für den Baustein „Ablauf") | Events (`view`, 301), ohne Daten | ✓ |
 | Events von einzelnen Kalendern sehen | `view events`, 306 | die Kalender der Bausteine „Ablauf" und „Liedblatt" |
 | Ablaufpläne für einzelne Kalender sehen | `view agenda`, 331 | dieselben Kalender |
 | Alle Song-Kategorien sehen (für den Baustein „Liedblatt") | `view songcategory`, 313, alle Kategorien | ✓ |
 
-Das Leserecht auf **Status** (Einstellungen → Musiker → „Bildschirme für die Klicksteuerung") brauchen die Musiker, um zu sehen, wo ein Bildschirm in
-seiner Präsentation steht; schreiben dürfen sie dort nicht. Die Kategorie gibt es erst, wenn ein Administrator die Startseite geöffnet hat; „Rechte
-aktualisieren" nimmt das Recht zurück, sobald kein Bildschirm mehr freigegeben ist.
+Das Leserecht auf **Status** (Einstellungen → Musiker → „Bildschirme für Proben" oder „Bildschirme für die Klicksteuerung") brauchen die Musiker, um zu sehen,
+was ein Bildschirm zeigt – welche Präsentation läuft, ob eine Probe gilt und, bei der Klicksteuerung, wo er in seiner Präsentation steht; schreiben dürfen sie
+dort nicht. Die Kategorie gibt es erst, wenn ein Administrator die Startseite geöffnet hat; „Rechte
+aktualisieren" nimmt das Recht zurück, sobald weder ein Bildschirm für Proben noch einer für die Klicksteuerung freigegeben ist.
 
 Die Mitglieder kommen aus den **Bandgruppen**, die du auf der Einstellungsseite wählst: Der Assistent richtet dafür die „Automatische
 Mitgliedschaft" der Gruppe ein (dazu braucht er „Personen verwalten"). Wer in einer Bandgruppe ist, wird Teilnehmer; **von Hand aufgenommene

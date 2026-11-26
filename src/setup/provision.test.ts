@@ -492,6 +492,12 @@ describe('the rights for the click steering (Plan.md 124 B)', () => {
         expect(onCategory(planProvisioning(withStatus), 'musician', 20)).toEqual([]);
     });
 
+    it('gives the musicians the same read rights on status for released rehearsal screens (Plan.md 135 B)', () => {
+        const musician = onCategory(planProvisioning({ ...withStatus, rehearsalScreens: true }), 'musician', 20);
+        expect(musician.map((g) => g.authId)).toEqual([2011, 2015]);
+        expect(onCategory(planProvisioning({ ...withStatus, rehearsalScreens: true, clickScreens: true }), 'musician', 20)).toHaveLength(2);
+    });
+
     it('leaves the right out while status does not exist yet', () => {
         const specs = planProvisioning({ ...withControl, clickScreens: true });
         expect(specs.find((g) => g.key === 'musician')!.grants.filter((g) => g.authId === 2011)).toHaveLength(1);

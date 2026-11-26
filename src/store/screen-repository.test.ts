@@ -28,6 +28,10 @@ function bundle(overrides: Partial<ScreenBundle> = {}): ScreenBundle {
 
 const save = { updatedBy: 'Anna' };
 
+/** A slide with a song sheet of the source "Probe" (`rehearsal`) or of the agenda. */
+const sheetSlide = (id: string, source?: 'rehearsal'): ReturnType<typeof makeSlide> =>
+    makeSlide({ id, blocks: [{ ...(createBlock('songsheet', { width: 1920, height: 1080 }, [2], DEFAULT_THEME) as ContentBlock), id: `${id}-sheet`, ...(source ? { source } : {}) } as ContentBlock] });
+
 function banner(overrides: Partial<Banner> = {}): Banner {
     return {
         text: 'Heute Parkplatz gesperrt',
@@ -882,7 +886,7 @@ describe('ScreenRepository', () => {
         });
 
         it('adds the released rehearsal presentations of a released screen (Plan.md 125 B)', async () => {
-            const base = bundle({ playlists: [makePlaylist({ slideIds: ['slide-1'] }), makePlaylist({ id: 'probe', slideIds: ['slide-2'] })] });
+            const base = bundle({ playlists: [makePlaylist({ slideIds: ['slide-1'] }), makePlaylist({ id: 'probe', slideIds: ['slide-2'] })], slides: [makeSlide({ id: 'slide-1', blocks: [textBlock('t1')] }), sheetSlide('slide-2', 'rehearsal')] });
             await repo.saveScreen(base, { ...save, expectedRevision: null });
             const none = await repo.loadScreen('foyer-links');
             expect(none.rehearsalScreenIds).toBeUndefined();
@@ -896,8 +900,22 @@ describe('ScreenRepository', () => {
             expect(loaded.issues).toEqual([]);
         });
 
+        it('counts a released presentation without a rehearsal sheet as not released – the player stays with its schedule (Plan.md 135 B)', async () => {
+            // "probe" was released with a rehearsal sheet and lost it (here: it is the sheet of the agenda); "mit" still has one.
+            const base = bundle({
+                playlists: [makePlaylist({ slideIds: ['slide-1'] }), makePlaylist({ id: 'probe', name: 'Ablauf', slideIds: ['slide-2'] }), makePlaylist({ id: 'mit', slideIds: ['slide-3'] })],
+                slides: [makeSlide({ id: 'slide-1', blocks: [textBlock('t1')] }), sheetSlide('slide-2'), sheetSlide('slide-3', 'rehearsal')],
+            });
+            await repo.saveScreen(base, { ...save, expectedRevision: null });
+            await repo.saveSettings({ schema: { major: 1, minor: 68 }, rehearsalScreenIds: ['screen-1'], rehearsalPlaylistIds: ['probe', 'mit'] });
+            expect((await repo.loadScreen('foyer-links')).rehearsalPlaylistIds).toEqual(['mit']);
+            const [overview] = await repo.listScreenOverviews();
+            expect(overview!.rehearsalPlaylistIds).toEqual(['mit']);
+            expect(Object.keys(overview!.playlists)).not.toContain('probe');
+        });
+
         it('gives the tile of a released screen the released rehearsal presentations (Plan.md 125 D)', async () => {
-            const base = bundle({ playlists: [makePlaylist({ slideIds: ['slide-1'] }), makePlaylist({ id: 'probe', name: 'Probe', slideIds: ['slide-2'] })] });
+            const base = bundle({ playlists: [makePlaylist({ slideIds: ['slide-1'] }), makePlaylist({ id: 'probe', name: 'Probe', slideIds: ['slide-2'] })], slides: [makeSlide({ id: 'slide-1', blocks: [textBlock('t1')] }), sheetSlide('slide-2', 'rehearsal')] });
             await repo.saveScreen(base, { ...save, expectedRevision: null });
             const [none] = await repo.listScreenOverviews();
             expect(none!.rehearsalPlaylistIds).toBeUndefined();

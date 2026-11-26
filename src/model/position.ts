@@ -1,9 +1,10 @@
 import { MAX_VALUE_LENGTH } from './read';
 
 /**
- * Where a screen stands (Plan.md 124 C): one value per screen in the category `status`, written by a TV with a device login while it is
- * released for the click steering and its presentation does not run by time alone. The phone page reads it for "Folie 3 von 12" and the
- * list of slides. Not a schema document – no version, and the reader skips what it does not understand, like the signs of life next to it.
+ * Where a screen stands (Plan.md 124 C, 135 B): one value per screen in the category `status`, written by a TV with a device login while
+ * it is released for the rehearsal override or the click steering. The phone page reads it – and only it – to know what the monitor shows:
+ * the presentation, how it moves on, whether a rehearsal runs, the songsheet and, where clicks count, the slide. Not a schema document – no
+ * version, and the reader skips what it does not understand, like the signs of life next to it.
  */
 export interface PositionDoc {
     kind: 'position';
@@ -11,17 +12,27 @@ export interface PositionDoc {
     screenId: string;
     /** `PlaylistDoc.id` of the running presentation. */
     playlistId: string;
-    /** `SlideDoc.id` on show. */
-    slideId: string;
+    /** Name of the running presentation, cut like the names of the slides; missing = unknown (a value of before Plan.md 135 B). */
+    playlistName?: string;
+    /**
+     * How the presentation moves on at this screen (`effectiveAdvance`: "time" without the release for the click steering). Missing = a
+     * value of before Plan.md 135 B, which was only written where clicks count: read as `click`.
+     */
+    advance: 'time' | 'time-click' | 'click';
+    /** The musicians override the screen for a rehearsal (`activeOverride`): until when and who chose; missing = none. */
+    rehearsal?: { until: string; by?: string };
+    /** `SlideDoc.id` on show. Only where clicks count (`advance` not `time`); the same for `number`, `total` and `slides`. */
+    slideId?: string;
     /** Place of the slide among the slides shown, from 1 (`placeInRotation`). */
-    number: number;
-    total: number;
+    number?: number;
+    total?: number;
     /** The slides shown, in order, for the list to tap. */
-    slides: { id: string; name: string }[];
+    slides?: { id: string; name: string }[];
     /**
      * The slide has a block `songsheet` – the phone then steps through its parts first; the first such block counts. Says where the parts
      * come from: the event of the agenda (`agenda`) or the song of the rehearsal (`rehearsal`). `true` – the value of before, or a block
-     * whose event is not known – means "unknown": the phone clicks the slides only.
+     * whose event is not known – means "unknown": the phone clicks the slides only. Where the presentation runs by time it is the
+     * presentation's, not the slide's: the first songsheet of any slide shown – the slide changes without a write.
      */
     songsheet?: PositionSongsheet;
     /** The stage is black. */
@@ -34,6 +45,14 @@ export interface PositionDoc {
     clickAt?: string;
     /** ISO time of ChurchTools, not of the device clock. */
     at: string;
+}
+
+/** A position with the slides – where clicks count; what the phone steers by clicks. */
+export type ClickPosition = PositionDoc & Required<Pick<PositionDoc, 'slideId' | 'number' | 'total' | 'slides'>>;
+
+/** Whether the position carries the slides (it does not where the presentation runs by time). */
+export function hasSlides(position: PositionDoc): position is ClickPosition {
+    return position.slideId !== undefined && position.number !== undefined && position.total !== undefined && position.slides !== undefined;
 }
 
 /** Where the parts of a `songsheet` block on the slide come from (Plan.md 124 D). */
@@ -70,19 +89,31 @@ export function readPosition(raw: unknown): PositionDoc | null {
     const r = value as Record<string, unknown>;
     if (r.kind !== 'position') return null;
     if (typeof r.screenId !== 'string' || !r.screenId || typeof r.playlistId !== 'string' || !r.playlistId) return null;
-    if (typeof r.slideId !== 'string' || !r.slideId) return null;
     if (typeof r.at !== 'string' || Number.isNaN(Date.parse(r.at))) return null;
+    const advance = r.advance === 'time' || r.advance === 'time-click' || r.advance === 'click' ? r.advance : 'click';
+    const doc: PositionDoc = { kind: 'position', screenId: r.screenId, playlistId: r.playlistId, advance, seq: whole(r.seq, 0) ?? 0, at: r.at };
+    if (typeof r.playlistName === 'string') doc.playlistName = r.playlistName;
+    const rehearsal = r.rehearsal;
+    if (typeof rehearsal === 'object' && rehearsal !== null) {
+        const o = rehearsal as Record<string, unknown>;
+        if (typeof o.until === 'string' && !Number.isNaN(Date.parse(o.until))) doc.rehearsal = { until: o.until, ...(typeof o.by === 'string' && o.by ? { by: o.by } : {}) };
+    }
+    // The slides count together or not at all; where clicks count a position without them is no position – as before.
     const number = whole(r.number, 0);
     const total = whole(r.total, 0);
-    if (number === null || total === null) return null;
-    const slides: { id: string; name: string }[] = [];
-    for (const entry of Array.isArray(r.slides) ? r.slides : []) {
-        if (typeof entry !== 'object' || entry === null) continue;
-        const e = entry as Record<string, unknown>;
-        if (typeof e.id !== 'string' || !e.id) continue;
-        slides.push({ id: e.id, name: typeof e.name === 'string' ? e.name : '' });
-    }
-    const doc: PositionDoc = { kind: 'position', screenId: r.screenId, playlistId: r.playlistId, slideId: r.slideId, number, total, slides, seq: whole(r.seq, 0) ?? 0, at: r.at };
+    if (typeof r.slideId === 'string' && r.slideId && number !== null && total !== null) {
+        const slides: { id: string; name: string }[] = [];
+        for (const entry of Array.isArray(r.slides) ? r.slides : []) {
+            if (typeof entry !== 'object' || entry === null) continue;
+            const e = entry as Record<string, unknown>;
+            if (typeof e.id !== 'string' || !e.id) continue;
+            slides.push({ id: e.id, name: typeof e.name === 'string' ? e.name : '' });
+        }
+        doc.slideId = r.slideId;
+        doc.number = number;
+        doc.total = total;
+        doc.slides = slides;
+    } else if (advance !== 'time') return null;
     const sheet = readSongsheet(r.songsheet);
     if (sheet) doc.songsheet = sheet;
     if (typeof r.by === 'string' && r.by) doc.by = r.by;
@@ -93,8 +124,11 @@ export function readPosition(raw: unknown): PositionDoc | null {
 
 /** Names cut to {@link NAME_MAX}, and from the end as many slides left out as the value needs to stay within the size of a value. */
 export function fitPositionSlides(position: PositionDoc): PositionDoc {
-    const slides = position.slides.map((s) => ({ id: s.id, name: s.name.slice(0, NAME_MAX) }));
-    const fitted = { ...position, slides };
-    while (fitted.slides.length && JSON.stringify(fitted).length > MAX_VALUE_LENGTH - 500) fitted.slides = fitted.slides.slice(0, -Math.max(1, Math.ceil(fitted.slides.length / 10)));
+    const fitted: PositionDoc = { ...position };
+    if (position.playlistName !== undefined) fitted.playlistName = position.playlistName.slice(0, NAME_MAX);
+    if (position.slides) {
+        fitted.slides = position.slides.map((s) => ({ id: s.id, name: s.name.slice(0, NAME_MAX) }));
+        while (fitted.slides.length && JSON.stringify(fitted).length > MAX_VALUE_LENGTH - 500) fitted.slides = fitted.slides.slice(0, -Math.max(1, Math.ceil(fitted.slides.length / 10)));
+    }
     return fitted;
 }

@@ -16,10 +16,10 @@ import { createVideoCache } from '../player/video-cache';
 import { screenVideoUrls } from '../player/video';
 import { createPreloader } from '../player/preload';
 import { turnsWithin } from '../player/paging';
-import { canStepSlide, effectiveAdvance, songsheetOf } from '../player/click';
+import { canStepSlide, effectiveAdvance, songsheetOf, songsheetOfSlides } from '../player/click';
 import { presenterAction } from '../player/presenter-keys';
 import { placeInRotation, useRotation } from '../player/rotation';
-import { activePlaylistId } from '../player/schedule';
+import { activeOverride, activePlaylistId, type ScheduleContext } from '../player/schedule';
 import { keepPlayerStorage, registerPlayerServiceWorker, watchForNewVersion } from '../player/service-worker';
 import { INTERVALS } from '../player/timing';
 import { fitStage } from '../player/stage';
@@ -151,10 +151,11 @@ watch(
     { immediate: true },
 );
 
-const playlist = computed(() => {
+/** What the schedule decides with: the override of the musicians included (Plan.md 125 B). */
+const scheduleContext = computed<ScheduleContext | null>(() => {
     const loaded = state?.screen;
     if (!loaded) return null;
-    const playlistId = activePlaylistId(loaded.screen, {
+    return {
         now: context.now,
         timeZone: context.timeZone,
         clockConfirmed: context.clockConfirmed,
@@ -164,7 +165,21 @@ const playlist = computed(() => {
             doc: state?.override,
             release: { screenIds: loaded.rehearsalScreenIds ?? [], playlistIds: loaded.rehearsalPlaylistIds ?? [] },
         },
-    });
+    };
+});
+
+/** The override of the musicians that runs now – the same decision as for the presentation below; the same object while it holds. */
+const override = computed(() => {
+    const loaded = state?.screen;
+    const schedule = scheduleContext.value;
+    return loaded && schedule?.override ? activeOverride(loaded.screen, schedule.override.doc, schedule.override.release, schedule) : null;
+});
+
+const playlist = computed(() => {
+    const loaded = state?.screen;
+    const schedule = scheduleContext.value;
+    if (!loaded || !schedule) return null;
+    const playlistId = activePlaylistId(loaded.screen, schedule);
     return (
         loaded.playlists.find((p) => p.id === playlistId) ??
         loaded.playlists.find((p) => p.id === loaded.screen.defaultPlaylistId) ??
@@ -319,16 +334,46 @@ watch(
 );
 /** What the songsheet block of the slide on show says of its source; a computed of its own so that a block reporting its event moves the position. */
 const songsheet = computed(() => (current.value ? songsheetOf(current.value, context.songsheetEvents ?? {}) : undefined));
-// Where the screen stands, for the phone page; only while the presentation does not run by time alone (the player drops what did not change).
+/**
+ * The events the songsheet blocks reported, kept while the presentation runs: a block reports only while it is on show, and the position of
+ * a presentation by time must not change with every round between "event known" and "unknown".
+ */
+const seenEvents = reactive<Record<string, number>>({});
 watch(
-    [advance, playlist, current, slides, black, appliedSeq, appliedBy, songsheet],
+    () => ({ ...context.songsheetEvents }),
+    (events) => Object.assign(seenEvents, events),
+    { immediate: true },
+);
+watch(
+    () => playlist.value?.id,
+    () => {
+        for (const id of Object.keys(seenEvents)) delete seenEvents[id];
+    },
+);
+/** The songsheet of the presentation as a whole, for the position by time (`songsheetOfSlides`). */
+const playlistSongsheet = computed(() => songsheetOfSlides(slides.value, seenEvents));
+// Where the screen stands, for the phone page (Plan.md 135 B). Where clicks count it follows slide, black and clicks; by time it follows only
+// presentation, rehearsal and songsheet – no write per slide. The player drops what did not change and reports only a released screen.
+watch(
+    [advance, playlist, override, current, slides, black, appliedSeq, appliedBy, songsheet, playlistSongsheet],
     () => {
         const slide = current.value;
         const running = playlist.value;
-        if (!player || advance.value === 'time' || !running || !slide) return;
+        if (!player || !running) return;
+        const common = {
+            playlistId: running.id,
+            playlistName: running.name,
+            advance: advance.value,
+            ...(override.value ? { rehearsal: { until: override.value.until, ...(override.value.by ? { by: override.value.by } : {}) } } : {}),
+        };
+        if (advance.value === 'time') {
+            player.reportPosition({ ...common, ...(playlistSongsheet.value ? { songsheet: playlistSongsheet.value } : {}), seq: 0 });
+            return;
+        }
+        if (!slide) return;
         const place = placeInRotation(slides.value, slide.id);
         player.reportPosition({
-            playlistId: running.id,
+            ...common,
             slideId: slide.id,
             number: place.number,
             total: place.total,

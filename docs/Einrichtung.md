@@ -280,6 +280,8 @@ für eine Probe überschreiben dürfen, und unter **„Präsentationen für Prob
 stehen nur Präsentationen mit einem Liedblatt der Quelle „Probe"; eine, die noch nicht freigegeben ist, nennt die Seite in einem Hinweis.
 Die Musiker sehen weder Bildschirme noch Präsentationen – beim „Speichern" schreibt die Seite deshalb eine Liste mit den Namen in die
 Kategorie „Steuerung". Danach auf „Rechte aktualisieren" tippen (siehe oben), damit Fernseher und Gestalter diese Kategorie lesen.
+Der Bildschirm folgt einer Probe nur, wenn die Präsentation ein Liedblatt der Quelle „Probe" hat – verliert eine freigegebene Präsentation es (oder
+wird sie umgebaut), bleibt er bei seinem Zeitplan, und die Kachel in der Übersicht zeigt keine Probe.
 
 Auf der Handyseite wählen die Musiker unter **„Probe" → „Bildschirm"** einen freigegebenen Bildschirm, eine freigegebene Präsentation und die
 Dauer (1 bis 3 Stunden) und tippen auf **„Auf Bildschirm zeigen"**. Läuft dort schon eine Probe, steht da, was bis wann und von wem läuft; mit
@@ -292,7 +294,8 @@ Fernseher; das Handy sieht nicht, ob ein Gottesdienst die Probe schon beendet ha
 „Per Klick" oder „Nach Zeit, Klicks greifen ein" vom Handy aus weiterschalten (die Einstellung dazu steht im Editor unter „Präsentation → Weiterschalten"). Auch hier
 gilt: Die Musiker sehen die Bildschirme nicht, deshalb schreibt die Seite beim „Speichern" die Namen in die Kategorie „Steuerung". Danach auf „Rechte
 aktualisieren" tippen: Fernseher lesen dann „Steuerung", die Musikergruppe liest zusätzlich die Kategorie „Status", in der die Bildschirme melden, wo sie
-stehen (nur lesen). „Status" gibt es erst, wenn ein Administrator die Startseite geöffnet hat.
+stehen (nur lesen). Dasselbe Leserecht auf „Status" bekommt die Musikergruppe, sobald Bildschirme für **Proben** freigegeben sind: Ein freigegebener Bildschirm
+meldet dort, welche Präsentation läuft und ob eine Probe gilt. „Status" gibt es erst, wenn ein Administrator die Startseite geöffnet hat.
 Auf der Handyseite erscheint danach der Bereich **„Bildschirm“** (siehe [Funktionen](Funktionen.md#präsentationen)); ohne freigegebenen Bildschirm fehlt er.
 
 In ChurchTools siehst du das Ergebnis an der Gruppe „Infoscreen-Musiker" unter **Einstellungen → Automatische Mitgliedschaft**: Filter

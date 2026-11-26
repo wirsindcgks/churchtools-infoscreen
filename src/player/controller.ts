@@ -11,7 +11,7 @@ import { isRehearsalSheet, REHEARSAL_MAX_AGE_MS, type RehearsalState } from '../
 import type { Appointment } from '../appointments/normalize';
 import { pendingClicks, type ClickAction, type OverrideDoc } from '../agenda/control';
 import type { PositionDoc } from '../model/position';
-import { effectiveAdvance } from './click';
+import { effectiveAdvance, reportsPosition } from './click';
 import { httpStatus, NotAuthenticatedError, retryAfterMs, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
 import { shownSlideIds, shownStand } from '../model/embeds';
@@ -701,12 +701,15 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
     let positionRetryAt = 0;
 
     /**
-     * Where this screen stands (Plan.md 124 C), for the phone page: written to `status` only when it changed – slide, black, presentation or
-     * the last click applied; a page of a list does not count – and a little later, so that several clicks in a row are one write.
+     * Where this screen stands (Plan.md 124 C, 135 B), for the phone page: written to `status` only when it changed – presentation, mode,
+     * rehearsal, songsheet and, where clicks count, slide, black and the last click applied; a page of a list does not count, and a
+     * presentation by time brings no slide – and a little later, so that several clicks in a row are one write. Only a screen released
+     * for the rehearsal override or the click steering reports.
      * Whatever goes wrong here touches nothing else: it is only logged, and after a `403` the player does not ask again for a while.
      */
     function reportPosition(position: Omit<PositionDoc, 'kind' | 'screenId' | 'at'>): void {
         if (stopped || !state.screen) return;
+        if (!reportsPosition(state.screen.screen.id, state.screen.rehearsalScreenIds, state.screen.clickScreenIds)) return;
         const key = JSON.stringify(position);
         if (positionPending && JSON.stringify(positionPending) === key) return;
         if (key === positionWritten) {

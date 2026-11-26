@@ -800,11 +800,15 @@ export class ScreenRepository {
         const [slidesRead, settings] = await Promise.all([this.readSlides(), this.loadSettings().catch(() => null)]);
         const slides = new Map(slidesRead.docs.map((s) => [s.doc.id, s.doc]));
 
+        // Only a presentation with a rehearsal sheet counts as released, the same rule as in `loadScreen` (Plan.md 135 B).
+        const templateById = new Map(running.templates.map((t) => [t.doc.id, t.doc]));
+        const withSheet = new Set(rehearsalPlaylists(all, slidesRead.docs.map((s) => expandTemplates(s.doc, templateById))).map((p) => p.id));
+
         const overviews = screens.map((screen) => {
             const own: Record<string, ScreenPlaylist> = {};
             // A released screen may show the released rehearsal presentations (Plan.md 125 D); stale ids are skipped, as in `loadScreen`.
             const released = settings?.rehearsalScreenIds?.includes(screen.id)
-                ? (settings.rehearsalPlaylistIds ?? []).filter((id) => playlists.has(id))
+                ? (settings.rehearsalPlaylistIds ?? []).filter((id) => playlists.has(id) && withSheet.has(id))
                 : undefined;
             for (const id of new Set([...playlistIdsOf(screen), ...(released ?? [])])) {
                 const playlist = playlists.get(id);
@@ -903,9 +907,13 @@ export class ScreenRepository {
             if (!media.some((m) => m.id === id)) issues.push({ documentId: id, message: tr.mediaMissing });
         }
 
+        // The player follows an override only to a presentation that has a rehearsal sheet: one that was released and lost it (or was
+        // renamed) would show the musicians "Probe" while the screen stays on its schedule (Plan.md 135, finding 2). Embedded ones count.
+        const withSheet = new Set(rehearsalPlaylists(playlists, slides).map((p) => p.id));
+        const rehearsalSheetIds = rehearsalPlaylistIds.filter((id) => withSheet.has(id));
         const allowedServiceIds = settings?.allowedServiceIds ?? [];
         const roomTypeIds = settings?.roomTypeIds;
-        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, templates, allowedServiceIds, roomTypeIds, screenCalendarIds: settings?.screenCalendarIds, peopleGroupId: settings?.peopleGroupId, peopleDeviceIds: settings?.peopleDeviceIds, peopleGroupIds: settings?.peopleGroupIds, personFieldKeys: settings?.personFields ?? settings?.personFieldKeys, ...(released ? { rehearsalScreenIds: settings!.rehearsalScreenIds, rehearsalPlaylistIds } : {}), ...(clickReleased ? { clickScreenIds: settings!.clickScreenIds } : {}), issues };
+        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, templates, allowedServiceIds, roomTypeIds, screenCalendarIds: settings?.screenCalendarIds, peopleGroupId: settings?.peopleGroupId, peopleDeviceIds: settings?.peopleDeviceIds, peopleGroupIds: settings?.peopleGroupIds, personFieldKeys: settings?.personFields ?? settings?.personFieldKeys, ...(released ? { rehearsalScreenIds: settings!.rehearsalScreenIds, rehearsalPlaylistIds: rehearsalSheetIds } : {}), ...(clickReleased ? { clickScreenIds: settings!.clickScreenIds } : {}), issues };
     }
 
     /**

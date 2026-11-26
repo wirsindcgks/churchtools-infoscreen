@@ -144,11 +144,13 @@ export interface PlanInput {
     /**
      * Screens are released for the rehearsal override (Plan.md 125 A, `SettingsDoc.rehearsalScreenIds` not empty): the device and the designers
      * read the category `steuerung` – the device for the override, the designers for the card of the screen. Missing: none released.
+     * Like the click screens (`clickScreens`) they give the musicians' group the category `status` (Plan.md 135 B): a released screen reports
+     * what it shows there.
      */
     rehearsalScreens?: boolean;
     /**
      * Screens are released for the click steering (Plan.md 124 B, `SettingsDoc.clickScreenIds` not empty): the device reads the category
-     * `steuerung` (the clicks) and the musicians' group the category `status` (where a screen reports its position). Missing: none released.
+     * `steuerung` (the clicks). Missing: none released.
      */
     clickScreens?: boolean;
     /**
@@ -351,7 +353,8 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
                 { authId: AUTH.agendaView, dataId: agendaCalendars, label: RIGHT_LABELS[AUTH.agendaView] },
             );
         }
-        // The musicians read the position the screens report in `status` for the click steering (Plan.md 124 B) – read only; the category
+        // The musicians read the position the screens report in `status` – for the click steering (Plan.md 124 B) and, since Plan.md 135 B, for
+        // what a screen shows (rehearsal screens too) – read only; the category
         // exists only once an administrator opened the start page, without it the plan leaves the right out like the signs of life.
         const status = input.categories.status;
         const viewStatus: GrantSpec[] =
@@ -361,7 +364,7 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
                       { authId: moduleRight('view custom category'), dataId: [status], label: t.setup.provision.grants.viewStatus },
                       { authId: moduleRight('view custom data'), dataId: [status], label: t.setup.provision.grants.viewStatus },
                   ];
-        if (input.clickScreens) musician.push(...viewStatus);
+        if (input.clickScreens || input.rehearsalScreens) musician.push(...viewStatus);
         specs.push({ key: 'musician', name: GROUP_NAMES.musician, grants: musician, forbidden: writing, postsOff: true, conditional: viewStatus });
     }
     return specs;

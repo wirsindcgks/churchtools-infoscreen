@@ -1,7 +1,7 @@
 import { CLICK_KEEP, stepPart, stepSection, type ClickAction, type ClickDoc, type PartRef } from '../agenda/control';
 import type { AgendaEvent } from '../agenda/live';
 import type { SongSheet } from '../agenda/songsheet';
-import type { PositionDoc } from '../model/position';
+import type { ClickPosition, PositionDoc } from '../model/position';
 
 /** The pure parts of the area "Bildschirm" of the phone page (Plan.md 124 D). */
 
@@ -98,7 +98,7 @@ export function positionSettled(position: Pick<PositionDoc, 'seq'> | null, ownSe
 }
 
 /** The slide of `position` moved by `by`; `null` where the slide is not in the list or at its ends – the player does not wrap round (Plan.md 124). */
-export function movedSlide(position: Pick<PositionDoc, 'slideId' | 'slides'>, by: 1 | -1): string | null {
+export function movedSlide(position: Pick<ClickPosition, 'slideId' | 'slides'>, by: 1 | -1): string | null {
     const at = position.slides.findIndex((s) => s.id === position.slideId);
     return at < 0 ? null : (position.slides[at + by]?.id ?? null);
 }
