@@ -2010,7 +2010,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         },
         tv: {
             title: 'Adressen der Bildschirme',
-            intro: 'Erzeugt die Adresse, mit der sich der Fernseher eines Bildschirms selbst anmeldet.',
+            intro: 'Erzeugt die Adresse, mit der sich der Fernseher eines Bildschirms selbst anmeldet, und öffnet die Einstellungen des Bildschirms.',
             formTitle: 'Adresse für einen Bildschirm',
             text: 'Mit dieser Adresse meldet sich der Fernseher bei jedem Start selbst als Geräte-Benutzer an – eine Anmeldung im Browser hielte nur 24 Stunden. Trag sie als Startseite des Kiosk-Browsers ein.',
             noScreens: 'Noch keine Bildschirme angelegt.',
@@ -2018,6 +2018,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             username: 'Benutzername des Geräte-Kontos',
             password: 'Passwort des Geräte-Kontos',
             create: 'Adresse erzeugen',
+            screenSettings: 'Einstellungen des Bildschirms',
             signingIn: 'Meldet an …',
             note: 'Passwort und Adresse werden nirgends gespeichert. Das Passwort dient nur dazu, bei ChurchTools den Login-Token des Geräte-Kontos abzuholen.',
             copy: 'Kopieren',

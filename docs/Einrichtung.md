@@ -355,6 +355,9 @@ Browser genügt nicht – ChurchTools meldet nach 24 Stunden ab.
 2. Bildschirm wählen, **Benutzername und Passwort des Geräte-Kontos** eingeben, **„Adresse erzeugen"**.
 3. **Kopieren** und als **Startseite des Kiosk-Browsers** eintragen.
 
+Daneben öffnet **„Einstellungen des Bildschirms“** für den gewählten Bildschirm dieselben Einstellungen wie „…“ →
+„Einstellungen“ an seiner Kachel: Name, Randausgleich und Bedienung.
+
 **Die Adresse ist ein Schlüssel.** Wer sie hat, sieht ChurchTools mit den Rechten des Geräte-Kontos, ohne Passwort.
 Trag sie direkt am Gerät ein, statt sie per E-Mail oder Chat zu schicken, und fotografiere sie nicht ab. Ungültig wird
 sie, sobald das Passwort des Geräte-Kontos geändert wird.

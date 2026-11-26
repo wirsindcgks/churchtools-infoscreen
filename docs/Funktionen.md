@@ -30,7 +30,8 @@ Jeder Fernseher ist eine Kachel mit dem, was er gerade zeigt, und der Angabe, ob
 öffnet die laufende Präsentation im Editor; Adresse und Zeitplan stecken im Menü „…". Haben die Musiker eine Probe vom Handy
 auf den Bildschirm geholt, steht dort **„Probe: <Präsentation> bis 19:30, von <Name>"** – so lange, wie der Fernseher sie zeigt.
 
-Hat ein Bildschirm Touch-Bedienung oder eine Maus, lässt er sich unter „…“ → „Einstellungen“ → „Bedienung“
+Hat ein Bildschirm Touch-Bedienung oder eine Maus, lässt er sich unter „…“ → „Einstellungen“ → „Bedienung“ (dieselben
+Einstellungen öffnet auch **Einstellungen → Adressen der Bildschirme → „Einstellungen des Bildschirms“**)
 **interaktiv** schalten: Tippen oder Klicken links blättert zurück, rechts vor. Nach der Wartezeit (Vorgabe 30
 Sekunden) ohne Eingabe läuft die Präsentation von selbst weiter. Die Pfeile sind immer sichtbar oder erscheinen erst
 nach dem ersten Tippen. Auf Folien, die Seiten blättern (Beiträge, Gruppen, Personen, Termine, Räume, Galerie),
