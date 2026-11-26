@@ -1781,7 +1781,9 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             typeRecommended:
                 'Empfohlen: „Merkmal". Gestalter und Fernseher bekommen auch die Rechte, die dieser Typ seinen Rollen gibt – wähle einen Typ, der wenig mitbringt.',
             create: 'Gruppen und Rechte anlegen',
-            working: 'Arbeitet …',
+            working: 'Rechte werden gesetzt … Bitte bleib auf dieser Seite, bis es fertig ist.',
+            leaveWhileWorking: 'Die Rechte werden gerade gesetzt. Verlässt du die Seite jetzt, bleiben sie halb gesetzt – dann hilft „Rechte aktualisieren“.',
+            leaveAnyway: 'Trotzdem verlassen',
             group: 'Gruppe',
             noneChosen: '– keine gewählt –',
             loadingGroups: 'Lade Gruppen …',
