@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import { defineComponent, h, reactive } from 'vue';
+import { nextTick, defineComponent, h, reactive } from 'vue';
 import { describe, expect, it } from 'vitest';
 import type { Group } from '../groups/normalize';
 import { makeSlide } from '../model/testing';
@@ -77,6 +77,45 @@ const groupsBlock: Block = {
 };
 
 describe('the playlist preview', () => {
+    const mountPreview = (props: Record<string, unknown>) => {
+        const editorContext = reactive<StageContext>({ now: new Date('2026-10-04T08:00:00Z'), timeZone: 'Europe/Berlin', clockConfirmed: true, churchName: 'Gemeinde', appointments: [], media: new Map() });
+        const slides = [makeSlide({ id: 'a', name: 'Eins', durationSeconds: 10 }), makeSlide({ id: 'b', name: 'Zwei', durationSeconds: 10 })];
+        const Host = defineComponent({
+            setup() {
+                provideStageContext(editorContext);
+                return () => h(PlaylistPreview, { slides, stage: { width: 1920, height: 1080 }, ...props });
+            },
+        });
+        return mount(Host);
+    };
+
+    // Plan.md 124 B: "per Klick" never turns by itself, shows no bar and says so in the line below; the arrows still step.
+    it('holds the rotation and shows "per Klick" instead of the seconds, with no progress bar', async () => {
+        const timed = mountPreview({ progress: true });
+        expect(timed.get('[data-testid="preview-where"]').text()).toContain('10 s');
+        expect(timed.find('[data-testid="slide-progress"]').exists()).toBe(true);
+        timed.unmount();
+
+        const clicked = mountPreview({ progress: true, advance: 'click' });
+        await nextTick();
+        const where = clicked.get('[data-testid="preview-where"]');
+        expect(where.text()).toContain('per Klick');
+        expect(where.text()).not.toContain(' s');
+        expect(where.text()).not.toContain('angehalten');
+        expect(clicked.find('[data-testid="slide-progress"]').exists()).toBe(false);
+        expect(clicked.get<HTMLButtonElement>('[data-testid="preview-pause"]').element.disabled).toBe(true);
+        await clicked.get('[data-testid="preview-next"]').trigger('click');
+        expect(clicked.get('[data-testid="preview-where"]').text()).toContain('2/2');
+        clicked.unmount();
+    });
+
+    it('keeps running by time for "Nach Zeit, Klicks greifen ein"', () => {
+        const wrapper = mountPreview({ advance: 'time-click' });
+        expect(wrapper.get('[data-testid="preview-where"]').text()).toContain('10 s');
+        expect(wrapper.get<HTMLButtonElement>('[data-testid="preview-pause"]').element.disabled).toBe(false);
+        wrapper.unmount();
+    });
+
     // It builds its own stage context from the editor's; data it does not pass on is missing only
     // here, while the TV shows it (seen with the groups block on the test instance, 2026-09-29).
     it('shows the posts and groups the editor has loaded, as the TV does', () => {

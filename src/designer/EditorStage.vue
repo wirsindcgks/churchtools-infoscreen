@@ -42,16 +42,18 @@ const banner = computed(() => {
  * The presentation's progress bar on the slide being edited (Plan.md 105), standing at 40 % like a held preview: it shows where
  * the bar will be and what the blocks must leave free. Not in a template's own editing, and no part of the slide.
  */
+const barShown = computed(() => !!editor.draft?.playlist.progress && editor.draft.playlist.advance !== 'click' && !editor.templateEdit);
 const progress = computed(() => {
     const slide = editor.slide;
-    if (!editor.draft?.playlist.progress || editor.templateEdit || !slide) return null;
+    // Only by click (Plan.md 124 B) there is no time to show, like in the preview.
+    if (!barShown.value || !slide) return null;
     // Counted over what the screen shows: the slides of an embedded presentation in their place (Plan.md 120).
     const place = placeInRotation(editor.shownSlides, slide.id);
     return { textColor: progressTextColor(slide.background), seconds: slideSeconds(slide, stage.pages ?? {}), number: place.number, total: place.number ? place.total : 0 };
 });
 // The same on the stage: with the presentation's bar on the slide, the blocks leave theirs out (Plan.md 109).
 watchEffect(() => {
-    stage.slideProgress = !!editor.draft?.playlist.progress && !editor.templateEdit;
+    stage.slideProgress = barShown.value;
 });
 onBeforeUnmount(() => {
     stage.slideProgress = false;

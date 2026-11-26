@@ -147,6 +147,11 @@ export interface PlanInput {
      */
     rehearsalScreens?: boolean;
     /**
+     * Screens are released for the click steering (Plan.md 124 B, `SettingsDoc.clickScreenIds` not empty): the device reads the category
+     * `steuerung` (the clicks) and the musicians' group the category `status` (where a screen reports its position). Missing: none released.
+     */
+    clickScreens?: boolean;
+    /**
      * The people group of the block "Personen" (Plan.md 112): `'new'` while the assistant is about to create it, its id once
      * it exists. Missing: there is none (installations from before) – the plan then leaves it and the device's right on it out.
      */
@@ -278,7 +283,7 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
                   { authId: moduleRight('view custom category'), dataId: [control], label: t.setup.provision.grants.viewControl },
                   { authId: moduleRight('view custom data'), dataId: [control], label: t.setup.provision.grants.viewControl },
               ];
-    if (input.songsheet || input.rehearsalScreens) device.push(...viewControl());
+    if (input.songsheet || input.rehearsalScreens || input.clickScreens) device.push(...viewControl());
     // Designers get it and keep it: the assistant never gave them a right on `steuerung` before, so one may be set by hand – never taken back.
     if (input.rehearsalScreens) designer.push(...viewControl());
 
@@ -346,7 +351,18 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
                 { authId: AUTH.agendaView, dataId: agendaCalendars, label: RIGHT_LABELS[AUTH.agendaView] },
             );
         }
-        specs.push({ key: 'musician', name: GROUP_NAMES.musician, grants: musician, forbidden: writing, postsOff: true });
+        // The musicians read the position the screens report in `status` for the click steering (Plan.md 124 B) – read only; the category
+        // exists only once an administrator opened the start page, without it the plan leaves the right out like the signs of life.
+        const status = input.categories.status;
+        const viewStatus: GrantSpec[] =
+            status === undefined
+                ? []
+                : [
+                      { authId: moduleRight('view custom category'), dataId: [status], label: t.setup.provision.grants.viewStatus },
+                      { authId: moduleRight('view custom data'), dataId: [status], label: t.setup.provision.grants.viewStatus },
+                  ];
+        if (input.clickScreens) musician.push(...viewStatus);
+        specs.push({ key: 'musician', name: GROUP_NAMES.musician, grants: musician, forbidden: writing, postsOff: true, conditional: viewStatus });
     }
     return specs;
 }

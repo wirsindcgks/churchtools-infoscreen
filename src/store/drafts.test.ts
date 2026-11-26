@@ -155,6 +155,13 @@ describe('DraftStore', () => {
         });
     });
 
+    it('keeps the advance on the draft, and leaves "by time" out (Plan.md 124 B)', async () => {
+        await drafts.save(change({ advance: 'click' }), anna);
+        expect((await drafts.load('p1'))?.playlist.advance).toBe('click');
+        await drafts.save(change({ advance: 'time' }), { ...anna, expectedRevision: 1 });
+        expect((await drafts.load('p1'))?.playlist).not.toHaveProperty('advance');
+    });
+
     it('keeps embeds on the draft, and leaves the field out without any (Plan.md 120)', async () => {
         const embeds = [{ playlistId: 'main', position: 1 }];
         await drafts.save(change({ embeds }), anna);

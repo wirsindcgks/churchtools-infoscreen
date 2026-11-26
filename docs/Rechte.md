@@ -63,7 +63,7 @@ zeigt.
 
 Die Kategorie **Steuerung** steht nicht in der Tabelle: Das Gerät bekommt dort „Kategorien sehen" und „Daten in Kategorie sehen", sobald ein
 Baustein „Liedblatt" gezeigt wird **oder** Bildschirme für Proben vom Handy freigegeben sind (Einstellungen → Musiker); fällt beides weg,
-nimmt „Rechte aktualisieren" es wieder zurück. Gestalter bekommen dasselbe Leserecht, sobald Bildschirme für Proben freigegeben sind, und
+nimmt „Rechte aktualisieren" es wieder zurück; dasselbe gilt für Bildschirme, die für die Klicksteuerung freigegeben sind. Gestalter bekommen dasselbe Leserecht, sobald Bildschirme für Proben freigegeben sind, und
 behalten es – ein Leserecht auf die Steuerung schadet ihnen nicht. Schreiben dürfen nur die Musiker ([unten](#musiker--für-die-handysteuerung)).
 
 Weil das Gerät die Entwürfe nicht sieht, kann ein Fernseher **nie einen Entwurf zeigen**. Wer die Adresse eines
@@ -144,10 +144,15 @@ Medien und Einstellungen haben sie kein Recht. Die Beiträge der Gruppe sind abg
 | Steuerung der Musiker anlegen (Kategorie „Steuerung") | `create custom data` | nur Steuerung |
 | Steuerung der Musiker ändern (Kategorie „Steuerung") | `edit custom data` | nur Steuerung |
 | Steuerung der Musiker löschen (Kategorie „Steuerung") | `delete custom data` | nur Steuerung |
+| Stand der Bildschirme sehen (Kategorie „Status") | `view custom category`, `view custom data` | nur Status, und nur solange Bildschirme für die Klicksteuerung freigegeben sind |
 | Events sehen (für den Baustein „Ablauf") | Events (`view`, 301), ohne Daten | ✓ |
 | Events von einzelnen Kalendern sehen | `view events`, 306 | die Kalender der Bausteine „Ablauf" und „Liedblatt" |
 | Ablaufpläne für einzelne Kalender sehen | `view agenda`, 331 | dieselben Kalender |
 | Alle Song-Kategorien sehen (für den Baustein „Liedblatt") | `view songcategory`, 313, alle Kategorien | ✓ |
+
+Das Leserecht auf **Status** (Einstellungen → Musiker → „Bildschirme für die Klicksteuerung") brauchen die Musiker, um zu sehen, wo ein Bildschirm in
+seiner Präsentation steht; schreiben dürfen sie dort nicht. Die Kategorie gibt es erst, wenn ein Administrator die Startseite geöffnet hat; „Rechte
+aktualisieren" nimmt das Recht zurück, sobald kein Bildschirm mehr freigegeben ist.
 
 Die Mitglieder kommen aus den **Bandgruppen**, die du auf der Einstellungsseite wählst: Der Assistent richtet dafür die „Automatische
 Mitgliedschaft" der Gruppe ein (dazu braucht er „Personen verwalten"). Wer in einer Bandgruppe ist, wird Teilnehmer; **von Hand aufgenommene

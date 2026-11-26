@@ -354,6 +354,8 @@ export interface DeviceGroupInput {
     controlRights?: RequiredRight[];
     /** Screens are released for the rehearsal override (Plan.md 125 A): the device reads `steuerung` for it, with or without a block "Liedblatt". */
     rehearsalScreens?: boolean;
+    /** Screens are released for the click steering (Plan.md 124 B): the device reads `steuerung` for the clicks, too. */
+    clickScreens?: boolean;
     /** A screen shows a video (Plan.md 52): the device must see the wiki category, else the video does not run. */
     videoInUse?: boolean;
     wikiCategoryId: number | null;
@@ -637,7 +639,7 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
     }
 
     // The steering of the musicians is read from the category `steuerung`; the plan gives the device "Daten sehen" on it.
-    if ((input.songsheetInUse || input.rehearsalScreens) && input.controlRights?.length) {
+    if ((input.songsheetInUse || input.rehearsalScreens || input.clickScreens) && input.controlRights?.length) {
         const blind = input.members.filter((m) => lacking(m.grants, input.controlRights!).length).map((m) => m.label);
         if (blind.length) {
             checks.push({ level: 'warn', category: 'agenda', text: t.setup.checks.controlBlind(blind.join(', ')), detail: t.setup.checks.controlBlindDetail });

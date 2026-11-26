@@ -19,7 +19,7 @@ import { grantableServiceGroups } from './service-groups';
 import { loadAuthCatalog } from './catalog';
 import { churchToolsProvisionApi, loadGroups } from './load';
 import { readLocks } from './locks';
-import { releasedRehearsalScreens } from './settings-doc';
+import { releasedClickScreens, releasedRehearsalScreens } from './settings-doc';
 import { planProvisioning, readRefresh, refreshIsEmpty } from './provision';
 
 const KEY = 'infoscreen-rights-pending';
@@ -116,6 +116,7 @@ async function compute(): Promise<boolean> {
         agendaServiceGroupIds: grantableServiceGroups(agendaServiceGroupIds, serviceGroups),
         songsheet,
         rehearsalScreens: releasedRehearsalScreens(settings, screenList).length > 0,
+        clickScreens: releasedClickScreens(settings, screenList).length > 0,
         screenCalendarIds: released,
         peopleGroupIds: releasedPeople,
     });

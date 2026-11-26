@@ -22,6 +22,7 @@ import { useEdit } from './edit';
 import MediaField from './fields/MediaField.vue';
 import NumberField from './fields/NumberField.vue';
 import SegmentField from './fields/SegmentField.vue';
+import SelectField from './fields/SelectField.vue';
 import TextField from './fields/TextField.vue';
 import TileField from './fields/TileField.vue';
 import ToggleField from './fields/ToggleField.vue';
@@ -126,6 +127,9 @@ const progressStyleOptions = [
     { value: 'bar', label: t.inspector.progressStyles.bar },
     { value: 'segments', label: t.inspector.progressStyles.segments },
 ];
+const advanceOptions = (['time', 'time-click', 'click'] as const).map((value) => ({ value, label: t.inspector.advances[value] }));
+/** Only by click (Plan.md 124 B): no duration, no progress. */
+const clickOnly = computed(() => editor.draft?.playlist.advance === 'click');
 const progressPlacementOptions = [
     { value: 'inset', label: t.inspector.progressPlacements.inset },
     { value: 'edge', label: t.inspector.progressPlacements.edge },
@@ -143,7 +147,7 @@ const slideHelp = {
 /** The bar in the folded summary of "Präsentation" (Plan.md 132 A): only while it is on, with its form and placement. */
 const progressSummary = computed(() => {
     const playlist = editor.draft?.playlist;
-    if (!playlist?.progress) return [];
+    if (!playlist?.progress || clickOnly.value) return [];
     return [
         t.inspector.progressShort,
         ...(playlist.progressStyle === 'segments' ? [t.inspector.progressStyles.segments] : []),
@@ -154,6 +158,7 @@ const playlistHelp = {
     items: [
         { term: t.inspector.schedule, text: t.inspector.scheduleInfo },
         { term: t.inspector.interaction, text: t.inspector.interactionInfo },
+        th.advance,
         { term: t.inspector.progress, text: t.inspector.progressInfo },
         th.pageProgressStyle,
         th.pageProgressPlacement,
@@ -163,7 +168,11 @@ const playlistHelp = {
 const playlistSummary = computed(() =>
     editor.screens.length ? editor.screens.map((s) => s.name).join(', ') : t.inspector.noScreen,
 );
-const playlistSectionSummary = computed(() => [playlistSummary.value, ...progressSummary.value].join(' · '));
+const advanceSummary = computed(() => {
+    const advance = editor.draft?.playlist.advance;
+    return advance && advance !== 'time' ? [t.inspector.advanceShort[advance]] : [];
+});
+const playlistSectionSummary = computed(() => [playlistSummary.value, ...advanceSummary.value, ...progressSummary.value].join(' · '));
 const backgroundSummary = computed(() => {
     const background = slide.value?.background;
     if (!background) return '';
@@ -206,6 +215,9 @@ const backgroundColors = computed(() => {
                 @update:model-value="editor.updateSlide({ durationSeconds: $event })"
             />
             <ToggleField :model-value="slide.enabled" :label="t.inspector.enabled" testid="slide-enabled" @update:model-value="editor.updateSlide({ enabled: $event })" />
+            <p v-if="clickOnly" class="hint" data-testid="duration-click-hint">
+                {{ t.inspector.advanceNoDuration }}
+            </p>
             <p v-if="runsLonger" class="hint" data-testid="duration-hint">
                 {{ t.inspector.runsLonger(runsLonger) }}
             </p>
@@ -280,15 +292,24 @@ const backgroundColors = computed(() => {
                     <dt>{{ t.inspector.runsOn }}</dt>
                     <dd data-testid="playlist-screens">{{ playlistSummary }}</dd>
                 </dl>
+                <SelectField
+                    :model-value="editor.draft.playlist.advance ?? 'time'"
+                    :options="advanceOptions"
+                    :label="t.inspector.advance"
+                    testid="playlist-advance"
+                    @update:model-value="editor.setAdvance($event as 'time' | 'time-click' | 'click')"
+                />
                 <!-- The bar belongs to the presentation, not to the slide (Plan.md 132 A): here, not among the slide's settings. -->
                 <ToggleField
                     :model-value="!!editor.draft.playlist.progress"
                     :label="t.inspector.progress"
+                    :disabled="clickOnly"
                     testid="playlist-progress"
                     @update:model-value="editor.setProgress($event)"
                 />
                 <SegmentField
                     v-if="editor.draft.playlist.progress"
+                    :disabled="clickOnly"
                     :model-value="editor.draft.playlist.progressStyle ?? 'bar'"
                     :options="progressStyleOptions"
                     :label="t.inspector.progressStyle"
@@ -297,12 +318,16 @@ const backgroundColors = computed(() => {
                 />
                 <SegmentField
                     v-if="editor.draft.playlist.progress"
+                    :disabled="clickOnly"
                     :model-value="editor.draft.playlist.progressPlacement ?? 'inset'"
                     :options="progressPlacementOptions"
                     :label="t.inspector.progressPlacement"
                     testid="playlist-progress-placement"
                     @update:model-value="editor.setProgressPlacement($event === 'edge' ? 'edge' : 'inset')"
                 />
+                <p v-if="clickOnly" class="hint" data-testid="advance-progress-hint">
+                    {{ t.inspector.advanceNoProgress }}
+                </p>
                 <p class="hint" data-testid="schedule-hint">
                     {{ t.inspector.scheduleBefore }}
                     <RouterLink :to="{ name: 'schedules' }">{{ t.inspector.scheduleLink }}</RouterLink>

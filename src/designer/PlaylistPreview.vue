@@ -33,12 +33,17 @@ const props = defineProps<{
     progressEdge?: boolean;
     /** Plan.md 109: one segment per slide instead of the bar with the number. */
     progressSegments?: boolean;
+    /** Plan.md 124 B: how the presentation moves on; `click` never turns by itself and shows no bar. Missing = by time. */
+    advance?: 'time' | 'time-click' | 'click';
 }>();
 const emit = defineEmits<{ close: [] }>();
 
 /** The editor's live data – time, appointments, media – with pages that really turn. */
 const parent = useStageContext();
 const paused = ref(false);
+/** Only by click (Plan.md 124 B): held like a paused preview – the arrows step, the space bar does not resume. */
+const clickOnly = computed(() => props.advance === 'click');
+const holding = computed(() => paused.value || clickOnly.value);
 const context = reactive<StageContext>({
     get now() {
         return parent.now;
@@ -88,7 +93,7 @@ const context = reactive<StageContext>({
     },
     pages: {},
     get paging() {
-        return !paused.value;
+        return !holding.value;
     },
     // Videos play, but never with sound unless the designer asks for it with the button on the video.
     silent: true,
@@ -99,7 +104,7 @@ provideStageContext(context);
 const shown = computed(() => props.slides.filter((s) => s.enabled));
 const rotation = useRotation(shown, () => context.pages ?? {});
 const { current, index, startedAt, heldAt } = rotation;
-watch(paused, (value) => rotation.setPaused(value));
+watch(holding, (value) => rotation.setPaused(value), { immediate: true });
 
 const seconds = rotation.seconds;
 
@@ -128,7 +133,7 @@ function onKey(event: KeyboardEvent): void {
     else if (event.key === 'ArrowLeft') rotation.step(-1);
     else if (event.key === ' ') {
         event.preventDefault();
-        paused.value = !paused.value;
+        if (!clickOnly.value) paused.value = !paused.value;
     } else if (event.key !== 'Backspace') return; // WebKit would go back in the history and leave the editor
     event.preventDefault();
 }
@@ -166,7 +171,7 @@ onBeforeUnmount(() => {
             <p v-if="!current" class="stage-message">{{ t.editor.previewDialog.noActive }}</p>
             <BannerView v-if="bannerShown(banner, parent.now, parent.timeZone)" :banner="banner!" :stage-width="stage.width" />
             <ProgressBar
-                v-if="progress && current"
+                v-if="progress && current && !clickOnly"
                 :started-at="startedAt"
                 :seconds="seconds"
                 :held="heldAt"
@@ -190,6 +195,7 @@ onBeforeUnmount(() => {
             <button
                 v-tip="paused ? t.editor.previewDialog.resumeTitle : t.editor.previewDialog.pauseTitle"
                 type="button"
+                :disabled="clickOnly"
                 :aria-label="paused ? t.editor.previewDialog.resume : t.editor.previewDialog.pause"
                 data-testid="preview-pause"
                 @click="paused = !paused"
@@ -206,7 +212,7 @@ onBeforeUnmount(() => {
                 <Icon name="forward" />
             </button>
             <span v-if="current" class="where" data-testid="preview-where">
-                {{ (index % shown.length) + 1 }}/{{ shown.length }} · {{ current.name }} · {{ seconds }} s{{ paused ? t.editor.previewDialog.paused : '' }}
+                {{ (index % shown.length) + 1 }}/{{ shown.length }} · {{ current.name }} · {{ clickOnly ? t.editor.previewDialog.byClick : `${seconds} s` }}{{ paused && !clickOnly ? t.editor.previewDialog.paused : '' }}
             </span>
             <button v-tip="t.editor.previewDialog.closeTitle" type="button" class="close" data-testid="preview-close" @click="emit('close')">
                 <Icon name="close" /> {{ t.common.close }}

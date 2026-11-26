@@ -472,6 +472,42 @@ describe('the rights for the rehearsal override (Plan.md 125 A)', () => {
     });
 });
 
+describe('the rights for the click steering (Plan.md 124 B)', () => {
+    const withControl = { ...input, controlCategoryId: 36, musicianGroupId: 99 };
+    const withStatus = { ...withControl, categories: { ...categories, status: 20 } };
+    const onCategory = (specs: ReturnType<typeof planProvisioning>, key: 'device' | 'musician', id: number) =>
+        specs.find((g) => g.key === key)!.grants.filter((g) => g.dataId?.length === 1 && g.dataId[0] === id);
+    const known = { calendarIds: [], roomIds: [] };
+
+    it('gives the device "Daten sehen" on steuerung for released click screens, like for rehearsal screens', () => {
+        expect(onCategory(planProvisioning({ ...withControl, clickScreens: true }), 'device', 36).map((g) => g.authId)).toEqual([2011, 2015]);
+        expect(onCategory(planProvisioning(withControl), 'device', 36)).toEqual([]);
+        const both = planProvisioning({ ...withControl, clickScreens: true, rehearsalScreens: true });
+        expect(onCategory(both, 'device', 36)).toHaveLength(2);
+    });
+
+    it('gives the musicians read rights on status, and no writing right there', () => {
+        const musician = onCategory(planProvisioning({ ...withStatus, clickScreens: true }), 'musician', 20);
+        expect(musician.map((g) => g.authId)).toEqual([2011, 2015]);
+        expect(onCategory(planProvisioning(withStatus), 'musician', 20)).toEqual([]);
+    });
+
+    it('leaves the right out while status does not exist yet', () => {
+        const specs = planProvisioning({ ...withControl, clickScreens: true });
+        expect(specs.find((g) => g.key === 'musician')!.grants.filter((g) => g.authId === 2011)).toHaveLength(1);
+    });
+
+    it('asks for what is missing on the musicians, and takes it back once no click screen is released', () => {
+        const plan = planProvisioning({ ...withStatus, clickScreens: true });
+        const missing = planRefresh(plan, { musician: [[]] }, known).find((g) => g.key === 'musician')!;
+        expect(pairs(missing.add)).toEqual(expect.arrayContaining(['2011:20', '2015:20']));
+        const ended = planProvisioning(withStatus);
+        const result = planRefresh(ended, { musician: [[held(2011, 36), held(2011, 20), held(2015, 20)]] }, known).find((g) => g.key === 'musician')!;
+        expect(pairs(result.remove)).toEqual(['2011:20', '2015:20']);
+        expect(planRefresh(plan, { musician: [[held(2011, 20), held(2015, 20)]] }, known).find((g) => g.key === 'musician')!.remove).toEqual([]);
+    });
+});
+
 describe('released calendars (Plan.md 85 b)', () => {
     const plan = planProvisioning({ ...input, screenCalendarIds: [3, 4] });
     const known = { calendarIds: [1, 2, 3, 4, 5], roomIds: [] };

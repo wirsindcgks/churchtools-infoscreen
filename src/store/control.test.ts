@@ -56,7 +56,7 @@ describe('writeRehearsal', () => {
 });
 
 describe('writeRehearsalCatalog (Plan.md 125 A)', () => {
-    const catalog = (at: string, screens = [{ id: 's1', name: 'Probenraum' }]): RehearsalCatalogDoc => ({ kind: 'rehearsalCatalog', screens, playlists: [], at });
+    const catalog = (at: string, screens = [{ id: 's1', name: 'Probenraum' }]): RehearsalCatalogDoc => ({ kind: 'rehearsalCatalog', screens, playlists: [], clickScreens: [{ id: 's2', name: 'Bühne' }], at });
 
     it('fails without the category and reads nothing', async () => {
         const repo = new ScreenRepository(new MemoryKv());
@@ -105,7 +105,7 @@ describe('writeOverride and readRehearsalScreens (Plan.md 125 C)', () => {
         const kv = new MemoryKv();
         const repo = new ScreenRepository(kv);
         const id = (await repo.ensureControlCategory())!;
-        await repo.writeRehearsalCatalog({ kind: 'rehearsalCatalog', screens: [{ id: 's1', name: 'Probenraum' }], playlists: [], at: '2026-11-11T09:00:00Z' });
+        await repo.writeRehearsalCatalog({ kind: 'rehearsalCatalog', screens: [{ id: 's1', name: 'Probenraum' }], playlists: [], clickScreens: [], at: '2026-11-11T09:00:00Z' });
         await repo.writeRehearsal({ kind: 'rehearsal', songId: 7, arrangementId: 3, section: 0, at: '2026-11-11T09:30:00Z' });
         const soon = new Date(Date.now() + 3_600_000).toISOString();
         await repo.writeOverride(override('s1', new Date().toISOString(), soon));

@@ -114,6 +114,25 @@ describe('the inspector of the slide (Plan.md 79, B2)', () => {
         expect(wrapper.get('[data-testid="section-playlist"] summary').text()).toContain('· Fortschritt · Segmente · am Rand');
     });
 
+    it('offers the advance, and greys out progress and explains the duration for "per Klick" (Plan.md 124 B)', async () => {
+        const { editor, wrapper } = await setup();
+        expect(wrapper.find('[data-testid="playlist-advance"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="duration-click-hint"]').exists()).toBe(false);
+        await wrapper.get<HTMLInputElement>('[data-testid="playlist-progress"]').setValue(true);
+        editor.setAdvance('click');
+        await wrapper.vm.$nextTick();
+        expect(wrapper.get<HTMLInputElement>('[data-testid="playlist-progress"]').element.disabled).toBe(true);
+        expect(wrapper.find('[data-testid="advance-progress-hint"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="duration-click-hint"]').exists()).toBe(true);
+        // The duration stays editable and keeps its value.
+        expect(wrapper.get<HTMLInputElement>('[data-testid="duration-input"]').element.disabled).toBe(false);
+        expect(wrapper.get('[data-testid="section-playlist"] summary').text()).toContain('per Klick');
+        editor.setAdvance('time-click');
+        await wrapper.vm.$nextTick();
+        expect(wrapper.get<HTMLInputElement>('[data-testid="playlist-progress"]').element.disabled).toBe(false);
+        expect(wrapper.find('[data-testid="advance-progress-hint"]').exists()).toBe(false);
+    });
+
     it('puts the progress bar of the playlist into the section "Präsentation", not among the slide\'s settings (Plan.md 132 A)', async () => {
         const { wrapper } = await setup();
         expect(wrapper.find('[data-testid="section-progress"]').exists()).toBe(false);

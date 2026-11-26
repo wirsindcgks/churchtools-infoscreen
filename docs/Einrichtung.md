@@ -288,6 +288,13 @@ tut er auch, wenn die Dauer abläuft. Beginnt vorher eine Terminregel des Zeitpl
 Im Designer zeigt die Kachel des Bildschirms die laufende Probe mit Präsentation, Endzeit und Namen, nach demselben Maßstab wie der
 Fernseher; das Handy sieht nicht, ob ein Gottesdienst die Probe schon beendet hat, die Kachel schon.
 
+**Klicksteuerung freigeben.** Unter **„Bildschirme für die Klicksteuerung"** wählst du die Bildschirme, auf denen die Musiker Präsentationen mit
+„Per Klick" oder „Nach Zeit, Klicks greifen ein" vom Handy aus weiterschalten (die Einstellung dazu steht im Editor unter „Präsentation → Weiterschalten"). Auch hier
+gilt: Die Musiker sehen die Bildschirme nicht, deshalb schreibt die Seite beim „Speichern" die Namen in die Kategorie „Steuerung". Danach auf „Rechte
+aktualisieren" tippen: Fernseher lesen dann „Steuerung", die Musikergruppe liest zusätzlich die Kategorie „Status", in der die Bildschirme melden, wo sie
+stehen (nur lesen). „Status" gibt es erst, wenn ein Administrator die Startseite geöffnet hat.
+<!-- bis Stück C: Bildschirme und Handyseite nutzen diese Freigabe erst mit den folgenden Stücken. -->
+
 In ChurchTools siehst du das Ergebnis an der Gruppe „Infoscreen-Musiker" unter **Einstellungen → Automatische Mitgliedschaft**: Filter
 „Mitgliedschaft in einer Gruppe" mit deinen Bandgruppen, dazu „Person ist nicht archiviert" und „Person ist nicht verstorben".
 

@@ -335,6 +335,14 @@ describe('ScreenRepository', () => {
             });
         });
 
+        it('copies the advance of the presentation (Plan.md 124 B)', async () => {
+            const made = await repo.createPlaylist({ name: 'Gottesdienst', stage: LANDSCAPE }, 'Anna');
+            const { playlist, slides } = await repo.loadPlaylist(made.id);
+            await repo.savePlaylist({ playlist: { ...playlist, advance: 'click' }, slides }, { expectedRevision: playlist.revision, updatedBy: 'Anna' });
+            const copy = await repo.duplicatePlaylist(made.id, 'Ben');
+            expect((await repo.loadPlaylist(copy.id)).playlist.advance).toBe('click');
+        });
+
         it('creates a playlist that runs nowhere yet and keeps it through a tidy-up', async () => {
             const made = await repo.createPlaylist({ name: 'Gottesdienst', stage: LANDSCAPE }, 'Anna');
             const loaded = await repo.loadPlaylist(made.id);

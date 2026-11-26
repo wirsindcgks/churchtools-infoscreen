@@ -211,6 +211,16 @@ export const th = {
         text: `Ein dünner Balken unten im Baustein zeigt, wann ${next} kommt. Aus ändert nichts am Takt. Zeigt die Präsentation ihren Fortschritt, bleibt der des Bausteins aus.`,
     }),
 
+    /** "Weiterschalten" of the presentation (Plan.md 124 B). */
+    advance: {
+        term: i.advance,
+        text:
+            'Nach Zeit: Jede Folie steht so lange wie ihre Anzeigedauer, dann kommt die nächste. Nach Zeit, Klicks greifen ein: dasselbe, aber ein Klick ' +
+            'vom Handy oder von einem Presenter springt sofort weiter, danach läuft die Zeit normal weiter. Per Klick: Die Folie bleibt stehen, bis ' +
+            'weitergeschaltet wird; Anzeigedauer und Fortschritt gelten dann nicht. Klicks wirken nur auf Bildschirmen, die unter Einstellungen → ' +
+            'Musiker für die Klicksteuerung freigegeben sind.',
+    } satisfies HelpItem,
+
     /** "Form" of that bar (Plan.md 109), the same for every block and for the slide. */
     pageProgressStyle: {
         term: i.progressStyle,

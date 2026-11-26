@@ -1167,6 +1167,7 @@ export class ScreenRepository {
             ...(source.playlist.progress ? { progress: true } : {}),
             ...(source.playlist.progressPlacement === 'edge' ? { progressPlacement: 'edge' as const } : {}),
             ...(source.playlist.progressStyle === 'segments' ? { progressStyle: 'segments' as const } : {}),
+            ...(source.playlist.advance && source.playlist.advance !== 'time' ? { advance: source.playlist.advance } : {}),
             // The copy embeds the same main part (Plan.md 120); a slide skipped above counts no more in the positions.
             ...(source.playlist.embeds?.length ? { embeds: source.playlist.embeds.map((e) => ({ ...e, position: Math.min(e.position, slides.length) })) } : {}),
             revision: 1,

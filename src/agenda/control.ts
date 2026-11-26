@@ -303,6 +303,8 @@ export interface RehearsalCatalogDoc {
     kind: 'rehearsalCatalog';
     screens: { id: string; name: string }[];
     playlists: { id: string; name: string }[];
+    /** Since Plan.md 124 B: the screens released for the click steering. Missing in older values = none; older readers ignore it. */
+    clickScreens: { id: string; name: string }[];
     /** ISO time of the write. */
     at: string;
 }
@@ -336,7 +338,8 @@ export function readRehearsalCatalog(raw: unknown): RehearsalCatalogDoc | null {
     const screens = namedIds(r.screens);
     const playlists = namedIds(r.playlists);
     if (!screens || !playlists) return null;
-    return { kind: 'rehearsalCatalog', screens, playlists, at: r.at };
+    // Tolerant: a value from before the click steering has no list, a damaged one counts as none.
+    return { kind: 'rehearsalCatalog', screens, playlists, clickScreens: namedIds(r.clickScreens) ?? [], at: r.at };
 }
 
 /** The catalog with the latest `at`; `null` where there is none. */
