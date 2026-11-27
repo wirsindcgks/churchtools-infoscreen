@@ -57,7 +57,7 @@ function pick(id: string): void {
 <template>
     <section class="control-card monitor" data-testid="control-monitor">
         <div class="monitor-top">
-            <span class="monitor-name" data-testid="monitor-name">{{ monitor.name }}</span>
+            <Icon name="tv" :size="20" class="monitor-icon" /><span class="monitor-name" data-testid="monitor-name">{{ monitor.name }}</span>
             <p v-if="state?.chip" class="chip" :class="`tone-${state.kind}`" data-testid="monitor-chip"><span class="dot" aria-hidden="true" />{{ state.chip }}</p>
             <HelpButton v-if="state?.note" :label="t.control.monitorInfo" :shown="infoOpen" data-testid="monitor-info" @toggle="infoOpen = !infoOpen" />
             <div v-if="monitors.length > 1" ref="box" class="monitor-switch">
@@ -188,9 +188,14 @@ button {
 .tone-presentation .dot {
     background: #a78bfa;
 }
-/* The "?" at the chip is the one of the help in the inspector (user, 2026-11-27); it stands beside the chip, not at the end of the row. */
-.monitor-top .help-btn {
+/* The "?" at the chip is the one of the help in the inspector (user, 2026-11-27), at the end of the row; "Wechseln" follows it. */
+.monitor-top .help-btn + .monitor-switch {
     margin-left: 0;
+}
+/* The screen the card is about (user, 2026-11-27). */
+.monitor-icon {
+    flex: none;
+    color: #b8bcc4;
 }
 .line {
     color: #f1f2f4;

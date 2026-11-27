@@ -241,7 +241,7 @@ describe('ControlView (Plan.md 135 C)', () => {
         expect(wrapper.get('[data-testid="monitor-line"]').text()).toBe('bis 12:00 · Max');
         expect(wrapper.find('[data-testid="monitor-rehearsal"]').exists()).toBe(false);
         // Until the screen reports it, the card says that it switches (user, 2026-11-27: "es passiert nichts").
-        expect(wrapper.get('[data-testid="monitor-transfer"]').text()).toBe('Bildschirm wechselt zur Probe …');
+        expect(wrapper.get('[data-testid="monitor-transfer"]').text()).toBe('Wechselt zur Probe …');
     });
 
     it('keeps the sheet open and says so where the write fails', async () => {
@@ -293,7 +293,7 @@ describe('ControlView (Plan.md 135 C)', () => {
             expect(doc).toMatchObject({ playlistId: 'p1', until: '2026-11-26T11:52:00.000Z', by: 'Max' });
             expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Probe');
             expect(wrapper.get('[data-testid="monitor-line"]').text()).toBe('bis 12:52 · Max');
-            expect(wrapper.get('[data-testid="monitor-transfer"]').text()).toBe('Bildschirm übernimmt die Zeit …');
+            expect(wrapper.get('[data-testid="monitor-transfer"]').text()).toBe('Übernimmt die Zeit …');
         });
 
         it('ends the rehearsal and offers "Probe starten" again', async () => {
@@ -304,7 +304,7 @@ describe('ControlView (Plan.md 135 C)', () => {
             expect(repository.writeOverride.mock.calls[0]![0]).toMatchObject({ screenId: 's1', playlistId: '', ended: true, by: 'Max' });
             expect(wrapper.find('[data-testid="monitor-end"]').exists()).toBe(false);
             expect(wrapper.find('[data-testid="monitor-rehearsal"]').exists()).toBe(true);
-            expect(wrapper.get('[data-testid="monitor-transfer"]').text()).toBe('Bildschirm kehrt zum Zeitplan zurück …');
+            expect(wrapper.get('[data-testid="monitor-transfer"]').text()).toBe('Zurück zum Zeitplan …');
         });
 
         it('shows the song with its parts and the magnifier, no "Schwarz" in the bar although the presentation is at the click', async () => {
