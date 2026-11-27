@@ -32,8 +32,11 @@ export type Middle = 'service' | 'rehearsal' | 'slides' | 'none';
 export interface MonitorState {
     /** The dot and the colour of the chip; `none` – the screen reports nothing. */
     kind: 'service' | 'rehearsal' | 'presentation' | 'schedule' | 'none';
+    /** The word of the kind in the band: "Probe", "Präsentation", … (Plan.md 137 A). */
     chip: string | null;
-    /** What the position alone says below the chip; the middle may put its own lines in place of them (the own click, the plan of the service). */
+    /** What stands behind the word in the band: the time, the end of the rehearsal and who started it, the name. */
+    detail: string | null;
+    /** What the position alone says below the band; the middle may put its own lines in place of them (the own click, the plan of the service). */
     lines: string[];
     middle: Middle;
 }
@@ -57,7 +60,7 @@ export function slideLines(shown: { slideId: string; number: number; total: numb
 }
 
 /**
- * What the monitor shows, from the position it reported (Plan.md 135 C): the chip, the lines below, and what the middle of the page shows.
+ * What the monitor shows, from the position it reported (Plan.md 135 C): the word of the band, its details, the lines below, and what the middle of the page shows.
  * The songsheet of the agenda counts first: a rehearsal over a presentation with such a songsheet shows the songs of the service, which is
  * what the screen shows. `null` – the screen reported nothing.
  * `eventStartMs`: the start of the event the songsheet follows, where the page knows it.
@@ -70,16 +73,16 @@ export function monitorState(position: PositionDoc | null, now: number, context:
     const middle: Middle = sheet ? (sheet.source === 'agenda' ? 'service' : 'rehearsal') : clicking ? 'slides' : 'none';
     if (sheet?.source === 'agenda') {
         const start = context.eventStartMs ?? null;
-        return { kind: 'service', chip: t.control.monitorService(start === null ? null : clock(start, context.timeZone)), lines: [], middle };
+        return { kind: 'service', chip: t.control.monitorService, detail: start === null ? null : clock(start, context.timeZone), lines: [], middle };
     }
     if (position.rehearsal) {
-        return { kind: 'rehearsal', chip: t.control.monitorRehearsal, lines: [t.control.monitorRehearsalLine(clock(Date.parse(position.rehearsal.until), context.timeZone), firstName(position.rehearsal.by ?? null))], middle };
+        return { kind: 'rehearsal', chip: t.control.monitorRehearsal, detail: t.control.monitorRehearsalLine(clock(Date.parse(position.rehearsal.until), context.timeZone), firstName(position.rehearsal.by ?? null)), lines: [], middle };
     }
     if (clicking && hasSlides(position)) {
         const last = position.clickAt ? { by: position.by ?? null, at: Date.parse(position.clickAt) } : null;
-        return { kind: 'presentation', chip: t.control.monitorPresentation(name), lines: slideLines(position, last, now), middle };
+        return { kind: 'presentation', chip: t.control.monitorPresentation, detail: name, lines: slideLines(position, last, now), middle };
     }
-    return { kind: 'schedule', chip: t.control.monitorSchedule(name), lines: [], middle };
+    return { kind: 'schedule', chip: t.control.monitorSchedule, detail: name, lines: [], middle };
 }
 
 /**

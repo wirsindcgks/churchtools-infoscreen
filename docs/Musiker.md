@@ -22,12 +22,13 @@ Solange die Seite offen ist, geht das Handy nicht in den Ruhezustand.
 
 ## Die Seite auf einen Blick
 
-<img src="bilder/steuerung.png" alt="Die Handyseite: oben die Karte des Bildschirms „Bühne“ mit „Gottesdienst“, in der Mitte das Lied mit seinen Teilen, unten „Zurück“ und „Vor“" width="320">
+<img src="bilder/steuerung.png" alt="Die Handyseite: oben der Name des Bildschirms und das Band „Bühne“ mit „Gottesdienst“, in der Mitte das Lied mit seinen Teilen, unten „Zurück“ und „Vor“" width="320">
 
 Die Seite hat drei Teile:
 
-1. **Oben – der Bildschirm.** Daneben steht, was er gerade zeigt: grün **Gottesdienst**, gelb **Probe**, lila
-   **Präsentation**. Gibt es mehrere Bildschirme, tippst du auf den **Namen des Bildschirms** (mit dem kleinen Pfeil) und wählst einen anderen.
+1. **Oben – der Bildschirm.** Links der Pfeil zurück zu ChurchTools, daneben der **Name des Bildschirms**. Gibt es mehrere
+   Bildschirme, tippst du auf den Namen (mit dem kleinen Pfeil) und wählst einen anderen. Darunter ein farbiges **Band**
+   sagt, was der Bildschirm gerade zeigt: grün **Gottesdienst**, gelb **Probe**, lila **Präsentation**, grau **Zeitplan**.
 2. **Mitte – das Lied.** Alle Teile als Knöpfe; der blaue läuft gerade. Antippen, und der Bildschirm springt dorthin.
 3. **Unten – Zurück und Vor.** Auf „Vor" steht klein, was als Nächstes kommt.
 
@@ -51,12 +52,12 @@ flowchart LR
     C --> D["Beenden"]
 ```
 
-1. Auf der Karte oben **„Probe starten"** tippen, die Dauer wählen (1 bis 3 Stunden) und bestätigen. Während eines
+1. Im Band oben **„Probe starten ›"** tippen, die Dauer wählen (1 bis 3 Stunden) und bestätigen. Während eines
    Gottesdienstes gibt es den Knopf nicht – so kann niemand den Bildschirm aus Versehen umschalten.
    Der Bildschirm braucht dann **einen kurzen Moment** – solange dreht sich ein Kreis mit „Wechselt zur Probe …".
 2. Mit der **Lupe** ein Lied suchen und antippen. Hat es mehrere Arrangements, wählst du darunter das richtige.
 3. Teile antippen oder mit **Vor** und **Zurück** schalten – wie im Gottesdienst. Für das nächste Lied wieder die Lupe.
-4. Länger proben: **„+1 Std"** oder **„+2 Std"**. Fertig: **„Beenden"** – der Bildschirm zeigt danach wieder sein
+4. Länger proben: das Band antippen, dann **„+1 Std"** oder **„+2 Std"**. Fertig: **„Beenden"** – der Bildschirm zeigt danach wieder sein
    normales Programm.
 
 Beginnt laut Plan ein Gottesdienst, endet die Probe von selbst. **„Lied beenden"** (unten in der Suche) nimmt das Lied
@@ -83,7 +84,7 @@ entsperrt sein.
 | „Der Bildschirm meldet sich nicht" | Wie oben – das Handy erreicht ihn gerade nicht. |
 | „Nicht gespeichert – bitte noch einmal tippen" | Kurz keine Verbindung. Noch einmal tippen. |
 | „ChurchTools ist gerade nicht erreichbar" | Internet am Handy prüfen (WLAN oder mobile Daten). |
-| Kein „Probe starten" auf der Karte | Dieser Bildschirm ist nicht für Proben freigegeben – beim Admin fragen. |
+| Kein „Probe starten" im Band | Dieser Bildschirm ist nicht für Proben freigegeben – beim Admin fragen. |
 | „Zu diesem Arrangement gibt es keinen Liedtext" | Zum Lied fehlt in ChurchTools die Datei mit dem Text. Wer die Lieder pflegt, kann sie ergänzen – oder ein anderes Arrangement wählen. |
 | „Die Steuerung ist nicht eingerichtet, oder dir fehlt das Recht dafür" | Du bist (noch) nicht in der Bandgruppe, oder der Abgleich steht noch aus – beim Admin melden. |
 

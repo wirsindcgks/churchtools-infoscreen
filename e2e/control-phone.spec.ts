@@ -91,20 +91,25 @@ for (const [name, viewport] of [
                     expect(b.x + b.width).toBeLessThanOrEqual(view.width);
                 }
 
-                // The monitor card is compact: name and chip in one row.
-                const monitor = await box(page, '[data-testid="control-monitor"]');
+                // The band is one line (Plan.md 137 A): word and details in one row, the whole band inside the window and the head.
+                const monitor = await box(page, '[data-testid="monitor-band"]');
+                const head = await box(page, '[data-testid="control-head"]');
                 const nameBox = await box(page, '[data-testid="monitor-name"]');
                 const chipBox = await box(page, '[data-testid="monitor-chip"]');
-                expect(Math.abs(nameBox.y + nameBox.height / 2 - (chipBox.y + chipBox.height / 2))).toBeLessThan(6);
-                // Nothing of the row runs out of the card (user, 2026-11-27: "Wechseln" did).
+                expect(monitor.height).toBeLessThanOrEqual(48);
+                expect(chipBox.y).toBeGreaterThanOrEqual(monitor.y);
+                expect(chipBox.y + chipBox.height).toBeLessThanOrEqual(monitor.y + monitor.height);
                 expect(chipBox.x + chipBox.width).toBeLessThanOrEqual(monitor.x + monitor.width);
+                expect(monitor.x).toBeGreaterThanOrEqual(0);
+                expect(monitor.x + monitor.width).toBeLessThanOrEqual(view.width);
+                expect(nameBox.x + nameBox.width).toBeLessThanOrEqual(head.x + head.width);
                 // One line of the song head: the key stands behind the title, the magnifier is 44 × 44.
                 const lupe = await box(page, '[data-testid="rehearsal-other"]');
                 expect([Math.round(lupe.width), Math.round(lupe.height)]).toEqual([44, 44]);
                 const last = buttons[buttons.length - 1]!;
                 test.info().annotations.push({
                     type: 'measured',
-                    description: `${name}: monitor card ${Math.round(monitor.height)} px, song card ${Math.round(card.height)} px, last part ends ${Math.round(card.y + card.height - last.y - last.height)} px above the card edge, bar ${Math.round(bar.height)} px`,
+                    description: `${name}: band ${Math.round(monitor.height)} px, song card ${Math.round(card.height)} px, last part ends ${Math.round(card.y + card.height - last.y - last.height)} px above the card edge, bar ${Math.round(bar.height)} px`,
                 });
                 console.log(test.info().annotations.at(-1)!.description);
             });
