@@ -4,6 +4,18 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.75.1] – 2026-11-27
+
+### Geändert
+
+- **Die Schriftgröße steht im Lesemodus dabei** (Plan.md 138). Zwischen „−“ und „+“ steht, wie groß die Schrift gerade
+  ist, etwa „130 %“. Ein Tipp darauf stellt wieder 100 % ein.
+
+### Behoben
+
+- **Große Schrift schob die Seite zur Seite** (Plan.md 138). Am Handy ließ sich der Lesemodus bei großer Schrift seitlich
+  verschieben. Lange Zeilen und Wörter brechen jetzt um, nichts rutscht mehr zur Seite.
+
 ## [0.75.0] – 2026-11-27
 
 ### Neu
@@ -2361,6 +2373,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.67.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.67.0
 [0.66.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.66.0
 [0.68.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.68.0
+[0.75.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.75.1
 [0.75.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.75.0
 [0.74.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.74.1
 [0.74.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.74.0
