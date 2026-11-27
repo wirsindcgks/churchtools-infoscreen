@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * The slides of a presentation at the click on the phone page (Plan.md 124 D, 135 C): back, forward, black, a slide to tap. A click is
+ * The slides of a presentation at the click on the phone page (Plan.md 124 D, 135 C): back, forward, a slide to tap (no "Schwarz" on the phone since Plan.md 137 C; a screen that is black – set at its device – says so). A click is
  * written as a value per screen into `steuerung` (the player reads it), the screen reports where it stands into `status` (the page reads
  * it and hands it over). The own click shows at once and holds until the screen reports it.
  */
@@ -57,7 +57,8 @@ const lastClick = computed(() => {
 const now = computed(() => {
     const id = shown.value.slideId;
     const at = shown.value.slides.findIndex((s) => s.id === id);
-    return { title: shown.value.slides[at]?.name || t.control.slideNumber(shown.value.number), number: shown.value.number, total: shown.value.total };
+    // A screen that is black (set at its device) says so; a click on "Vor" lifts it (Plan.md 137 C).
+    return { title: shown.value.black ? t.control.nowBlack : shown.value.slides[at]?.name || t.control.slideNumber(shown.value.number), number: shown.value.number, total: shown.value.total };
 });
 const lastText = computed(() => (lastClick.value ? lastClickText(lastClick.value.by, lastClick.value.at, tick.value) : null));
 
@@ -78,15 +79,14 @@ watch(
     },
 );
 
-const black = computed(() => shown.value.black);
 /** What "Vor" leads to: the name of the next slide, where the phone knows one. */
 const forwardHint = computed(() => {
-    const id = black.value ? null : movedSlide(shown.value, 1);
+    const id = shown.value.black ? null : movedSlide(shown.value, 1);
     return id ? (shown.value.slides.find((s) => s.id === id)?.name ?? '') : '';
 });
 
 /** Writes the click value of the screen: reads it first, adds the action, writes it – one after the other (`enqueue`), so that no `seq` is given twice. */
-function sendClick(action: { do: 'next' | 'previous' | 'black' } | { do: 'goto'; slideId: string }, over: Omit<Pending, 'token' | 'seq' | 'at'>): void {
+function sendClick(action: { do: 'next' | 'previous' } | { do: 'goto'; slideId: string }, over: Omit<Pending, 'token' | 'seq' | 'at'>): void {
     const p = props.position;
     const id = props.screenId;
     const mine = ++token;
@@ -115,11 +115,10 @@ function sendClick(action: { do: 'next' | 'previous' | 'black' } | { do: 'goto';
 }
 
 /** The own display after a click: the slide it moves to (`null` = it stays) and black. */
-function after(step: { do: 'next' | 'previous' } | { do: 'goto'; slideId: string } | { do: 'black' }): Omit<Pending, 'token' | 'seq' | 'at'> {
+function after(step: { do: 'next' | 'previous' } | { do: 'goto'; slideId: string }): Omit<Pending, 'token' | 'seq' | 'at'> {
     const now = shown.value;
     // A click while black only lifts the black (as in a slide show program).
     if (now.black) return { slideId: now.slideId, number: now.number, black: false };
-    if (step.do === 'black') return { slideId: now.slideId, number: now.number, black: true };
     if (step.do === 'goto') {
         const at = now.slides.findIndex((s) => s.id === step.slideId);
         return at < 0 ? { slideId: now.slideId, number: now.number, black: false } : { slideId: step.slideId, number: at + 1, black: false };
@@ -133,11 +132,6 @@ function after(step: { do: 'next' | 'previous' } | { do: 'goto'; slideId: string
 
 function step(by: 1 | -1): void {
     const action = { do: by === 1 ? ('next' as const) : ('previous' as const) };
-    sendClick(action, after(action));
-}
-
-function blackClick(): void {
-    const action = { do: 'black' as const };
     sendClick(action, after(action));
 }
 
@@ -183,7 +177,7 @@ onBeforeUnmount(() => clearInterval(ticker));
         <p v-if="presenter" class="note" data-testid="slides-presenter">{{ t.control.presenterDetected }}</p>
         <!-- In the fixed zone below the middle of the page (Plan.md 135 A). -->
         <Teleport defer to="#control-bar">
-            <ControlBar :back-disabled="false" :forward-disabled="false" :hint="forwardHint" with-black :black="black" @back="step(-1)" @forward="step(1)" @black="blackClick" />
+            <ControlBar :back-disabled="false" :forward-disabled="false" :hint="forwardHint" @back="step(-1)" @forward="step(1)" />
         </Teleport>
     </div>
 </template>

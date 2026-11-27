@@ -471,8 +471,8 @@ button {
 }
 .bar {
     flex: none;
-    padding: 10px 12px 12px;
-    border-top: 1px solid #3a3f4a;
+    /* As in the drafts (Plan.md 137 C): no rule above; 18 px below, so eight parts of a song fit a small phone with the bar. */
+    padding: 12px 12px 18px;
     background: #101114;
 }
 .bar:empty {
