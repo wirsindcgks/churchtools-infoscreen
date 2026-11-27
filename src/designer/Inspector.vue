@@ -297,7 +297,7 @@ const LAYERS = [
             <!-- Without a block chosen: the slide's blocks on top, rolling; slide to playlist below, pinned to the bottom
                  where the inspector is a column (Plan.md 133). -->
             <div class="inspector-flow">
-                <InspectorDivider :label="t.inspector.levels.onSlide" testid="level-on-slide" />
+                <InspectorDivider :label="t.inspector.levels.onSlide" testid="level-on-slide" first />
                 <InspectorSection v-if="rows.length" id="slide-blocks" summary="" :group="false" :title="t.inspector.blocksTitle" default-open class="slide-blocks" data-testid="slide-blocks">
                     <p class="layer-position">{{ t.inspector.topIsFront }}</p>
                     <LayerList @picked="emit('picked')" />
@@ -346,7 +346,6 @@ const LAYERS = [
         flex: none;
         max-height: 50%;
         overflow-y: auto;
-        border-top: 1px solid var(--d-divider);
     }
 }
 .no-blocks {
@@ -378,11 +377,10 @@ h3 {
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
-/* The first part of the inspector: no line above it, one below, then the slide's own fields. */
+/* The first part of the inspector: no line above it; the name of the next level brings the line below (Plan.md 133). */
 .inspector .slide-blocks {
     margin-bottom: var(--d-space-3);
     border-top: 0;
-    border-bottom: 1px solid var(--d-divider);
 }
 .layer-buttons {
     display: flex;
