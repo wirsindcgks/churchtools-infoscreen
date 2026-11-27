@@ -82,7 +82,14 @@ button {
     border-color: #f2f2f2;
     color: #101114;
 }
+/* Greyed out is grey, also for "Vor": no dimmed accent colour that looks half active (user, 2026-11-27). */
 button:disabled {
-    opacity: 0.4;
+    background: #1d2027;
+    border-color: #3a3f4a;
+    color: #7d828c;
+    cursor: default;
+}
+button:disabled small {
+    color: inherit;
 }
 </style>

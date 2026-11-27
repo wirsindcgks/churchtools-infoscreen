@@ -38,6 +38,7 @@ const playlist = computed(() => props.playlists.find((p) => p.id === chosen.valu
                     {{ t.control.duration(h) }}
                 </button>
             </div>
+            <p class="note small" data-testid="rehearsal-sheet-note">{{ t.control.rehearsalServiceNote }}</p>
         </template>
         <template v-if="playlists.length" #foot>
             <button type="button" class="start" :disabled="busy || !playlist" data-testid="rehearsal-sheet-start" @click="playlist && emit('start', playlist.id, hours)">{{ t.control.rehearsalSheetStart }}</button>
@@ -54,6 +55,9 @@ p {
 }
 .note {
     color: #b8bcc4;
+}
+.note.small {
+    font-size: 0.85rem;
 }
 .warn {
     padding: 10px 12px;

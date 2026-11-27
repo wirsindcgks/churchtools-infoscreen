@@ -288,7 +288,7 @@ Der Bildschirm folgt einer Probe nur, wenn die Präsentation ein Liedblatt der Q
 wird sie umgebaut), bleibt er bei seinem Zeitplan, und die Kachel in der Übersicht zeigt keine Probe.
 
 Auf der Handyseite tippen die Musiker auf der Monitor-Karte auf **„Probe starten"**; in dem Blatt, das von unten aufgeht, wählen sie eine
-freigegebene Präsentation und die Dauer (1 bis 3 Stunden) und starten die Probe. Läuft sie, zeigt die Karte „Probe bis …“ und „gestartet von …“;
+freigegebene Präsentation und die Dauer (1 bis 3 Stunden) und starten die Probe. Läuft sie, zeigt die Karte „Probe“ mit „bis …“ und dem Namen;
 mit **„+1 Std"** und **„+2 Std"** verlängern sie (höchstens vier Stunden ab jetzt), mit **„Beenden"** zeigt der Bildschirm sofort wieder, was
 der Zeitplan vorsieht. Das tut er auch, wenn die Dauer abläuft. Beginnt vorher eine Terminregel des Zeitplans, endet die Probe von selbst – der Gottesdienst gewinnt.
 Im Designer zeigt die Kachel des Bildschirms die laufende Probe mit Präsentation, Endzeit und Namen, nach demselben Maßstab wie der

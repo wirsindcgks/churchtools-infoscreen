@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * The card of the monitor at the top of the middle (Plan.md 135 C, D): its name, "Wechseln" where there are several, a chip with what runs
- * and the lines below it. Where the screen is released for rehearsals: "Probe starten", and while a rehearsal runs the buttons to extend
+ * (the "i" beside it shows who follows) and one small line below it. Where the screen is released for rehearsals: "Probe starten", and while a rehearsal runs the buttons to extend
  * and end it. What the screen shows comes from its position only.
  */
 import { onBeforeUnmount, ref } from 'vue';
@@ -28,6 +28,8 @@ const emit = defineEmits<{ choose: [id: string]; startRehearsal: []; extend: [ho
 
 /** The list under "Wechseln": a tap beside it and Escape close it. */
 const open = ref(false);
+/** The sentence about who follows, shown by the "i" at the chip. */
+const infoOpen = ref(false);
 const box = ref<HTMLElement | null>(null);
 function closeOnOutside(event: Event): void {
     if (open.value && !box.value?.contains(event.target as Node)) open.value = false;
@@ -51,6 +53,8 @@ function pick(id: string): void {
     <section class="control-card monitor" data-testid="control-monitor">
         <div class="monitor-top">
             <span class="monitor-name" data-testid="monitor-name">{{ monitor.name }}</span>
+            <p v-if="state?.chip" class="chip" :class="`tone-${state.kind}`" data-testid="monitor-chip"><span class="dot" aria-hidden="true" />{{ state.chip }}</p>
+            <button v-if="state?.note" type="button" class="info" :aria-label="t.control.monitorInfo" :aria-expanded="infoOpen" data-testid="monitor-info" @click="infoOpen = !infoOpen">i</button>
             <div v-if="monitors.length > 1" ref="box" class="monitor-switch">
                 <button type="button" class="switch-button" aria-haspopup="true" :aria-expanded="open" data-testid="monitor-switch" @click="open = !open">
                     {{ t.control.monitorSwitch }}<Icon name="chevron-down" :size="16" />
@@ -62,26 +66,24 @@ function pick(id: string): void {
                 </ul>
             </div>
         </div>
-        <p v-if="state?.chip" class="chip" :class="`tone-${state.kind}`" data-testid="monitor-chip"><span class="dot" aria-hidden="true" />{{ state.chip }}</p>
-        <p v-for="line in lines" :key="line" class="line" data-testid="monitor-line">{{ line }}</p>
+        <p v-if="state?.note && infoOpen" class="line note" data-testid="monitor-note">{{ state.note }}</p>
+        <p v-if="lines.length" class="line" data-testid="monitor-line">{{ lines.join(' · ') }}</p>
         <p v-if="silent" class="line" data-testid="monitor-silent">{{ t.control.monitorSilent }}</p>
-        <p v-if="state?.note" class="note" data-testid="monitor-note">{{ state.note }}</p>
-        <template v-if="rehearsalRunning">
-            <p class="note" data-testid="monitor-rehearsal-note">{{ t.control.rehearsalServiceNote }}</p>
-            <div class="actions">
-                <button v-for="h in EXTEND_HOURS" :key="h" type="button" :disabled="busy" :data-testid="`monitor-extend-${h}`" @click="emit('extend', h)">{{ t.control.rehearsalExtend(h) }}</button>
-                <button type="button" :disabled="busy" data-testid="monitor-end" @click="emit('endRehearsal')">{{ t.control.rehearsalEnd }}</button>
-            </div>
-        </template>
+        <div v-if="rehearsalRunning" class="actions">
+            <button v-for="h in EXTEND_HOURS" :key="h" type="button" :disabled="busy" :data-testid="`monitor-extend-${h}`" @click="emit('extend', h)">{{ t.control.rehearsalExtend(h) }}</button>
+            <button type="button" :disabled="busy" data-testid="monitor-end" @click="emit('endRehearsal')">{{ t.control.rehearsalEnd }}</button>
+        </div>
         <button v-else-if="monitor.rehearsal" type="button" class="rehearsal" data-testid="monitor-rehearsal" @click="emit('startRehearsal')">{{ t.control.rehearsalStart }}</button>
     </section>
 </template>
 
 <style scoped>
+/* Compact (user, 2026-11-27): the song gets the space – name and chip in one row, one small line, flat buttons. */
 .monitor {
     flex: none;
     display: grid;
     gap: 6px;
+    padding: 10px 12px;
 }
 p {
     margin: 0;
@@ -89,20 +91,22 @@ p {
 .monitor-top {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 8px;
 }
 /* Bold, but not `strong`: ChurchTools colours that dark blue. */
 .monitor-name {
     min-width: 0;
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 600;
     color: #f1f2f4;
-    overflow-wrap: anywhere;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .monitor-switch {
     position: relative;
     flex: none;
+    margin-left: auto;
 }
 button {
     border: 1px solid #3a3f4a;
@@ -116,9 +120,9 @@ button {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    min-height: 40px;
-    padding: 0 10px 0 12px;
-    font-size: 0.95rem;
+    min-height: 36px;
+    padding: 0 8px 0 10px;
+    font-size: 0.9rem;
 }
 .switch-button[aria-expanded='true'] {
     border-color: #6b7180;
@@ -148,20 +152,22 @@ button {
     background: #2a2e37;
     font-weight: 600;
 }
+/* The chip never shortens: the name gives way. */
 .chip {
-    justify-self: start;
+    flex: none;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 4px 12px 4px 10px;
+    gap: 6px;
+    padding: 2px 10px 2px 8px;
     border-radius: 999px;
     background: #2a2e37;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     font-weight: 600;
+    white-space: nowrap;
 }
 .dot {
-    width: 10px;
-    height: 10px;
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
     background: #8b909a;
 }
@@ -174,18 +180,38 @@ button {
 .tone-presentation .dot {
     background: #a78bfa;
 }
-.line {
+/* The "i" at the chip: a tap shows the sentence about who follows, another tap hides it. */
+.info {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 50%;
+    color: #b8bcc4;
+    font-size: 0.8rem;
+    font-style: italic;
+    font-family: serif;
+}
+.info[aria-expanded='true'] {
+    border-color: #6b7180;
     color: #f1f2f4;
 }
-.note {
-    color: #b8bcc4;
+.line {
+    color: #f1f2f4;
     font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.line.note {
+    color: #b8bcc4;
+    white-space: normal;
 }
 .rehearsal {
     justify-self: start;
-    min-height: 40px;
+    min-height: 38px;
     padding: 0 14px;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 }
 .actions {
     display: flex;
@@ -193,9 +219,9 @@ button {
 }
 .actions button {
     flex: 1 1 0;
-    min-height: 40px;
+    min-height: 38px;
     padding: 0 8px;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 }
 button:disabled {
     opacity: 0.4;

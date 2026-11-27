@@ -131,7 +131,8 @@ button:disabled {
     gap: 8px;
 }
 .part {
-    padding: 8px;
+    min-height: 48px;
+    padding: 6px 8px;
 }
 .part.active {
     background: #2f6fed;

@@ -19,6 +19,12 @@ describe('ControlRehearsalSheet (Plan.md 135 D)', () => {
         wrapper.unmount();
     });
 
+    it('tells before the start that a service by the schedule ends the rehearsal', () => {
+        const wrapper = mountSheet();
+        expect(wrapper.get('[data-testid="rehearsal-sheet-note"]').text()).toBe('Ein Gottesdienst laut Zeitplan beendet die Probe.');
+        wrapper.unmount();
+    });
+
     it('starts with the chosen presentation and duration', async () => {
         const wrapper = mountSheet(two);
         await wrapper.findAll('.choice').find((b) => b.text() === 'Band')!.trigger('click');

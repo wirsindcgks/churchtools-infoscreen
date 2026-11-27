@@ -71,7 +71,7 @@ export function monitorState(position: PositionDoc | null, now: number, context:
         return { kind: 'service', chip: t.control.monitorService(start === null ? null : clock(start, context.timeZone)), lines: [], note, middle };
     }
     if (position.rehearsal) {
-        return { kind: 'rehearsal', chip: t.control.monitorRehearsal(clock(Date.parse(position.rehearsal.until), context.timeZone)), lines: position.rehearsal.by ? [t.control.monitorRehearsalBy(position.rehearsal.by)] : [], note, middle };
+        return { kind: 'rehearsal', chip: t.control.monitorRehearsal, lines: [t.control.monitorRehearsalLine(clock(Date.parse(position.rehearsal.until), context.timeZone), position.rehearsal.by ?? null)], note, middle };
     }
     if (clicking && hasSlides(position)) {
         const last = position.clickAt ? { by: position.by ?? null, at: Date.parse(position.clickAt) } : null;

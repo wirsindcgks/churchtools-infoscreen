@@ -249,12 +249,18 @@ onBeforeUnmount(() => {
                     </button>
                 </li>
             </ul>
+            <!-- A rare step, so quiet: text only, at the foot of the sheet (user, 2026-11-27). -->
+            <template v-if="song" #foot>
+                <button type="button" class="end" data-testid="rehearsal-end" @click="endSong">
+                    {{ t.control.endSong }}
+                </button>
+            </template>
         </ControlSheet>
         <template v-if="song">
-            <div class="song" data-testid="rehearsal-song">
+            <div class="song" :class="{ fill: !!sheet }" data-testid="rehearsal-song">
                 <ControlSongCard :title="song.name ?? ''" :song-key="sheet?.key" :parts="sheet?.sections ?? []" :active="section" :disabled="false" :hide-parts="!sheet" @choose="choose">
                     <template #action>
-                        <button type="button" class="pick" data-testid="rehearsal-other" @click="openSearch"><Icon name="search" :size="20" />{{ t.control.chooseSong }}</button>
+                        <button type="button" class="pick" :aria-label="t.control.chooseSong" data-testid="rehearsal-other" @click="openSearch"><Icon name="search" :size="22" /></button>
                     </template>
                     <template v-if="arrangements.length > 1" #sub>
                         <div class="arrangements" role="group" :aria-label="t.control.arrangement">
@@ -263,11 +269,13 @@ onBeforeUnmount(() => {
                             </button>
                         </div>
                     </template>
+                    <template v-if="atEnd && sheet && !sheetLoading" #foot>
+                        <p class="note small" data-testid="rehearsal-end-note">{{ t.control.stepEndRehearsal }}</p>
+                    </template>
                 </ControlSongCard>
             </div>
             <p v-if="sheetLoading" class="note">{{ t.control.rehearsalLoading }}</p>
             <template v-else-if="sheet">
-                <p v-if="atEnd" class="note" data-testid="rehearsal-end-note">{{ t.control.stepEndRehearsal }}</p>
                 <!-- In the fixed zone below the middle of the page (Plan.md 135 A). -->
                 <Teleport defer to="#control-bar">
                     <ControlBar :back-disabled="previous === null" :forward-disabled="following === null" :hint="forwardHint" @back="previous !== null && choose(previous)" @forward="following !== null && choose(following)" />
@@ -277,13 +285,10 @@ onBeforeUnmount(() => {
             <p v-else class="note" data-testid="rehearsal-nosheet">
                 {{ t.control.noRehearsalSheet }}
             </p>
-            <button v-if="!sheetLoading" type="button" class="end" data-testid="rehearsal-end" @click="endSong">
-                {{ t.control.endSong }}
-            </button>
         </template>
         <section v-else class="control-card none">
             <p class="note">{{ t.control.rehearsalNone }}</p>
-            <button type="button" class="pick" data-testid="rehearsal-other" @click="openSearch"><Icon name="search" :size="20" />{{ t.control.chooseSong }}</button>
+            <button type="button" class="pick words" data-testid="rehearsal-other" @click="openSearch"><Icon name="search" :size="20" />{{ t.control.chooseSong }}</button>
         </section>
     </div>
 </template>
@@ -301,18 +306,28 @@ onBeforeUnmount(() => {
     flex: none;
     min-width: 0;
 }
-/* The card may shrink, but not to nothing – the parts must stay in view, the middle rolls before they vanish (user, 2026-11-27). */
+/* The card takes what is left; it may shrink, but not to nothing – the parts must stay in view, the middle rolls before they vanish (user, 2026-11-27). */
 .rehearsal > .song {
-    flex: 0 1 auto;
-    min-height: 9rem;
     display: flex;
     flex-direction: column;
+}
+.rehearsal > .song.fill {
+    flex: 1 1 0;
+    min-height: 9rem;
 }
 p {
     margin: 0;
 }
 .note {
     color: #b8bcc4;
+}
+/* The line under the parts: one line, quiet. */
+.note.small {
+    flex: none;
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .warn {
     padding: 10px 12px;
@@ -325,10 +340,8 @@ p {
     justify-content: space-between;
     gap: 12px;
 }
-/* A rare step, so quiet: text only, under the parts. */
 .end {
     justify-self: center;
-    align-self: center;
     min-height: 44px;
     padding: 0 16px;
     border: 0;
@@ -336,6 +349,7 @@ p {
     color: #b8bcc4;
     font: inherit;
     font-size: 0.95rem;
+    text-align: center;
     text-decoration: underline;
     cursor: pointer;
 }
@@ -365,16 +379,22 @@ button {
     text-align: left;
     cursor: pointer;
 }
-/* The magnifier and the words: one button, in the head of the song card or beside the note. */
+/* The magnifier alone, 44 × 44, in the head of the song card; the words only where no song is chosen yet. */
 .pick {
     flex: none;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
+    width: 44px;
     min-height: 44px;
+    padding: 0;
+    text-align: center;
+}
+.pick.words {
+    width: auto;
     padding: 0 12px;
     font-size: 0.95rem;
-    text-align: center;
 }
 .arrangements {
     display: flex;

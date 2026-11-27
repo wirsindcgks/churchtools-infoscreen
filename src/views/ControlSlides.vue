@@ -194,7 +194,7 @@ onBeforeUnmount(() => clearInterval(ticker));
     min-width: 0;
 }
 .slides > .slide-card {
-    flex: 0 1 auto;
+    flex: 1 1 0;
     min-height: 9rem;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -222,8 +222,8 @@ button {
     align-items: center;
     gap: 12px;
     width: 100%;
-    min-height: 56px;
-    padding: 8px 14px;
+    min-height: 48px;
+    padding: 6px 14px;
     border: 1px solid #3a3f4a;
     border-radius: 8px;
     background: #1d2027;

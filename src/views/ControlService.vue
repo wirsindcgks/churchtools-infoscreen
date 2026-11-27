@@ -273,9 +273,12 @@ onBeforeUnmount(() => {
                     :active="activePart?.itemIndex === current.index ? activePart.section : null"
                     :disabled="!stepping"
                     @choose="(n) => choose({ itemIndex: current!.index, section: n })"
-                />
+                >
+                    <template v-if="atEnd" #foot>
+                        <p class="note small" data-testid="control-end">{{ t.control.stepEnd }}</p>
+                    </template>
+                </ControlSongCard>
             </div>
-            <p v-if="atEnd" class="note" data-testid="control-end">{{ t.control.stepEnd }}</p>
             <button v-if="upNext" type="button" class="after" :disabled="!stepping || firstSection(upNext.parts) === null" data-testid="control-after" @click="chooseNext">
                 {{ t.control.after(upNext.title) }}
             </button>
@@ -324,8 +327,8 @@ onBeforeUnmount(() => {
     min-width: 0;
 }
 .service > .current {
-    flex: 0 1 auto;
-    /* Never squeezed to nothing: the parts stay in view, the middle rolls before they vanish. */
+    flex: 1 1 0;
+    /* The card takes what is left, but is never squeezed to nothing: the parts stay in view, the middle rolls before they vanish. */
     min-height: 9rem;
     display: flex;
     flex-direction: column;
@@ -335,6 +338,14 @@ p {
 }
 .note {
     color: #b8bcc4;
+}
+/* The line under the parts: one line, quiet. */
+.note.small {
+    flex: none;
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .warn {
     padding: 10px 12px;

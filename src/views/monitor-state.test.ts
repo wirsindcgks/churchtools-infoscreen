@@ -59,12 +59,12 @@ describe('monitorState (Plan.md 135 C)', () => {
         const rehearsal = { until: '2026-11-26T18:11:00Z', by: 'Anna' };
         expect(monitorState(position({ rehearsal, songsheet: { source: 'rehearsal' } }), NOW, context)).toMatchObject({
             kind: 'rehearsal',
-            chip: 'Probe bis 19:11',
-            lines: ['gestartet von Anna'],
+            chip: 'Probe',
+            lines: ['bis 19:11 · Anna'],
             middle: 'rehearsal',
             note: 'Alle Probenmonitore folgen.',
         });
-        expect(monitorState(position({ rehearsal: { until: rehearsal.until } }), NOW, context)!.lines).toEqual([]);
+        expect(monitorState(position({ rehearsal: { until: rehearsal.until } }), NOW, context)!.lines).toEqual(['bis 19:11']);
     });
 
     it('the presentation at the click: violet, the slide and the last click', () => {
