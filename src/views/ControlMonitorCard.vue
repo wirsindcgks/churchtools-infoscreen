@@ -57,12 +57,11 @@ function pick(id: string): void {
 <template>
     <section class="control-card monitor" data-testid="control-monitor">
         <div class="monitor-top">
-            <Icon name="tv" :size="20" class="monitor-icon" /><span class="monitor-name" data-testid="monitor-name">{{ monitor.name }}</span>
-            <p v-if="state?.chip" class="chip" :class="`tone-${state.kind}`" data-testid="monitor-chip"><span class="dot" aria-hidden="true" />{{ state.chip }}</p>
-            <HelpButton v-if="state?.note" :label="t.control.monitorInfo" :shown="infoOpen" data-testid="monitor-info" @toggle="infoOpen = !infoOpen" />
+            <Icon name="tv" :size="20" class="monitor-icon" />
+            <!-- With several screens the name is the switch (user, 2026-11-27): a button "Wechseln" beside name and chip ran out of the card. -->
             <div v-if="monitors.length > 1" ref="box" class="monitor-switch">
-                <button type="button" class="switch-button" aria-haspopup="true" :aria-expanded="open" data-testid="monitor-switch" @click="open = !open">
-                    {{ t.control.monitorSwitch }}<Icon name="chevron-down" :size="16" />
+                <button type="button" class="switch-button" aria-haspopup="true" :aria-expanded="open" :aria-label="t.control.monitorSwitchLabel(monitor.name)" data-testid="monitor-switch" @click="open = !open">
+                    <span class="monitor-name" data-testid="monitor-name">{{ monitor.name }}</span><Icon name="chevron-down" :size="16" class="switch-chevron" />
                 </button>
                 <ul v-if="open" class="switch-list" role="group" :aria-label="t.control.screenChoose">
                     <li v-for="m in monitors" :key="m.id">
@@ -70,6 +69,9 @@ function pick(id: string): void {
                     </li>
                 </ul>
             </div>
+            <span v-else class="monitor-name" data-testid="monitor-name">{{ monitor.name }}</span>
+            <p v-if="state?.chip" class="chip" :class="`tone-${state.kind}`" data-testid="monitor-chip"><span class="dot" aria-hidden="true" />{{ state.chip }}</p>
+            <HelpButton v-if="state?.note" :label="t.control.monitorInfo" :shown="infoOpen" data-testid="monitor-info" @toggle="infoOpen = !infoOpen" />
         </div>
         <p v-if="state?.note && infoOpen" class="line note" data-testid="monitor-note">{{ state.note }}</p>
         <p v-if="lines.length" class="line" data-testid="monitor-line">{{ lines.join(' · ') }}</p>
@@ -91,6 +93,7 @@ function pick(id: string): void {
 .monitor {
     flex: none;
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 6px;
     padding: 10px 12px;
 }
@@ -101,6 +104,7 @@ p {
     display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
 }
 /* Bold, but not `strong`: ChurchTools colours that dark blue. */
 .monitor-name {
@@ -114,8 +118,7 @@ p {
 }
 .monitor-switch {
     position: relative;
-    flex: none;
-    margin-left: auto;
+    min-width: 0;
 }
 button {
     border: 1px solid #3a3f4a;
@@ -125,13 +128,21 @@ button {
     font: inherit;
     cursor: pointer;
 }
+/* The name as the switch: no frame, so it reads as the name; the chevron says it opens. */
 .switch-button {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 4px;
+    max-width: 100%;
     min-height: 36px;
-    padding: 0 8px 0 10px;
-    font-size: 0.9rem;
+    margin: 0 -6px;
+    padding: 0 6px;
+    border-color: transparent;
+    background: none;
+}
+.switch-chevron {
+    flex: none;
+    color: #b8bcc4;
 }
 .switch-button[aria-expanded='true'] {
     border-color: #6b7180;
@@ -140,7 +151,7 @@ button {
     position: absolute;
     z-index: 5;
     top: 100%;
-    right: 0;
+    left: 0;
     margin: 4px 0 0;
     padding: 4px;
     min-width: 200px;
@@ -189,10 +200,7 @@ button {
 .tone-presentation .dot {
     background: #a78bfa;
 }
-/* The "?" at the chip is the one of the help in the inspector (user, 2026-11-27), at the end of the row; "Wechseln" follows it. */
-.monitor-top .help-btn + .monitor-switch {
-    margin-left: 0;
-}
+/* The "?" at the chip is the one of the help in the inspector (user, 2026-11-27), at the end of the row. */
 /* The screen the card is about (user, 2026-11-27). */
 .monitor-icon {
     flex: none;

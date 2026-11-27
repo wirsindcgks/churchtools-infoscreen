@@ -275,7 +275,7 @@ function clickBy(by: number): void {
         step(0);
         return;
     }
-    // The ends hold (Plan.md 124): no wrap-around – the song changes with the agenda or by the choice of a musician.
+    // "Vor" on the last slide starts over, "Zurück" on the first holds (Plan.md 124, user 2026-11-27).
     if (canStepSlide(index.value, slides.value.length, by)) step(by);
 }
 function applyClick(action: ClickAction): void {

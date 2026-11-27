@@ -27,7 +27,7 @@ Solange die Seite offen ist, geht das Handy nicht in den Ruhezustand.
 Die Seite hat drei Teile:
 
 1. **Oben – der Bildschirm.** Daneben steht, was er gerade zeigt: grün **Gottesdienst**, gelb **Probe**, lila
-   **Präsentation**. Gibt es mehrere Bildschirme, wechselst du mit **„Wechseln"**.
+   **Präsentation**. Gibt es mehrere Bildschirme, tippst du auf den **Namen des Bildschirms** (mit dem kleinen Pfeil) und wählst einen anderen.
 2. **Mitte – das Lied.** Alle Teile als Knöpfe; der blaue läuft gerade. Antippen, und der Bildschirm springt dorthin.
 3. **Unten – Zurück und Vor.** Auf „Vor" steht klein, was als Nächstes kommt.
 

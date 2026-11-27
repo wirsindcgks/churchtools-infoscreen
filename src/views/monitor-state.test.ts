@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PositionDoc } from '../model/position';
-import { monitorList, monitorState, pickMonitor, rehearsalWithoutSheet, slideLines } from './monitor-state';
+import { firstName, monitorList, monitorState, pickMonitor, rehearsalWithoutSheet, slideLines } from './monitor-state';
 
 const NOW = Date.parse('2026-11-26T10:00:00Z');
 const context = { timeZone: 'Europe/Berlin' };
@@ -113,5 +113,14 @@ describe('rehearsalWithoutSheet (Plan.md 135 D)', () => {
         expect(rehearsalWithoutSheet(position({ rehearsal, songsheet: { source: 'agenda', eventId: 7 } }))).toBe(false);
         expect(rehearsalWithoutSheet(position())).toBe(false);
         expect(rehearsalWithoutSheet(null)).toBe(false);
+    });
+});
+
+describe('firstName (user, 2026-11-27: the last name only takes room)', () => {
+    it('keeps the first name of who clicked or started the rehearsal', () => {
+        expect(firstName('Tobias Nikola')).toBe('Tobias');
+        expect(firstName('  Anna  ')).toBe('Anna');
+        expect(firstName('')).toBeNull();
+        expect(firstName(null)).toBeNull();
     });
 });

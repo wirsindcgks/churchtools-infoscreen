@@ -90,11 +90,12 @@ describe('positionSettled, movedSlide', () => {
         expect(positionSettled({ seq: 9 }, null)).toBe(false);
     });
 
-    it('moves the slide along the list and stops at its ends (Plan.md 124)', () => {
+    it('moves the slide along the list, starts over after the last and holds at the first (Plan.md 124)', () => {
         const position = { slideId: 'b', slides: [{ id: 'a', name: '' }, { id: 'b', name: '' }, { id: 'c', name: '' }] };
         expect(movedSlide(position, 1)).toBe('c');
         expect(movedSlide(position, -1)).toBe('a');
-        expect(movedSlide({ ...position, slideId: 'c' }, 1)).toBeNull();
+        expect(movedSlide({ ...position, slideId: 'c' }, 1)).toBe('a');
+        expect(movedSlide({ slideId: 'a', slides: [{ id: 'a', name: '' }] }, 1)).toBeNull();
         expect(movedSlide({ ...position, slideId: 'a' }, -1)).toBeNull();
         expect(movedSlide({ ...position, slideId: 'zz' }, 1)).toBeNull();
     });

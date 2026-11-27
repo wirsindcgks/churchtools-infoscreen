@@ -43,9 +43,12 @@ export function reportsPosition(screenId: string, rehearsalScreenIds: readonly s
     return !!rehearsalScreenIds?.includes(screenId) || !!clickScreenIds?.includes(screenId);
 }
 
-/** Whether "Vor" (`by` 1) or "Zurück" (-1) from slide `index` of `count` still moves: the ends hold, there is no wrap-around (Plan.md 124). */
+/**
+ * Whether "Vor" (`by` 1) or "Zurück" (-1) from slide `index` of `count` still moves (Plan.md 124): "Vor" on the last slide starts over at the
+ * first (user, 2026-11-27), "Zurück" on the first holds. One slide alone does not move.
+ */
 export function canStepSlide(index: number, count: number, by: number): boolean {
     if (count < 1) return false;
     const at = ((index % count) + count) % count;
-    return by > 0 ? at < count - 1 : by < 0 ? at > 0 : true;
+    return by > 0 ? count > 1 : by < 0 ? at > 0 : true;
 }

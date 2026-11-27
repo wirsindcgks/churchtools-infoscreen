@@ -129,15 +129,23 @@ describe('ControlSlides (Plan.md 124 D, 135 C)', () => {
         expect(lines().lines[0]).toBe('Folie 2 von 3 · Lieder');
     });
 
-    it('keeps the buttons usable at the first and last slide, names nothing after the last, and does not move the display there (the player decides)', async () => {
+    it('starts over after the last slide: "Vor" names the first and moves the display there (user, 2026-11-27)', async () => {
         const { wrapper, repository, lines } = mountWith(position({ slideId: 'c', number: 3 }));
         const forward = wrapper.get('[data-testid="step-forward"]');
         expect(forward.attributes('disabled')).toBeUndefined();
-        expect(wrapper.find('[data-testid="step-hint"]').exists()).toBe(false);
+        expect(wrapper.get('[data-testid="step-hint"]').text()).toContain('Begrüßung');
         await forward.trigger('click');
         await flushPromises();
         expect(repository.writeClick.mock.calls[0]![0].actions).toEqual([{ seq: 1, do: 'next' }]);
-        expect(lines().lines[0]).toBe('Folie 3 von 3 · Segen');
+        expect(lines().lines[0]).toBe('Folie 1 von 3 · Begrüßung');
+    });
+
+    it('keeps "Zurück" usable on the first slide and does not move the display there (the player decides)', async () => {
+        const { wrapper, repository, lines } = mountWith(position({ slideId: 'a', number: 1 }));
+        await wrapper.get('[data-testid="step-back"]').trigger('click');
+        await flushPromises();
+        expect(repository.writeClick.mock.calls[0]![0].actions).toEqual([{ seq: 1, do: 'previous' }]);
+        expect(lines().lines[0]).toBe('Folie 1 von 3 · Begrüßung');
     });
 
     it('takes a presenter key like the button', async () => {
