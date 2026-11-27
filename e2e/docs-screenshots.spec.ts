@@ -426,6 +426,11 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await expect(page.locator('.editor-stage').getByTestId('list-place').first()).toContainText('Kirchsaal');
     await expect(page.getByTestId('quick-menu')).toBeVisible(); // the short menu over the list (Plan.md 79, C1)
     await expect(page.getByTestId('save-status')).toContainText('Entwurf gesichert', { timeout: 15_000 });
+    // Nothing chosen for the picture of the README: the inspector shows its levels on their tinted areas (Plan.md 133) –
+    // „Auf der Folie“ with the blocks, „Diese Folie“ and „Ganze Präsentation“ below (user, 2026-11-27).
+    await page.keyboard.press('Escape');
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
+    await expect(page.getByTestId('level-on-slide')).toBeVisible();
     await shoot(page, 'editor');
 
     // Every block of the slide, with the field "Ausrichten" of the short menu open (Plan.md 79, D4).
@@ -675,21 +680,50 @@ test.describe('on a phone', () => {
     test('the control page of the musicians', async ({ page, baseURL }) => {
         origin = new URL(baseURL!).origin;
         await fakeChurch(page);
-        const at = (minutes: number) => new Date(DOC_NOW.getTime() + minutes * 60_000).toISOString();
-        const song = (title: string, arrangementId: number) => ({
-            type: 'song',
-            title: '',
-            duration: 300,
-            song: { title, arrangementId, key: 'C', bpm: 96, arrangement: 'Standard', isDefault: true },
-        });
-        const items = [
-            { type: 'normal', title: 'Begrüßung', duration: 300 },
-            song('Segenslied', 501),
-            { type: 'normal', title: 'Predigt', duration: 1800 },
-            song('Halleluja', 502),
-            { type: 'normal', title: 'Segen', duration: 300 },
-        ];
-        const chordPro = (title: string) => `{title: ${title}}
+        await openControlService(page);
+        const current = page.getByTestId('control-current');
+        await current.getByRole('button', { name: 'Refrain' }).click();
+        await expect(current.locator('.part.active')).toHaveText('Refrain');
+        await shoot(page, 'steuerung');
+        // The reading mode (Plan.md 138): the sheet with chords, following the running part.
+        await page.getByTestId('control-read').click();
+        await expect(page.getByTestId('reader-scroller')).toBeVisible();
+        await shoot(page, 'steuerung-lesen');
+    });
+});
+
+// The reading mode on a tablet (Plan.md 138): an iPad upright at the music stand.
+test.describe('on a tablet', () => {
+    test.use({ viewport: { width: 768, height: 1024 }, hasTouch: true, isMobile: true });
+
+    test('the reading mode of the musicians', async ({ page, baseURL }) => {
+        origin = new URL(baseURL!).origin;
+        await fakeChurch(page);
+        await openControlService(page);
+        await page.getByTestId('control-current').getByRole('button', { name: 'Refrain' }).click();
+        await page.getByTestId('control-read').click();
+        await expect(page.getByTestId('reader-scroller')).toBeVisible();
+        await shoot(page, 'steuerung-tablet');
+    });
+});
+
+/** The phone page of the musicians with a made-up service (Plan.md 121 E2, 135): two songs at a released screen, the running point a song. */
+async function openControlService(page: Page): Promise<void> {
+    const at = (minutes: number) => new Date(DOC_NOW.getTime() + minutes * 60_000).toISOString();
+    const song = (title: string, arrangementId: number) => ({
+        type: 'song',
+        title: '',
+        duration: 300,
+        song: { title, arrangementId, key: 'C', bpm: 96, arrangement: 'Standard', isDefault: true },
+    });
+    const items = [
+        { type: 'normal', title: 'Begrüßung', duration: 300 },
+        song('Segenslied', 501),
+        { type: 'normal', title: 'Predigt', duration: 1800 },
+        song('Halleluja', 502),
+        { type: 'normal', title: 'Segen', duration: 300 },
+    ];
+    const chordPro = (title: string) => `{title: ${title}}
 {key: C}
 {comment: Strophe 1}
 [C]Gott segne [G]dich auf [Am]allen [F]Wegen
@@ -699,43 +733,38 @@ test.describe('on a phone', () => {
 [C]Er trägt uns [G]durch die [Am]Zeit und [F]weiter
 {comment: Bridge}
 [F]Wir [G]singen [C]heut für [C]dich`;
-        await page.route('**/api/events**', (route) => {
-            const path = new URL(route.request().url()).pathname;
-            if (path.endsWith('/agenda/songs')) {
-                const file = (id: number) => ({ name: 'lied.chordpro', fileUrl: `${origin}/files/lied-${id}.chordpro` });
-                return route.fulfill({ json: { data: [{ id: 1, arrangements: [{ id: 501, files: [file(501)] }] }, { id: 2, arrangements: [{ id: 502, files: [file(502)] }] }] } });
-            }
-            if (path.endsWith('/agenda')) return route.fulfill({ json: { data: { calendarId: 1, items } } });
-            return route.fulfill({ json: { data: [{ id: 7, name: 'Gottesdienst', startDate: at(-12), endDate: at(60), calendar: { domainIdentifier: '1' } }] } });
-        });
-        await page.route('**/files/lied-*.chordpro', (route) => route.fulfill({ contentType: 'text/plain', body: chordPro('Lied') }));
-        await page.route('**/csrftoken', (route) => route.fulfill({ json: { data: 'token' } }));
-        // The old interface answers the live position: the second point (the song) began two minutes ago.
-        await page.route(/\?q=churchservice/, (route) =>
-            route.fulfill({ json: { status: 'success', data: { pos_id: '2', switchdate: at(-2), addseconds: '0', currentTime: DOC_NOW.getTime() } } }),
-        );
-        // A screen released for rehearsals that shows the songsheet of this service (Plan.md 135): the monitor card at the top.
-        await page.goto('./'); // seeds the demo store
-        await page.evaluate((now) => {
-            const key = 'infoscreen-designer.demo-store';
-            const state = JSON.parse(localStorage.getItem(key)!) as { nextId: number; categories: { id: number; shorty: string; name: string }[]; values: [number, { id: number; value: string }[]][] };
-            const list = (shorty: string, name: string): { id: number; value: string }[] => {
-                let category = state.categories.find((c) => c.shorty === shorty);
-                if (!category) state.categories.push((category = { id: state.nextId++, shorty, name }));
-                let entry = state.values.find(([id]) => id === category!.id);
-                if (!entry) state.values.push((entry = [category.id, []]));
-                return entry[1];
-            };
-            const add = (target: { id: number; value: string }[], doc: unknown) => target.push({ id: state.nextId++, value: JSON.stringify(doc) });
-            add(list('steuerung', 'Steuerung'), { kind: 'rehearsalCatalog', screens: [{ id: 's1', name: 'Bühne' }], playlists: [{ id: 'p1', name: 'Probe' }], clickScreens: [], at: now });
-            add(list('status', 'Status'), { kind: 'position', screenId: 's1', playlistId: 'p2', playlistName: 'Gottesdienst', advance: 'time', songsheet: { source: 'agenda', eventId: 7 }, seq: 0, at: now });
-            localStorage.setItem(key, JSON.stringify(state));
-        }, DOC_NOW.toISOString());
-        await page.goto('steuerung');
-        await expect(page.getByTestId('monitor-chip')).toContainText('Gottesdienst');
-        const current = page.getByTestId('control-current');
-        await current.getByRole('button', { name: 'Refrain' }).click();
-        await expect(current.locator('.part.active')).toHaveText('Refrain');
-        await shoot(page, 'steuerung');
+    await page.route('**/api/events**', (route) => {
+        const path = new URL(route.request().url()).pathname;
+        if (path.endsWith('/agenda/songs')) {
+            const file = (id: number) => ({ name: 'lied.chordpro', fileUrl: `${origin}/files/lied-${id}.chordpro` });
+            return route.fulfill({ json: { data: [{ id: 1, arrangements: [{ id: 501, files: [file(501)] }] }, { id: 2, arrangements: [{ id: 502, files: [file(502)] }] }] } });
+        }
+        if (path.endsWith('/agenda')) return route.fulfill({ json: { data: { calendarId: 1, items } } });
+        return route.fulfill({ json: { data: [{ id: 7, name: 'Gottesdienst', startDate: at(-12), endDate: at(60), calendar: { domainIdentifier: '1' } }] } });
     });
-});
+    await page.route('**/files/lied-*.chordpro', (route) => route.fulfill({ contentType: 'text/plain', body: chordPro('Lied') }));
+    await page.route('**/csrftoken', (route) => route.fulfill({ json: { data: 'token' } }));
+    // The old interface answers the live position: the second point (the song) began two minutes ago.
+    await page.route(/\?q=churchservice/, (route) =>
+        route.fulfill({ json: { status: 'success', data: { pos_id: '2', switchdate: at(-2), addseconds: '0', currentTime: DOC_NOW.getTime() } } }),
+    );
+    // A screen released for rehearsals that shows the songsheet of this service (Plan.md 135): the monitor card at the top.
+    await page.goto('./'); // seeds the demo store
+    await page.evaluate((now) => {
+        const key = 'infoscreen-designer.demo-store';
+        const state = JSON.parse(localStorage.getItem(key)!) as { nextId: number; categories: { id: number; shorty: string; name: string }[]; values: [number, { id: number; value: string }[]][] };
+        const list = (shorty: string, name: string): { id: number; value: string }[] => {
+            let category = state.categories.find((c) => c.shorty === shorty);
+            if (!category) state.categories.push((category = { id: state.nextId++, shorty, name }));
+            let entry = state.values.find(([id]) => id === category!.id);
+            if (!entry) state.values.push((entry = [category.id, []]));
+            return entry[1];
+        };
+        const add = (target: { id: number; value: string }[], doc: unknown) => target.push({ id: state.nextId++, value: JSON.stringify(doc) });
+        add(list('steuerung', 'Steuerung'), { kind: 'rehearsalCatalog', screens: [{ id: 's1', name: 'Bühne' }], playlists: [{ id: 'p1', name: 'Probe' }], clickScreens: [], at: now });
+        add(list('status', 'Status'), { kind: 'position', screenId: 's1', playlistId: 'p2', playlistName: 'Gottesdienst', advance: 'time', songsheet: { source: 'agenda', eventId: 7 }, seq: 0, at: now });
+        localStorage.setItem(key, JSON.stringify(state));
+    }, DOC_NOW.toISOString());
+    await page.goto('steuerung');
+    await expect(page.getByTestId('monitor-chip')).toContainText('Gottesdienst');
+}
