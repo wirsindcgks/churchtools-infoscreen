@@ -79,7 +79,9 @@ zeigt dein Handy oder Tablet das ganze Lied:
   rollt die Seite von selbst zum nächsten Teil.
 - **Selbst blättern geht.** Rollst du von Hand weg, erscheint unten **„Zum laufenden Teil"** – ein Tipp, und du bist
   wieder dort, wo die Band ist.
-- **Schrift größer oder kleiner** mit **−** und **+** neben dem Liedtitel. Jedes Gerät merkt sich seine Größe.
+- **Schrift größer oder kleiner** mit **−** und **+** neben dem Liedtitel; dazwischen steht die Größe, etwa „130 %“. Ein
+  Tipp darauf stellt wieder 100 % ein. Jedes Gerät merkt sich seine Größe. Lange Zeilen brechen um, die Seite rutscht
+  nie zur Seite.
 - **Nur lesen.** Im Lesemodus kannst du nichts umschalten – keine Kacheln, kein „Vor", kein „Ändern". So schaltet ein
   Tablet am Notenständer nie aus Versehen. Zum Steuern tippst du wieder auf das Auge.
 - Das Auge gibt es, solange ein Lied läuft (Gottesdienst oder Probe). Dein Gerät merkt sich, ob du zuletzt gelesen hast.

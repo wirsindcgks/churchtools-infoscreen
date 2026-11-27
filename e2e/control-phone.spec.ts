@@ -170,6 +170,13 @@ for (const [name, viewport] of [
             await page.getByTestId('reader-larger').click();
             expect(await fits()).toBe(true);
             await expect(page.getByTestId('reader-part').nth(1)).toHaveAttribute('aria-current', 'true');
+            // Up to the largest step nothing pushes the page or the sheet sideways (user, 2026-11-27).
+            while (!(await page.getByTestId('reader-larger').isDisabled())) await page.getByTestId('reader-larger').click();
+            const sideways = await page.evaluate(() => {
+                const el = document.querySelector('[data-testid="reader-scroller"]')!;
+                return { page: document.scrollingElement!.scrollWidth - window.innerWidth, sheet: el.scrollWidth - el.clientWidth };
+            });
+            expect(sideways).toEqual({ page: 0, sheet: 0 });
         });
     });
 }
