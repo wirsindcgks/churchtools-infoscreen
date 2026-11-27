@@ -226,7 +226,7 @@ test('"per Klick" at a released screen: the first slide stays, no bar; at an unr
     await expect(page.getByTestId('slide-progress')).toHaveCount(0);
 });
 
-test('presenter at the device: page keys step, the ends hold, nothing happens by time or without the setting (Plan.md 124 E)', async ({ page }) => {
+test('presenter at the device: page keys step, forward starts over after the last slide, nothing happens by time or without the setting (Plan.md 124 E)', async ({ page }) => {
     test.setTimeout(60_000);
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
@@ -273,8 +273,12 @@ test('presenter at the device: page keys step, the ends hold, nothing happens by
     await expect(page.getByText('Nächster Termin')).toBeVisible();
     await page.keyboard.press('PageUp');
     await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
-    // Forward to the end: the last slide stays, there is no wrap-around to the first.
-    for (let i = 0; i < 20; i++) await page.keyboard.press('PageDown');
-    await page.waitForTimeout(500);
-    await expect(page.getByText('Herzlich willkommen!')).toHaveCount(0);
+    // Forward past the last slide: it starts over at the first (user, 2026-11-27).
+    let back = false;
+    for (let i = 0; i < 20 && !back; i++) {
+        await page.keyboard.press('PageDown');
+        await page.waitForTimeout(400);
+        back = await page.getByText('Herzlich willkommen!').isVisible();
+    }
+    expect(back).toBe(true);
 });

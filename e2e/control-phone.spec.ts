@@ -29,7 +29,7 @@ async function seedRehearsal(page: Page, section: number): Promise<void> {
         const until = new Date(Date.now() + 3600_000).toISOString();
         const add = (target: { id: number; value: string }[], doc: unknown) => target.push({ id: state.nextId++, value: JSON.stringify(doc) });
         const control = list('steuerung', 'Steuerung');
-        add(control, { kind: 'rehearsalCatalog', screens: [{ id: 's1', name: 'Confidence' }], playlists: [{ id: 'p1', name: 'Probenblatt' }], clickScreens: [], at: now });
+        add(control, { kind: 'rehearsalCatalog', screens: [{ id: 's1', name: 'Confidence' }, { id: 's2', name: 'Foyer' }], playlists: [{ id: 'p1', name: 'Probenblatt' }], clickScreens: [], at: now });
         add(control, { kind: 'rehearsal', songId: 9, arrangementId: 4, section: chosen, at: now, by: 'Tobias Nikola' });
         add(list('status', 'Status'), { kind: 'position', screenId: 's1', playlistId: 'p1', playlistName: 'Probenblatt', advance: 'time', rehearsal: { until, by: 'Tobias Nikola' }, songsheet: { source: 'rehearsal' }, seq: 0, at: now });
         localStorage.setItem(key, JSON.stringify(state));
@@ -96,6 +96,8 @@ for (const [name, viewport] of [
                 const nameBox = await box(page, '[data-testid="monitor-name"]');
                 const chipBox = await box(page, '[data-testid="monitor-chip"]');
                 expect(Math.abs(nameBox.y + nameBox.height / 2 - (chipBox.y + chipBox.height / 2))).toBeLessThan(6);
+                // Nothing of the row runs out of the card (user, 2026-11-27: "Wechseln" did).
+                expect(chipBox.x + chipBox.width).toBeLessThanOrEqual(monitor.x + monitor.width);
                 // One line of the song head: the key stands behind the title, the magnifier is 44 × 44.
                 const lupe = await box(page, '[data-testid="rehearsal-other"]');
                 expect([Math.round(lupe.width), Math.round(lupe.height)]).toEqual([44, 44]);

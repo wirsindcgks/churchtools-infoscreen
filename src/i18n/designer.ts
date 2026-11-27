@@ -1652,7 +1652,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         stepEnd: 'Letzter Teil – nächstes Lied über „Danach“.',
         stepEndRehearsal: 'Letzter Teil – anderes Lied über die Lupe.',
         presenterDetected: 'Presenter erkannt: Vor und Zurück schalten wie die Knöpfe.',
-        monitorSwitch: 'Wechseln',
+        monitorSwitchLabel: (name: string) => `Bildschirm wechseln, jetzt „${name}“`,
         monitorSilent: 'Der Bildschirm meldet sich nicht – ist er an?',
         monitorService: (time: string | null) => (time ? `Gottesdienst · ${time}` : 'Gottesdienst'),
         monitorRehearsal: 'Probe',

@@ -159,6 +159,8 @@ function clicked(): void {
 const nextSlide = computed(() => {
     const p = slidesPosition.value;
     if (!p || (middle.value !== 'service' && middle.value !== 'rehearsal')) return null;
+    // After the song on the last slide there is no next one: the line does not lead back to the start, unlike "Vor".
+    if (p.slides[p.slides.length - 1]?.id === p.slideId) return null;
     const id = movedSlide(p, 1);
     return id ? { id, name: p.slides.find((s) => s.id === id)?.name || t.control.slideLine(p.number + 1, p.total, '') } : null;
 });

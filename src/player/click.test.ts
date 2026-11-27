@@ -46,14 +46,14 @@ describe('reportsPosition (Plan.md 135 B)', () => {
     });
 });
 
-describe('canStepSlide (Plan.md 124: the ends hold)', () => {
+describe('canStepSlide (Plan.md 124: forward starts over, back holds)', () => {
     it('steps inside the list', () => {
         expect(canStepSlide(1, 3, 1)).toBe(true);
         expect(canStepSlide(1, 3, -1)).toBe(true);
     });
 
-    it('does not wrap round: forward on the last and back on the first slide do nothing', () => {
-        expect(canStepSlide(2, 3, 1)).toBe(false);
+    it('forward on the last slide starts over, back on the first does nothing (user, 2026-11-27)', () => {
+        expect(canStepSlide(2, 3, 1)).toBe(true);
         expect(canStepSlide(0, 3, -1)).toBe(false);
         expect(canStepSlide(0, 3, 1)).toBe(true);
         expect(canStepSlide(2, 3, -1)).toBe(true);

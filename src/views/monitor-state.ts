@@ -42,9 +42,14 @@ export interface MonitorState {
 
 const clock = (ms: number, timeZone: string) => new Intl.DateTimeFormat(LOCALE, { hour: '2-digit', minute: '2-digit', timeZone }).format(ms);
 
+/** The first name only: the last name takes room on the phone and adds nothing among the band (user, 2026-11-27). `null` stays `null`. */
+export function firstName(name: string | null): string | null {
+    return name?.trim().split(/\s+/)[0] || null;
+}
+
 /** "zuletzt Anna, vor 5 s". */
 export function lastClickText(by: string | null, at: number, now: number): string {
-    return t.control.clickLast(by, t.control.clickAgo(Math.max(0, Math.round((now - at) / 1000))));
+    return t.control.clickLast(firstName(by), t.control.clickAgo(Math.max(0, Math.round((now - at) / 1000))));
 }
 
 /** The lines of a presentation at the click: the slide and who clicked last. */
@@ -71,7 +76,7 @@ export function monitorState(position: PositionDoc | null, now: number, context:
         return { kind: 'service', chip: t.control.monitorService(start === null ? null : clock(start, context.timeZone)), lines: [], note, middle };
     }
     if (position.rehearsal) {
-        return { kind: 'rehearsal', chip: t.control.monitorRehearsal, lines: [t.control.monitorRehearsalLine(clock(Date.parse(position.rehearsal.until), context.timeZone), position.rehearsal.by ?? null)], note, middle };
+        return { kind: 'rehearsal', chip: t.control.monitorRehearsal, lines: [t.control.monitorRehearsalLine(clock(Date.parse(position.rehearsal.until), context.timeZone), firstName(position.rehearsal.by ?? null))], note, middle };
     }
     if (clicking && hasSlides(position)) {
         const last = position.clickAt ? { by: position.by ?? null, at: Date.parse(position.clickAt) } : null;

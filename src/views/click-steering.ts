@@ -49,8 +49,13 @@ export function positionSettled(position: Pick<PositionDoc, 'seq'> | null, ownSe
     return ownSeq !== null && position !== null && position.seq >= ownSeq;
 }
 
-/** The slide of `position` moved by `by`; `null` where the slide is not in the list or at its ends – the player does not wrap round (Plan.md 124). */
+/**
+ * The slide of `position` moved by `by`, as the player moves it (Plan.md 124): "Vor" on the last slide starts over at the first, "Zurück" on
+ * the first holds (`null`); `null` too where the slide is not in the list or stands alone.
+ */
 export function movedSlide(position: Pick<ClickPosition, 'slideId' | 'slides'>, by: 1 | -1): string | null {
     const at = position.slides.findIndex((s) => s.id === position.slideId);
-    return at < 0 ? null : (position.slides[at + by]?.id ?? null);
+    if (at < 0) return null;
+    if (by === 1 && at === position.slides.length - 1) return position.slides.length > 1 ? (position.slides[0]?.id ?? null) : null;
+    return position.slides[at + by]?.id ?? null;
 }

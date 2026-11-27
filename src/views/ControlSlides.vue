@@ -125,7 +125,7 @@ function after(step: { do: 'next' | 'previous' } | { do: 'goto'; slideId: string
     const target = movedSlide(now, by);
     // At the ends nothing moves in the display – the player stays there, unless a block on the slide still has a page (the phone cannot know).
     if (target === null) return { slideId: now.slideId, number: now.number, black: false };
-    return { slideId: target, number: now.number + by, black: false };
+    return { slideId: target, number: now.slides.findIndex((s) => s.id === target) + 1, black: false };
 }
 
 function step(by: 1 | -1): void {
