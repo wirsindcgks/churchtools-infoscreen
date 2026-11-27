@@ -36,13 +36,14 @@ useWakeLock();
  * G57): nothing of the host stays to hide or to scroll. While it is open the page behind must not scroll either; the old values come back
  * on leaving.
  */
-let scrollLocked: { el: HTMLElement; overflow: string }[] = [];
+let scrollLocked: { el: HTMLElement; overflow: string; background: string }[] = [];
 onMounted(() => {
-    scrollLocked = [document.documentElement, document.body].map((el) => ({ el, overflow: el.style.overflow }));
-    for (const { el } of scrollLocked) el.style.overflow = 'hidden';
+    scrollLocked = [document.documentElement, document.body].map((el) => ({ el, overflow: el.style.overflow, background: el.style.backgroundColor }));
+    // Dark behind it as well: the keyboard of iOS shifts the window and showed the white page of ChurchTools below the sheet (user, 2026-11-27).
+    for (const { el } of scrollLocked) Object.assign(el.style, { overflow: 'hidden', backgroundColor: '#101114' });
 });
 onBeforeUnmount(() => {
-    for (const { el, overflow } of scrollLocked) el.style.overflow = overflow;
+    for (const { el, overflow, background } of scrollLocked) Object.assign(el.style, { overflow, backgroundColor: background });
     scrollLocked = [];
 });
 
@@ -315,6 +316,9 @@ onBeforeUnmount(() => {
     background: #101114;
     color: #f2f2f2;
     font-size: 1.1rem;
+    /* The page is always dark: the help "?" takes the turquoise of the dark mode of the designer. */
+    --d-help: var(--color-teal-300, oklch(85.5% 0.138 181.071));
+    --d-surface: #101114;
 }
 /* The title stays for screen readers; the link says it for the eyes. */
 h1 {

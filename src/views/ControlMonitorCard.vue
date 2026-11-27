@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
  * The card of the monitor at the top of the middle (Plan.md 135 C, D): its name, "Wechseln" where there are several, a chip with what runs
- * (the "i" beside it shows who follows) and one small line below it. Where the screen is released for rehearsals: "Probe starten", and while a rehearsal runs the buttons to extend
+ * (the "?" beside it shows who follows) and one small line below it. Where the screen is released for rehearsals: "Probe starten", and while a rehearsal runs the buttons to extend
  * and end it. What the screen shows comes from its position only.
  */
 import { onBeforeUnmount, ref } from 'vue';
+import HelpButton from '../designer/HelpButton.vue';
 import Icon from '../designer/Icon.vue';
 import { t } from '../i18n/designer';
 import type { Monitor, MonitorState } from './monitor-state';
@@ -32,7 +33,7 @@ const emit = defineEmits<{ choose: [id: string]; startRehearsal: []; extend: [ho
 
 /** The list under "Wechseln": a tap beside it and Escape close it. */
 const open = ref(false);
-/** The sentence about who follows, shown by the "i" at the chip. */
+/** The sentence about who follows, shown by the "?" at the chip. */
 const infoOpen = ref(false);
 const box = ref<HTMLElement | null>(null);
 function closeOnOutside(event: Event): void {
@@ -58,7 +59,7 @@ function pick(id: string): void {
         <div class="monitor-top">
             <span class="monitor-name" data-testid="monitor-name">{{ monitor.name }}</span>
             <p v-if="state?.chip" class="chip" :class="`tone-${state.kind}`" data-testid="monitor-chip"><span class="dot" aria-hidden="true" />{{ state.chip }}</p>
-            <button v-if="state?.note" type="button" class="info" :aria-label="t.control.monitorInfo" :aria-expanded="infoOpen" data-testid="monitor-info" @click="infoOpen = !infoOpen">i</button>
+            <HelpButton v-if="state?.note" :label="t.control.monitorInfo" :shown="infoOpen" data-testid="monitor-info" @toggle="infoOpen = !infoOpen" />
             <div v-if="monitors.length > 1" ref="box" class="monitor-switch">
                 <button type="button" class="switch-button" aria-haspopup="true" :aria-expanded="open" data-testid="monitor-switch" @click="open = !open">
                     {{ t.control.monitorSwitch }}<Icon name="chevron-down" :size="16" />
@@ -187,21 +188,9 @@ button {
 .tone-presentation .dot {
     background: #a78bfa;
 }
-/* The "i" at the chip: a tap shows the sentence about who follows, another tap hides it. */
-.info {
-    flex: none;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border-radius: 50%;
-    color: #b8bcc4;
-    font-size: 0.8rem;
-    font-style: italic;
-    font-family: serif;
-}
-.info[aria-expanded='true'] {
-    border-color: #6b7180;
-    color: #f1f2f4;
+/* The "?" at the chip is the one of the help in the inspector (user, 2026-11-27); it stands beside the chip, not at the end of the row. */
+.monitor-top .help-btn {
+    margin-left: 0;
 }
 .line {
     color: #f1f2f4;
