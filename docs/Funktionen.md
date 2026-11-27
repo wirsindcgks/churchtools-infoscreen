@@ -69,7 +69,7 @@ Schatten oder eine farbige Hinterlegung. Farben kommen aus der Palette der Gemei
 ![Editor mit einer gestalteten Folie: ein Bild mit runden Ecken, Schatten und abgedunkeltem Ton, darauf ein Text mit Schatten und Hinterlegung, daneben eine gedrehte gelbe Fläche mit ihrem Drehgriff](bilder/gestalten.png)
 
 **Mehrere Bausteine** wählt man mit Umschalt-Klick oder einem Auswahlrahmen, richtet sie gemeinsam aus, verteilt sie
-gleichmäßig oder **gruppiert** sie. Die Liste „Bausteine dieser Folie" erreicht auch, was verdeckt liegt.
+gleichmäßig oder **gruppiert** sie. Ist kein Baustein gewählt, zeigt der Inspektor drei Ebenen mit je einer Zwischenzeile: „Auf der Folie“ mit der Liste „Bausteine“, die auch erreicht, was verdeckt liegt, „Diese Folie“ und „Ganze Präsentation“. Am PC und am Tablet quer hängen „Folie“ bis „Präsentation“ eingeklappt am unteren Rand und stehen bei jeder Folie am selben Platz; am Handy folgen sie der Liste.
 
 ![Editor mit allen fünf Bausteinen einer Folie gewählt: darüber das Kurzmenü „5 Bausteine" mit offenem „Ausrichten"](bilder/mehrere.png)
 

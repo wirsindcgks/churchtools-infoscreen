@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addBlock } from './helpers';
+import { addBlock, openSection } from './helpers';
 
 test.use({ viewport: { width: 1280, height: 720 } });
 
@@ -24,6 +24,7 @@ test('an open player follows what the designer saves, without reloading', async 
 
     // Slide 1 down to 2 seconds, and a new fourth slide with its own text.
     await designer.keyboard.press('Escape');
+    await openSection(designer, 'slide');
     await designer.getByTestId('duration-input').fill('2');
     await designer.getByTestId('duration-input').blur();
     await designer.getByTestId('slide-item').last().click();

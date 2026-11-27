@@ -909,6 +909,11 @@ export const t = {
         regionFixedInfo: 'Der Baustein hat die Größe des Bereichs der Aufteilung und bleibt dort; wechselt die Aufteilung, wandert er mit.',
         /** The list of the slide's blocks above the slide's settings (Plan.md 79, D6). */
         slideBlocks: 'Bausteine dieser Folie',
+        /** The list under "Auf der Folie" (Plan.md 133); the divider above already names the level. */
+        blocksTitle: 'Bausteine',
+        noBlocks: 'Noch keine Bausteine auf dieser Folie.',
+        /** The dividers between the levels of the inspector while no block is chosen (Plan.md 133). */
+        levels: { onSlide: 'Auf der Folie', thisSlide: 'Diese Folie', wholePlaylist: 'Ganze Präsentation' },
         topIsFront: 'oben = vorne',
         linkedAlso: (names: string) => `Auch in: ${names}`,
         linkedPending: 'ab dem Veröffentlichen',

@@ -16,6 +16,7 @@ import { fillOfKind } from '../fill-kind';
 import FillEditor from '../FillEditor.vue';
 import { useGeneralHelp } from '../help/register';
 import Icon from '../Icon.vue';
+import InspectorDivider from '../InspectorDivider.vue';
 import InspectorSection from '../InspectorSection.vue';
 import { useInspectorContext } from './context';
 import { useEdit } from './edit';
@@ -188,9 +189,9 @@ const backgroundColors = computed(() => {
 
 <template>
     <section v-if="slide" data-testid="slide-inspector">
-        <!-- The slide's own settings under a head of their own (Plan.md 132 B), so they do not read as part of the list of blocks
-             above; outside the group like that list: open at first, and it stays open while another section opens. -->
-        <InspectorSection id="slide" :group="false" default-open :title="t.inspector.slideSection" :summary="slideSummary" :help="slideHelp">
+        <!-- The slide's own settings under a divider of their own (Plan.md 133), in the group with the others: one open at a time. -->
+        <InspectorDivider :label="t.inspector.levels.thisSlide" testid="level-this-slide" />
+        <InspectorSection id="slide" :title="t.inspector.slideSection" :summary="slideSummary" :help="slideHelp">
             <TextField :model-value="slide.name" :label="t.common.name" :maxlength="100" testid="slide-name" @update:model-value="editor.updateSlide({ name: $event })" />
             <!-- A slide that other playlists show too (Plan.md 49): changes here count there as well. -->
             <div v-if="linkedNames" class="linked" data-testid="slide-linked">
@@ -274,6 +275,7 @@ const backgroundColors = computed(() => {
 
     <!-- The playlist is the designers' own (schema 1.4); where it runs, the screens' schedules decide. -->
     <section v-if="editor.draft">
+        <InspectorDivider :label="t.inspector.levels.wholePlaylist" testid="level-playlist" />
         <InspectorSection id="playlist" :title="t.inspector.playlist" :summary="playlistSectionSummary" :help="playlistHelp">
             <div data-testid="playlist-info" class="playlist-info">
                 <TextField

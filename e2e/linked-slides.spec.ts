@@ -26,6 +26,7 @@ async function openPlaylist(page: Page, index: number): Promise<void> {
 const slideName = (page: Page) => page.getByTestId('slide-inspector').locator('input[type=text]').first();
 
 async function rename(page: Page, name: string): Promise<void> {
+    await openSection(page, 'slide');
     await slideName(page).fill(name);
     await slideName(page).blur();
 }
@@ -47,6 +48,7 @@ async function saveLinked(page: Page, expected?: string | RegExp): Promise<void>
 test('a linked duplicate shows the chain, and a change in one playlist arrives in the other', async ({ page }) => {
     await duplicateFirst(page, true);
     await expect(page.getByTestId('slide-linked-badge')).toHaveCount(3);
+    await openSection(page, 'slide');
     await expect(page.getByTestId('slide-linked')).toBeVisible();
     await expect(page.getByTestId('slide-linked-in')).toContainText('Auch in: ');
     await expect(page.getByTestId('slide-linked-badge').first()).toHaveAttribute('aria-label', /^Verknüpft mit: /);
@@ -57,12 +59,14 @@ test('a linked duplicate shows the chain, and a change in one playlist arrives i
 
     await openPlaylist(page, 0);
     await expect(page.getByTestId('slide-item').first()).toContainText('Gemeinsam geändert');
+    await openSection(page, 'slide');
     await expect(page.getByTestId('slide-linked')).toBeVisible();
     await expect(page.getByTestId('slide-linked-in')).toContainText('(Kopie)');
 });
 
 test('"Verknüpfung lösen" makes an own copy: a later change stays in this playlist', async ({ page }) => {
     await duplicateFirst(page, true);
+    await openSection(page, 'slide');
     await page.getByTestId('slide-unlink').click();
     await expect(page.getByTestId('slide-linked')).toHaveCount(0);
     await expect(page.getByTestId('slide-linked-badge')).toHaveCount(2);
@@ -96,10 +100,12 @@ test('slides taken over linked: "schon hier" for the ones already in the playlis
     await expect(page.getByTestId('slide-linked-badge')).toHaveCount(1);
     await expect(dialog.getByTestId('slide-import-linked-hint')).toHaveCount(0);
     // The link comes with the save: until then the inspector says so.
+    await openSection(page, 'slide');
     await expect(page.getByTestId('slide-link-pending')).toHaveText('ab dem Veröffentlichen');
     await saveLinked(page, 'läuft auch in „');
     await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
     await expect(page.getByTestId('slide-link-pending')).toHaveCount(0);
+    await openSection(page, 'slide');
     await expect(page.getByTestId('slide-linked-in')).toBeVisible();
 
     // … and taken over once, they are not offered again.
@@ -111,6 +117,7 @@ test('slides taken over linked: "schon hier" for the ones already in the playlis
     // After the save the source knows of the link, too.
     await openPlaylist(page, 0);
     await expect(page.getByTestId('slide-linked-badge')).toHaveCount(1);
+    await openSection(page, 'slide');
     await expect(page.getByTestId('slide-linked-in')).toContainText('(Kopie)');
     await expect(page.getByTestId('slide-link-pending')).toHaveCount(0);
 });
@@ -168,8 +175,10 @@ for (const size of [
         await openPlaylist(page, 0);
         if (size.width === 390) await openInspector(page);
         else if (size.width === 1180) await page.getByTestId('tablet-inspector-toggle').click();
+        await openSection(page, 'slide');
         const row = page.getByTestId('slide-linked');
         await expect(row).toBeVisible();
+        await openSection(page, 'slide');
         await expect(page.getByTestId('slide-linked-in')).toHaveAttribute('data-tip', new RegExp(long));
         const frame = (await page.locator('aside.inspector').boundingBox())!;
         for (const id of ['slide-linked', 'slide-unlink']) {

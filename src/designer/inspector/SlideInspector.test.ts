@@ -8,6 +8,7 @@ import { ScreenRepository } from '../../store/screen-repository';
 import { useEditorStore } from '../editor-store';
 import { createScreenBundle } from '../ops';
 import { INSPECTOR_CONTEXT } from './context';
+import { SECTION_GROUP } from './mode';
 import SlideInspector from './SlideInspector.vue';
 
 async function setup() {
@@ -23,6 +24,7 @@ async function setup() {
     const Host = defineComponent({
         setup() {
             provideStageContext({ now: new Date(), timeZone: 'Europe/Berlin', clockConfirmed: true, churchName: '', appointments: [], media: new Map() });
+            provide(SECTION_GROUP, 'inspector');
             provide(INSPECTOR_CONTEXT, { pickImage: (kind) => picked.push(kind), calendars: [], groups: [], homepages: [], rooms: null });
             return () => h(SlideInspector);
         },
@@ -140,15 +142,14 @@ describe('the inspector of the slide (Plan.md 79, B2)', () => {
         expect(wrapper.get('[data-testid="section-playlist"] summary').text()).not.toContain('Fortschritt');
     });
 
-    it('gathers name, display time and "Anzeigen" under a section "Folie" of their own, open at first and outside the group (Plan.md 132 B)', async () => {
+    it('gathers name, display time and "Anzeigen" under a section "Folie" of their own, closed at first and in the group (Plan.md 133)', async () => {
         const { editor, wrapper } = await setup();
         const section = wrapper.get('[data-testid="section-slide"]');
-        expect(section.attributes('open')).toBeDefined();
-        expect(section.attributes('name')).toBeUndefined();
+        expect(section.attributes('open')).toBeUndefined();
+        expect(section.attributes('name')).toBeDefined();
         for (const id of ['slide-name', 'duration-input', 'slide-enabled']) expect(section.find(`[data-testid="${id}"]`).exists()).toBe(true);
         editor.updateSlide({ enabled: false, durationSeconds: 12 });
-        (section.element as HTMLDetailsElement).open = false;
-        section.element.dispatchEvent(new Event('toggle'));
+        await flushPromises();
         await flushPromises();
         expect(wrapper.get('[data-testid="section-slide"] summary').text()).toContain('12 s · ausgeblendet');
     });
