@@ -41,7 +41,9 @@ const playlist = computed(() => props.playlists.find((p) => p.id === chosen.valu
             <p class="note small" data-testid="rehearsal-sheet-note">{{ t.control.rehearsalServiceNote }}</p>
         </template>
         <template v-if="playlists.length" #foot>
-            <button type="button" class="start" :disabled="busy || !playlist" data-testid="rehearsal-sheet-start" @click="playlist && emit('start', playlist.id, hours)">{{ t.control.rehearsalSheetStart }}</button>
+            <button type="button" class="start" :disabled="busy || !playlist" data-testid="rehearsal-sheet-start" @click="playlist && emit('start', playlist.id, hours)">
+                {{ busy ? t.control.transferSaving : t.control.rehearsalSheetStart }}
+            </button>
         </template>
     </ControlSheet>
 </template>

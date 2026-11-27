@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { OverrideDoc } from '../agenda/control';
 import type { PositionDoc } from '../model/position';
-import { endOverride, extendOverride, shownRehearsal, startOverride } from './rehearsal-override';
+import { endOverride, extendOverride, shownRehearsal, startOverride, transferState } from './rehearsal-override';
 
 const HOUR = 3600_000;
 const NOW = Date.parse('2026-11-27T10:00:00Z');
@@ -74,5 +74,25 @@ describe('shownRehearsal', () => {
     it('holds its own write for a minute only', () => {
         expect(shownRehearsal(reported, written({ ended: true, playlistId: '' }), NOW + 61_000)?.by).toBe('Anna');
         expect(shownRehearsal(position(), written(), NOW + 61_000)).toBeNull();
+    });
+});
+
+describe('transferState', () => {
+    const written = (over: Partial<OverrideDoc> = {}): OverrideDoc => ({ kind: 'override', screenId: 's1', playlistId: 'p2', until: '2026-11-27T12:00:00Z', at: '2026-11-27T10:00:00Z', ...over });
+    const ended = written({ ended: true, playlistId: '', until: '2026-11-27T10:00:00Z' });
+    const running = position({ rehearsal: { until: '2026-11-27T11:00:00Z' } });
+
+    it('waits until the screen reports the start, the new end or the end', () => {
+        expect(transferState(position(), written(), NOW + 5000)).toBe('waiting');
+        expect(transferState(running, written(), NOW + 5000)).toBe('waiting');
+        expect(transferState(position({ rehearsal: { until: '2026-11-27T12:00:00Z' } }), written(), NOW + 5000)).toBeNull();
+        expect(transferState(running, ended, NOW + 5000)).toBe('waiting');
+        expect(transferState(position(), ended, NOW + 5000)).toBeNull();
+    });
+
+    it('says "late" after a minute without an answer, and nothing without an own write', () => {
+        expect(transferState(position(), written(), NOW + 61_000)).toBe('late');
+        expect(transferState(null, written(), NOW + 61_000)).toBe('late');
+        expect(transferState(running, null, NOW)).toBeNull();
     });
 });

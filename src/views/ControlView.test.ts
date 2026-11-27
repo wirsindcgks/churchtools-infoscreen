@@ -240,6 +240,8 @@ describe('ControlView (Plan.md 135 C)', () => {
         expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Probe');
         expect(wrapper.get('[data-testid="monitor-line"]').text()).toBe('bis 12:00 · Max');
         expect(wrapper.find('[data-testid="monitor-rehearsal"]').exists()).toBe(false);
+        // Until the screen reports it, the card says that it switches (user, 2026-11-27: "es passiert nichts").
+        expect(wrapper.get('[data-testid="monitor-transfer"]').text()).toContain('Der Bildschirm wechselt zur Probe');
     });
 
     it('keeps the sheet open and says so where the write fails', async () => {
@@ -279,6 +281,7 @@ describe('ControlView (Plan.md 135 C)', () => {
             // Nothing twice: the end of the rehearsal and its author stand in one place.
             expect(wrapper.text().match(/10:52/g)).toHaveLength(1);
             expect(wrapper.text().match(/Anna/g)).toHaveLength(1);
+            expect(wrapper.find('[data-testid="monitor-transfer"]').exists()).toBe(false);
         });
 
         it('extends from the end that stands, for the presentation that runs, and shows the new end at once', async () => {
@@ -290,6 +293,7 @@ describe('ControlView (Plan.md 135 C)', () => {
             expect(doc).toMatchObject({ playlistId: 'p1', until: '2026-11-26T11:52:00.000Z', by: 'Max' });
             expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Probe');
             expect(wrapper.get('[data-testid="monitor-line"]').text()).toBe('bis 12:52 · Max');
+            expect(wrapper.get('[data-testid="monitor-transfer"]').text()).toContain('neue Zeit');
         });
 
         it('ends the rehearsal and offers "Probe starten" again', async () => {
@@ -300,6 +304,7 @@ describe('ControlView (Plan.md 135 C)', () => {
             expect(repository.writeOverride.mock.calls[0]![0]).toMatchObject({ screenId: 's1', playlistId: '', ended: true, by: 'Max' });
             expect(wrapper.find('[data-testid="monitor-end"]').exists()).toBe(false);
             expect(wrapper.find('[data-testid="monitor-rehearsal"]').exists()).toBe(true);
+            expect(wrapper.get('[data-testid="monitor-transfer"]').text()).toContain('kehrt zum Zeitplan zurück');
         });
 
         it('shows the song with its parts and the magnifier, no "Schwarz" in the bar although the presentation is at the click', async () => {

@@ -10,6 +10,8 @@ import { t } from '../i18n/designer';
 import type { Monitor, MonitorState } from './monitor-state';
 import { EXTEND_HOURS } from './rehearsal-override';
 
+const transferText = { saving: t.control.transferSaving, start: t.control.transferStart, extend: t.control.transferExtend, end: t.control.transferEnd, late: t.control.transferLate };
+
 defineProps<{
     monitors: Monitor[];
     monitor: Monitor;
@@ -23,6 +25,8 @@ defineProps<{
     rehearsalRunning: boolean;
     /** The write of the rehearsal is on its way: the buttons rest. */
     busy: boolean;
+    /** Between the tap and the screen taking it: the card says what happens meanwhile (see `useRehearsalControl`). */
+    transfer?: 'saving' | 'start' | 'extend' | 'end' | 'late' | null;
 }>();
 const emit = defineEmits<{ choose: [id: string]; startRehearsal: []; extend: [hours: number]; endRehearsal: [] }>();
 
@@ -68,6 +72,9 @@ function pick(id: string): void {
         </div>
         <p v-if="state?.note && infoOpen" class="line note" data-testid="monitor-note">{{ state.note }}</p>
         <p v-if="lines.length" class="line" data-testid="monitor-line">{{ lines.join(' · ') }}</p>
+        <p v-if="transfer" class="line transfer" :class="{ late: transfer === 'late' }" role="status" data-testid="monitor-transfer">
+            <span v-if="transfer !== 'late'" class="transfer-ring" aria-hidden="true" /><span>{{ transferText[transfer] }}</span>
+        </p>
         <p v-if="silent" class="line" data-testid="monitor-silent">{{ t.control.monitorSilent }}</p>
         <div v-if="rehearsalRunning" class="actions">
             <button v-for="h in EXTEND_HOURS" :key="h" type="button" :disabled="busy" :data-testid="`monitor-extend-${h}`" @click="emit('extend', h)">{{ t.control.rehearsalExtend(h) }}</button>
@@ -225,5 +232,35 @@ button {
 }
 button:disabled {
     opacity: 0.4;
+}
+/* Something happens (user, 2026-11-27): a turning ring until the screen took the tap. */
+.line.transfer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #facc15;
+    white-space: normal;
+}
+.line.transfer.late {
+    color: #fca5a5;
+}
+.transfer-ring {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #3a3f4a;
+    border-top-color: #facc15;
+    border-radius: 50%;
+    animation: transfer-turn 0.8s linear infinite;
+}
+@keyframes transfer-turn {
+    to {
+        transform: rotate(360deg);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .transfer-ring {
+        animation-duration: 2.4s;
+    }
 }
 </style>

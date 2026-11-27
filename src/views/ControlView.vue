@@ -261,6 +261,7 @@ onBeforeUnmount(() => {
                     :silent="positionRead && !position"
                     :rehearsal-running="rehearsalRunning"
                     :busy="rehearsal.busy.value"
+                    :transfer="rehearsal.transfer.value"
                     @choose="chooseMonitor"
                     @start-rehearsal="sheetOpen = true"
                     @extend="(hours) => rehearsal.extend(hours)"

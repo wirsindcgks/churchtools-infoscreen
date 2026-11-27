@@ -61,3 +61,15 @@ export function shownRehearsal(position: PositionDoc | null, pending: OverrideDo
     if (reported && Date.parse(reported.until) >= Date.parse(pending.until) - 1000) return reported;
     return { until: pending.until, playlistId: pending.playlistId, ...(pending.by ? { by: pending.by } : {}) };
 }
+
+/**
+ * Whether the screen has taken the own last write (user, 2026-11-27: after "Probe starten" and "Beenden" nothing seemed to happen, while
+ * the screen took up to half a minute): `waiting` – not yet, `late` – not within a minute (is it on?), `null` – taken, or nothing written.
+ */
+export function transferState(position: PositionDoc | null, pending: OverrideDoc | null, now: number): 'waiting' | 'late' | null {
+    if (!pending) return null;
+    const reported = position?.rehearsal;
+    const taken = pending.ended ? !reported : !!reported && Date.parse(reported.until) >= Date.parse(pending.until) - 1000;
+    if (taken) return null;
+    return now - Date.parse(pending.at) > PENDING_MAX_MS ? 'late' : 'waiting';
+}
