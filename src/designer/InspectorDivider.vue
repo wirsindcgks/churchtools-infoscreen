@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * A line of text between the levels of the inspector (Plan.md 133): "Auf der Folie", "Diese Folie", "Ganze Präsentation".
- * It names what the sections below it belong to. One line above it marks the change of level (none for the `first`);
- * the section right below drops its own line, so a level brings one line, not three (patch after `v0.73.0`).
- * The class is not `divider`: ChurchTools styles that name for the whole page (centred text between two lines).
+ * The name of a level of the inspector (Plan.md 133): "Auf der Folie", "Diese Folie", "Ganze Präsentation". It names what
+ * the sections below it belong to. The levels part by their tinted surfaces, not by lines (patch after `v0.73.0`); the
+ * section right below the name drops its own line. The class is not `divider`: ChurchTools styles that name for the whole
+ * page (centred text between two lines).
  */
 defineProps<{ label: string; testid: string; first?: boolean }>();
 </script>
@@ -15,15 +15,13 @@ defineProps<{ label: string; testid: string; first?: boolean }>();
 <style scoped>
 .inspector-level {
     margin: 0;
-    padding: var(--d-space-3) 0 var(--d-space-1);
-    border-top: 1px solid var(--d-divider);
+    padding: var(--d-space-3) 0 0;
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
     font-weight: var(--d-weight-heading);
 }
 .inspector-level--first {
     padding-top: var(--d-space-1);
-    border-top: 0;
 }
 </style>
 

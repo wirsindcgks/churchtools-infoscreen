@@ -188,7 +188,7 @@ const backgroundColors = computed(() => {
 </script>
 
 <template>
-    <section v-if="slide" data-testid="slide-inspector">
+    <section v-if="slide" class="level level--slide" data-testid="slide-inspector">
         <!-- The slide's own settings under a divider of their own (Plan.md 133), in the group with the others: one open at a time. -->
         <InspectorDivider :label="t.inspector.levels.thisSlide" testid="level-this-slide" />
         <InspectorSection id="slide" :title="t.inspector.slideSection" :summary="slideSummary" :help="slideHelp">
@@ -274,7 +274,7 @@ const backgroundColors = computed(() => {
     </section>
 
     <!-- The playlist is the designers' own (schema 1.4); where it runs, the screens' schedules decide. -->
-    <section v-if="editor.draft">
+    <section v-if="editor.draft" class="level level--playlist" data-testid="playlist-level">
         <InspectorDivider :label="t.inspector.levels.wholePlaylist" testid="level-playlist" />
         <InspectorSection id="playlist" :title="t.inspector.playlist" :summary="playlistSectionSummary" :help="playlistHelp">
             <div data-testid="playlist-info" class="playlist-info">
@@ -357,6 +357,20 @@ section {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
+}
+/* Each level on a tinted surface of its own instead of lines (patch after `v0.73.0`): the slide lightly, the playlist a little more. */
+.level {
+    padding: 0 var(--d-space-3);
+    border-radius: var(--d-radius-lg);
+}
+.level--slide {
+    background: var(--d-level-slide);
+}
+.level--playlist {
+    background: var(--d-level-playlist);
+}
+.level + .level {
+    margin-top: var(--d-space-2);
 }
 .swatch {
     width: 10px;

@@ -329,23 +329,29 @@ const LAYERS = [
         padding-top: var(--d-space-3);
     }
 }
-/* Where the inspector is a column (same query as the editor's): the blocks roll, slide to playlist stay at the bottom, folded
-   they take little room, open at most half the height and roll themselves (Plan.md 133). Elsewhere (the sheet) one column. */
+/* Where the inspector is a column (same query as the editor's): the blocks roll, slide to playlist stay at the bottom (Plan.md 133).
+   An open section below takes the height it needs and the list above gives way, down to the line "Auf der Folie"; only a
+   section taller than the whole inspector rolls on its own (patch after `v0.73.0`). Elsewhere (the sheet) one column.
+   The two parts roll themselves, so they span the full width and keep the padding inside: a ring round a swatch is not cut. */
 @media (min-width: 75.0625rem), (min-width: 48.0625rem) and (orientation: landscape) {
     .inspector--slide {
         display: flex;
         flex-direction: column;
         overflow: hidden;
+        padding-right: 0;
+        padding-left: 0;
     }
     .inspector--slide .inspector-flow {
-        flex: 1;
-        min-height: 0;
+        flex: 1 1 0;
+        min-height: 2.25rem;
         overflow-y: auto;
+        padding: 0 var(--d-space-4);
     }
     .inspector--slide .inspector-pinned {
-        flex: none;
-        max-height: 50%;
+        flex: 0 1 auto;
+        min-height: 0;
         overflow-y: auto;
+        padding: var(--d-space-2) var(--d-space-4) 0;
     }
 }
 .no-blocks {
