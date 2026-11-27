@@ -194,6 +194,9 @@ veröffentlichen“.*
 - **Plan:** In „Auf einen Blick“ die Zeile „Veröffentlicht sind `v0.1.0` bis …“ und ihre Klammer (`vX.Y.Z`: Kurzbeschreibung,
   Punkt N); beim Punkt „gebaut (unveröffentlicht)“ → „veröffentlicht mit `vX.Y.Z`“ samt dem, was offen bleibt. Die Prod-Zeile
   („dort läuft …“) nicht – das ist der Nachtrag.
+- **ChurchTools-Version in der README:** Badge „ChurchTools getestet …“ und der Satz im Abschnitt „Stand“ nennen die
+  Version der Produktivinstanz, auf der die Erweiterung läuft. Beim Release den Nutzer fragen, ob Prod noch darauf läuft,
+  und beide Stellen sonst nachziehen *(seit 2026-11-27, Nutzer)*.
 - **Prüfen:** `npm run release:check -- vX.Y.Z`.
 - **Tag:** leichtgewichtig, `git tag vX.Y.Z`. Workflow `release.yml`, Asset `churchtools-infoscreen-vX.Y.Z.zip`.
 - **Danach meldet der Agent:** Link aufs Release; **das ZIP lädt der Nutzer** in der Extension-Verwaltung hoch (Test- und
