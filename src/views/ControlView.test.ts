@@ -84,7 +84,7 @@ describe('ControlView (Plan.md 135 C)', () => {
         expect(wrapper.get('[data-testid="control-plan"]').text()).toContain('Segenslied');
         expect(wrapper.get('[data-testid="control-current"]').text()).toContain('Strophe 1');
         expect(wrapper.get('[data-testid="control-after"]').text()).toBe('Danach · Halleluja›');
-        expect(wrapper.get('[data-testid="step-hint"]').text()).toBe('Refrain');
+        expect(wrapper.get('[data-testid="step-hint"]').text()).toBe('Als Nächstes: Refrain');
         expect(repository.readPosition).not.toHaveBeenCalled();
     });
 
@@ -157,7 +157,8 @@ describe('ControlView (Plan.md 135 C)', () => {
         expect(wrapper.findAll('[data-testid="slide-list"] button')).toHaveLength(3);
         expect(wrapper.find('[data-testid="control-current"]').exists()).toBe(false);
         expect(wrapper.find('[data-testid="control-rehearsal"]').exists()).toBe(false);
-        expect(wrapper.find('[data-testid="step-black"]').exists()).toBe(true);
+        // No "Schwarz" on the phone (Plan.md 137 C).
+        expect(wrapper.find('[data-testid="step-black"]').exists()).toBe(false);
         // Released for the click only: no rehearsal to start.
         expect(wrapper.find('[data-testid="monitor-rehearsal"]').exists()).toBe(false);
     });
@@ -177,7 +178,7 @@ describe('ControlView (Plan.md 135 C)', () => {
         const { wrapper, repository } = setup({ catalog: catalog(), positions: { s1: position({ songsheet: { source: 'rehearsal' } }) }, rehearsal });
         await flushPromises();
         expect(wrapper.get('[data-testid="rehearsal-song"]').text()).toContain('Strophe');
-        expect(wrapper.get('[data-testid="step-hint"]').text()).toBe('Refrain');
+        expect(wrapper.get('[data-testid="step-hint"]').text()).toBe('Als Nächstes: Refrain');
         expect(wrapper.get('[data-testid="step-back"]').attributes('disabled')).toBeDefined();
         await wrapper.get('[data-testid="step-forward"]').trigger('click');
         await flushPromises();

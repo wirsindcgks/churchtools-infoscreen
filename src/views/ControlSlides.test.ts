@@ -59,7 +59,7 @@ describe('ControlSlides (Plan.md 124 D, 135 C)', () => {
         await flushPromises();
         expect(wrapper.findAll('[data-testid="slide-list"] button')).toHaveLength(3);
         expect(wrapper.get('[data-testid="slide-list"] button.active').text()).toContain('Lieder');
-        expect(wrapper.get('[data-testid="step-hint"]').text()).toBe('Segen');
+        expect(wrapper.get('[data-testid="step-hint"]').text()).toBe('Als Nächstes: Segen');
         expect(now()).toBe('Lieder 2 von 3');
         expect(wrapper.get('[data-testid="slides-last"]').text()).toBe('zuletzt Anna, vor 5 s');
     });
@@ -95,22 +95,20 @@ describe('ControlSlides (Plan.md 124 D, 135 C)', () => {
         const { wrapper, repository } = mountWith(position());
         await wrapper.get('[data-testid="step-forward"]').trigger('click');
         await wrapper.get('[data-testid="step-back"]').trigger('click');
-        await wrapper.get('[data-testid="step-black"]').trigger('click');
         await flushPromises();
         const last = repository.writeClick.mock.calls.at(-1)![0] as ClickDoc;
         expect(last.actions.map((a) => [a.seq, a.do])).toEqual([
             [1, 'next'],
             [2, 'previous'],
-            [3, 'black'],
         ]);
     });
 
-    it('shows black and lifts it with the next click, which then moves nothing', async () => {
+    it('says "Schwarz" where the screen is black, and lifts it with the next click, which then moves nothing', async () => {
         const { wrapper, repository, now } = mountWith(position({ black: true }));
-        expect(wrapper.get('[data-testid="step-black"]').text()).toBe('Schwarz aufheben');
+        expect(now()).toBe('Schwarz 2 von 3');
+        expect(wrapper.find('[data-testid="step-black"]').exists()).toBe(false);
         await wrapper.get('[data-testid="step-forward"]').trigger('click');
         expect(now()).toBe('Lieder 2 von 3');
-        expect(wrapper.get('[data-testid="step-black"]').text()).toBe('Schwarz');
         await flushPromises();
         expect(repository.writeClick).toHaveBeenCalledTimes(1);
     });

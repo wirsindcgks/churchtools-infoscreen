@@ -126,7 +126,7 @@ for (const [name, viewport] of [
 test.describe('a button that is greyed out', () => {
     test.use({ viewport: { width: 390, height: 844 } });
 
-    test('is grey, also "Vor" at the last part – not the dimmed accent colour', async ({ page }) => {
+    test('is grey, also "Vor" at the last part – not the light face of the main button', async ({ page }) => {
         await answerSong(page, 4);
         await seedRehearsal(page, 3);
         await page.goto('steuerung');
@@ -138,6 +138,8 @@ test.describe('a button that is greyed out', () => {
         await expect(page.getByTestId('step-back')).toBeEnabled();
         expect(forward.background).toBe(back.background);
         expect(forward.opacity).toBe('1');
+        // Not the light face of "Vor" (Plan.md 137 C).
+        expect(forward.background).not.toBe('rgb(241, 242, 244)');
         // The hint at the last part: "Letzter Teil" stands in the card, not beside it.
         await expect(page.locator('[data-testid="rehearsal-song"] [data-testid="rehearsal-end-note"]')).toBeVisible();
     });

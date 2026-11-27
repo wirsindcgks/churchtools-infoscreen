@@ -22,7 +22,7 @@ Solange die Seite offen ist, geht das Handy nicht in den Ruhezustand.
 
 ## Die Seite auf einen Blick
 
-<img src="bilder/steuerung.png" alt="Die Handyseite: oben der Name des Bildschirms und das Band „Bühne“ mit „Gottesdienst“, in der Mitte das Lied mit seinen Teilen, unten „Zurück“ und „Vor“" width="320">
+<img src="bilder/steuerung.png" alt="Die Handyseite: oben der Name des Bildschirms und das Band „Bühne“ mit „Gottesdienst“, in der Mitte das Lied mit seinen Teilen, unten der Pfeil „Zurück“ und das große „Vor“" width="320">
 
 Die Seite hat drei Teile:
 
@@ -30,7 +30,7 @@ Die Seite hat drei Teile:
    Bildschirme, tippst du auf den Namen (mit dem kleinen Pfeil) und wählst einen anderen. Darunter ein farbiges **Band**
    sagt, was der Bildschirm gerade zeigt: grün **Gottesdienst**, gelb **Probe**, lila **Präsentation**, grau **Zeitplan**.
 2. **Mitte – das Lied.** Die blaue **„Jetzt“-Zeile** sagt, welcher Teil gerade läuft („Refrain · 3 von 5“). Darunter alle Teile als große Kacheln; die blaue läuft gerade. Antippen, und der Bildschirm springt dorthin. Bei einer Präsentation stehen hier stattdessen die Folien als Zeilen.
-3. **Unten – Zurück und Vor.** Auf „Vor" steht klein, was als Nächstes kommt.
+3. **Unten – Zurück und Vor.** Links das schmale **Zurück**, rechts das große helle **Vor**; darauf steht klein „Als Nächstes: …".
 
 **Wichtig:** Alle Bildschirme zeigen dasselbe. Tippt jemand anderes in der Band, siehst du das auch auf deinem Handy.
 
@@ -66,7 +66,7 @@ vom Bildschirm, dann steht dort wieder der QR-Code.
 ## Präsentation per Klick
 
 Läuft auf dem Bildschirm eine Präsentation, die ihr von Hand weiterschaltet, siehst du in der Mitte die Liste der
-Folien. Folie antippen oder **Vor**/**Zurück**. **„Schwarz"** macht den Bildschirm dunkel, ein weiterer Tipp holt das
+Folien. Folie antippen oder **Vor**/**Zurück**. Ist der Bildschirm gerade schwarz (das geht nur am Gerät selbst, mit dem Presenter), steht in der „Jetzt"-Zeile **„Schwarz"**; ein Tipp auf **Vor** holt das
 Bild zurück. Steht auf einer Folie ein Lied, schaltest du dessen Teile wie gewohnt; **„Nächste Folie: …"** unter dem
 Lied führt weiter.
 
