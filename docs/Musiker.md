@@ -29,7 +29,7 @@ Die Seite hat drei Teile:
 1. **Oben – der Bildschirm.** Links der Pfeil zurück zu ChurchTools, daneben der **Name des Bildschirms**. Gibt es mehrere
    Bildschirme, tippst du auf den Namen (mit dem kleinen Pfeil) und wählst einen anderen. Darunter ein farbiges **Band**
    sagt, was der Bildschirm gerade zeigt: grün **Gottesdienst**, gelb **Probe**, lila **Präsentation**, grau **Zeitplan**.
-2. **Mitte – das Lied.** Alle Teile als Knöpfe; der blaue läuft gerade. Antippen, und der Bildschirm springt dorthin.
+2. **Mitte – das Lied.** Die blaue **„Jetzt“-Zeile** sagt, welcher Teil gerade läuft („Refrain · 3 von 5“). Darunter alle Teile als große Kacheln; die blaue läuft gerade. Antippen, und der Bildschirm springt dorthin. Bei einer Präsentation stehen hier stattdessen die Folien als Zeilen.
 3. **Unten – Zurück und Vor.** Auf „Vor" steht klein, was als Nächstes kommt.
 
 **Wichtig:** Alle Bildschirme zeigen dasselbe. Tippt jemand anderes in der Band, siehst du das auch auf deinem Handy.
@@ -39,7 +39,7 @@ Die Seite hat drei Teile:
 Das Lied kommt aus dem Ablaufplan – du musst nichts auswählen.
 
 - **Teil antippen** oder mit **Vor** und **Zurück** weiterschalten.
-- Am Ende eines Liedes bleibt **Vor** stehen (grau). Das nächste Lied wählst du mit **„Danach: …"** unter dem Lied.
+- Am Ende eines Liedes bleibt **Vor** stehen (grau). Das nächste Lied wählst du mit der Zeile **„Danach · …"** unten.
 - **„Alle Lieder"** klappt die Liste aller Lieder des Gottesdienstes auf – falls ihr spontan ein anderes spielt.
 
 ## In der Probe

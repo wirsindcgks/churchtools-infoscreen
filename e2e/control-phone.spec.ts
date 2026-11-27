@@ -81,6 +81,12 @@ for (const [name, viewport] of [
                     expect(b.y + b.height).toBeLessThanOrEqual(card.y + card.height);
                 }
 
+                // The "Jetzt" row names the running part, the tiles are 68 px (Plan.md 137 B).
+                await expect(page.getByTestId('control-now')).toBeVisible();
+                await expect(page.getByTestId('control-now-of')).toHaveText(`1 von ${parts}`);
+                const tile = await box(page, '[data-testid="rehearsal-song"] .part');
+                expect(Math.round(tile.height)).toBe(68);
+
                 // The bar lies whole in the window, "Zurück" and "Vor" in it.
                 const bar = await box(page, '[data-testid="control-bar"]');
                 expect(bar.y + bar.height).toBeLessThanOrEqual(view.height);

@@ -125,18 +125,25 @@ button:disabled {
     color: #b8bcc4;
     font-variant-numeric: tabular-nums;
 }
+/* Tiles (Plan.md 137 B): two columns, flat, 68 px; the running one blue. */
 .parts {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
 }
 .part {
-    min-height: 48px;
+    height: 68px;
+    min-height: 68px;
     padding: 6px 8px;
+    border: 0;
+    border-radius: 14px;
+    background: #1b1e25;
+    font-size: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .part.active {
     background: #2f6fed;
-    border-color: #6ea8ff;
     font-weight: 600;
 }
 </style>

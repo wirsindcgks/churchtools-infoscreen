@@ -11,7 +11,8 @@ import type { ClickPosition } from '../model/position';
 import type { ScreenRepository } from '../store/screen-repository';
 import ControlBar from './ControlBar.vue';
 import { buildClick, createQueue, movedSlide, OPTIMISTIC_MAX_MS, positionSettled } from './click-steering';
-import { slideLines } from './monitor-state';
+import ControlNow from './ControlNow.vue';
+import { lastClickText } from './monitor-state';
 
 const props = defineProps<{
     repository: ScreenRepository;
@@ -21,8 +22,8 @@ const props = defineProps<{
     /** The time of the last reading, which changes with every one: a reading that brings the same position still settles the own click. */
     readAt: number;
 }>();
-/** `clicked` – the page reads faster for a while; `info` – the lines of the monitor card, with the own click in them. */
-const emit = defineEmits<{ clicked: []; info: [info: { lines: string[]; eventStartMs: null }] }>();
+/** `clicked` – the page reads faster for a while. */
+const emit = defineEmits<{ clicked: [] }>();
 
 const notSaved = ref(false);
 /** A second of its own for "vor 5 s". */
@@ -52,11 +53,13 @@ const lastClick = computed(() => {
     if (over) return { by: props.author || null, at: over.at };
     return props.position.clickAt ? { by: props.position.by ?? null, at: Date.parse(props.position.clickAt) } : null;
 });
-watch(
-    [shown, lastClick, tick],
-    () => emit('info', { lines: slideLines(shown.value, lastClick.value, tick.value), eventStartMs: null }),
-    { immediate: true },
-);
+/** The "Jetzt" row (Plan.md 137 B): the running slide by its name or its number, and where it stands. */
+const now = computed(() => {
+    const id = shown.value.slideId;
+    const at = shown.value.slides.findIndex((s) => s.id === id);
+    return { title: shown.value.slides[at]?.name || t.control.slideNumber(shown.value.number), number: shown.value.number, total: shown.value.total };
+});
+const lastText = computed(() => (lastClick.value ? lastClickText(lastClick.value.by, lastClick.value.at, tick.value) : null));
 
 // A reading came in: the own click may be confirmed or too old to hold.
 watch(
@@ -163,15 +166,20 @@ onBeforeUnmount(() => clearInterval(ticker));
 <template>
     <div class="slides" data-testid="control-slides">
         <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
-        <section class="control-card slide-card">
-            <ul ref="list" class="slide-list" data-testid="slide-list">
-                <li v-for="(s, i) in shown.slides" :key="s.id">
-                    <button type="button" :class="{ active: s.id === shown.slideId }" :aria-current="s.id === shown.slideId" @click="goto(s.id)">
-                        <span class="n">{{ i + 1 }}</span>{{ s.name || t.control.slideLine(i + 1, shown.total, '') }}
-                    </button>
-                </li>
-            </ul>
-        </section>
+        <ControlNow :title="now.title" :number="now.number" :total="now.total" />
+        <p v-if="lastText" class="last" data-testid="slides-last">{{ lastText }}</p>
+        <ul ref="list" class="slide-list" data-testid="slide-list">
+            <li v-for="(s, i) in shown.slides" :key="s.id">
+                <button
+                    type="button"
+                    :class="{ active: s.id === shown.slideId, played: i + 1 < shown.number }"
+                    :aria-current="s.id === shown.slideId"
+                    @click="goto(s.id)"
+                >
+                    <span class="n">{{ i + 1 }}</span>{{ s.name || t.control.slideNumber(i + 1) }}
+                </button>
+            </li>
+        </ul>
         <p v-if="presenter" class="note" data-testid="slides-presenter">{{ t.control.presenterDetected }}</p>
         <!-- In the fixed zone below the middle of the page (Plan.md 135 A). -->
         <Teleport defer to="#control-bar">
@@ -181,23 +189,17 @@ onBeforeUnmount(() => clearInterval(ticker));
 </template>
 
 <style scoped>
-/* The middle is a column: the list takes what is left and rolls inside. */
+/* The middle is a column: the list takes what is left and rolls inside (Plan.md 137 B). */
 .slides {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
 }
 .slides > * {
     flex: none;
     min-width: 0;
-}
-.slides > .slide-card {
-    flex: 1 1 0;
-    min-height: 9rem;
-    overflow-y: auto;
-    overscroll-behavior: contain;
 }
 p {
     margin: 0;
@@ -210,37 +212,56 @@ p {
     border-radius: 8px;
     background: #4a2020;
 }
+/* Right under the "Jetzt" row, closer to it than to the list. */
+.last {
+    margin-top: -8px;
+    font-size: 13px;
+    color: #8b919c;
+}
 .slide-list {
+    flex: 1 1 0;
+    min-height: 9rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     list-style: none;
     margin: 0;
     padding: 0;
     display: grid;
-    gap: 8px;
+    align-content: start;
+    gap: 4px;
 }
 button {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
+    box-sizing: border-box;
     width: 100%;
-    min-height: 48px;
-    padding: 6px 14px;
-    border: 1px solid #3a3f4a;
-    border-radius: 8px;
-    background: #1d2027;
+    min-height: 52px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 12px;
+    background: #1b1e25;
     color: inherit;
     font: inherit;
+    font-size: 17px;
     text-align: left;
     cursor: pointer;
 }
 .n {
     flex: none;
-    min-width: 1.6em;
-    color: #b8bcc4;
+    width: 18px;
+    color: #8b919c;
     font-variant-numeric: tabular-nums;
 }
+/* Played: no background, pale – the slides before the running one. */
+button.played {
+    background: none;
+    color: #8b919c;
+}
 button.active {
+    min-height: 58px;
     background: #2f6fed;
-    border-color: #6ea8ff;
+    font-size: 18px;
     font-weight: 600;
 }
 button.active .n {

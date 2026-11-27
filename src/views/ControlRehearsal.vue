@@ -300,7 +300,7 @@ onBeforeUnmount(() => {
     min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
 }
 .rehearsal > * {
     flex: none;
@@ -379,7 +379,7 @@ button {
     text-align: left;
     cursor: pointer;
 }
-/* The magnifier alone, 44 × 44, in the head of the song card; the words only where no song is chosen yet. */
+/* The magnifier alone, 44 × 44, flat (Plan.md 137 B), in the head of the song card; the words only where no song is chosen yet. */
 .pick {
     flex: none;
     display: inline-flex;
@@ -389,6 +389,9 @@ button {
     width: 44px;
     min-height: 44px;
     padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: #1b1e25;
     text-align: center;
 }
 .pick.words {

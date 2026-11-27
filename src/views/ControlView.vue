@@ -67,8 +67,8 @@ const position = shallowRef<PositionDoc | null>(null);
 const positionRead = ref(false);
 /** The time of the last reading: it changes with every one, also where it brought the same position. */
 const readAt = ref(0);
-/** What the middle adds to the card: the lines of the plan or of the own click, the start of the service. */
-const info = shallowRef<{ lines: string[]; eventStartMs: number | null }>({ lines: [], eventStartMs: null });
+/** What the middle adds to the band: the start of the service. */
+const info = shallowRef<{ eventStartMs: number | null }>({ eventStartMs: null });
 const tick = ref(Date.now());
 const ticker = setInterval(() => (tick.value = Date.now()), 1000);
 
@@ -81,11 +81,10 @@ const shownPosition = computed<PositionDoc | null>(() => {
     if (!own) delete shown.rehearsal;
     return shown;
 });
-const state = computed(() => (monitor.value ? monitorState(shownPosition.value, tick.value, { timeZone: timeZone.value, eventStartMs: info.value.eventStartMs }) : null));
+const state = computed(() => (monitor.value ? monitorState(shownPosition.value, { timeZone: timeZone.value, eventStartMs: info.value.eventStartMs }) : null));
 const rehearsalRunning = computed(() => state.value?.kind === 'rehearsal');
 /** The rehearsal runs, but the screen shows no rehearsal sheet (no song, no service): the middle says so. */
 const noProbeSheet = computed(() => middle.value === 'none' && rehearsalWithoutSheet(position.value));
-const lines = computed(() => (info.value.lines.length ? info.value.lines : (state.value?.lines ?? [])));
 /** Without a monitor the song of the service stands alone. */
 const middle = computed(() => (monitor.value ? (positionRead.value ? (state.value?.middle ?? 'none') : 'none') : 'service'));
 const serviceEventId = computed(() => {
@@ -93,7 +92,7 @@ const serviceEventId = computed(() => {
     return monitor.value && sheet && sheet !== true && sheet.source === 'agenda' ? sheet.eventId : undefined;
 });
 const slidesPosition = computed(() => (position.value && hasSlides(position.value) ? position.value : null));
-watch(middle, () => (info.value = { lines: [], eventStartMs: null }));
+watch(middle, () => (info.value = { eventStartMs: null }));
 
 // --- reading the position of the monitor: every 3 seconds, every second for 15 after an own click (G16), only while the page is seen ---
 
@@ -210,7 +209,7 @@ watch(
         ++run;
         position.value = null;
         positionRead.value = false;
-        info.value = { lines: [], eventStartMs: null };
+        info.value = { eventStartMs: null };
         sheetOpen.value = false;
         rehearsal.reset();
         failure.value = null;
@@ -288,7 +287,6 @@ onBeforeUnmount(() => {
                     v-if="monitor"
                     :monitor="monitor"
                     :state="state"
-                    :lines="lines"
                     :silent="positionRead && !position"
                     :rehearsal-running="rehearsalRunning"
                     :busy="rehearsal.busy.value"
@@ -312,7 +310,7 @@ onBeforeUnmount(() => {
                 <ControlRehearsal v-else-if="middle === 'rehearsal' && repository" :repository="repository" :author="author" />
                 <button v-if="nextSlide" type="button" class="next-slide" data-testid="control-next-slide" @click="goNextSlide">{{ t.control.nextSlide(nextSlide.name) }}</button>
                 <p v-if="nextSlide && nextSlideNotSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
-                <p v-else-if="noProbeSheet" class="control-card note" data-testid="monitor-no-sheet">{{ t.control.noProbeSheet }}</p>
+                <p v-else-if="noProbeSheet" class="note" data-testid="monitor-no-sheet">{{ t.control.noProbeSheet }}</p>
                 <ControlSlides
                     v-else-if="middle === 'slides' && repository && slidesPosition && monitor"
                     :repository="repository"
@@ -321,7 +319,6 @@ onBeforeUnmount(() => {
                     :position="slidesPosition"
                     :read-at="readAt"
                     @clicked="clicked"
-                    @info="(next) => (info = next)"
                 />
             </template>
         </div>
@@ -466,8 +463,8 @@ button {
     overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 4px 12px 12px;
+    gap: 14px;
+    padding: 0 16px 12px;
 }
 .middle > :deep(*) {
     min-width: 0;
@@ -493,15 +490,16 @@ p {
     border-radius: 8px;
     background: #4a2020;
 }
-/* Like "Danach" below the song: dashed, quiet – the next slide of a presentation by click (Plan.md 135, choice b). */
+/* Like "Danach" below the song: a flat row, one tap away (Plan.md 137 B) – the next slide of a presentation by click (Plan.md 135, choice b). */
 .next-slide {
     min-height: 52px;
-    padding: 0 14px;
-    border: 1px dashed #3a3f4a;
+    padding: 0 16px;
+    border: 0;
     border-radius: 12px;
-    background: transparent;
-    color: #b8bcc4;
+    background: #1b1e25;
+    color: #f1f2f4;
     font: inherit;
+    font-size: 16px;
     text-align: left;
     overflow: hidden;
     text-overflow: ellipsis;

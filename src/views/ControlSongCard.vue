@@ -1,13 +1,16 @@
 <script setup lang="ts">
 /**
- * The song on the phone page as a card (Plan.md 135 C, D): its name and key in one row above (with a button to the right and small chips below
- * where the page puts them), the parts as a grid – the running one blue – and a small line under them (slot `foot`). The card fills what is
- * left of the middle; only the grid rolls inside it, the running part is brought into view.
+ * The song on the phone page, flat on the page (Plan.md 135 C, D, 137 B): its name and key in one row above (with a button to the right and
+ * small chips below where the page puts them), the "Jetzt" row with the running part, the parts as tiles – the running one blue – and a small
+ * line under them (slot `foot`). It fills what is left of the middle; only the tiles roll, the running part is brought into view.
  */
 import type { SheetSection } from '../agenda/songsheet';
+import { computed } from 'vue';
+import { t } from '../i18n/designer';
+import ControlNow from './ControlNow.vue';
 import ControlSong from './ControlSong.vue';
 
-defineProps<{
+const props = defineProps<{
     title: string;
     songKey?: string;
     parts: SheetSection[];
@@ -18,10 +21,17 @@ defineProps<{
     hideParts?: boolean;
 }>();
 const emit = defineEmits<{ choose: [section: number] }>();
+
+/** The running part by the name on its tile; "n von m" counts the parts of the sheet. */
+const now = computed(() => {
+    const at = props.active;
+    const part = at === null ? null : props.parts[at];
+    return at !== null && part ? { title: part.label || t.control.part(at + 1), number: at + 1, total: props.parts.length } : null;
+});
 </script>
 
 <template>
-    <section class="control-card song-card" :class="{ fill: !hideParts }">
+    <section class="song-card" :class="{ fill: !hideParts }">
         <header class="song-head">
             <h2 class="song-title" data-testid="song-title">{{ title }}</h2>
             <span v-if="songKey" class="song-key" data-testid="song-key">{{ songKey }}</span>
@@ -29,6 +39,7 @@ const emit = defineEmits<{ choose: [section: number] }>();
             <slot name="action" />
         </header>
         <slot name="sub" />
+        <ControlNow v-if="!hideParts && now" :title="now.title" :number="now.number" :total="now.total" />
         <div v-if="!hideParts" class="song-parts">
             <ul class="song-list">
                 <ControlSong :title="title" :song-key="songKey" :parts="parts" open bare :active="active" :disabled="disabled" @choose="(n) => emit('choose', n)" />
@@ -44,7 +55,7 @@ const emit = defineEmits<{ choose: [section: number] }>();
     flex: none;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 14px;
     min-height: 0;
 }
 .song-card.fill {
@@ -54,13 +65,13 @@ const emit = defineEmits<{ choose: [section: number] }>();
     flex: none;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
 }
 .song-title {
     flex: 0 1 auto;
     min-width: 0;
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 24px;
     font-weight: 600;
     line-height: 1.2;
     color: #f2f2f2;
@@ -73,7 +84,8 @@ const emit = defineEmits<{ choose: [section: number] }>();
 /* Behind the title, quiet: "Halleluja · C". */
 .song-key {
     flex: none;
-    color: #b8bcc4;
+    color: #8b919c;
+    font-weight: 400;
     font-variant-numeric: tabular-nums;
 }
 .song-key::before {
