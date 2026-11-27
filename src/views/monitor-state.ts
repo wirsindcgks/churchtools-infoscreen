@@ -77,7 +77,7 @@ export function monitorState(position: PositionDoc | null, now: number, context:
         const last = position.clickAt ? { by: position.by ?? null, at: Date.parse(position.clickAt) } : null;
         return { kind: 'presentation', chip: t.control.monitorPresentation(name), lines: slideLines(position, last, now), note, middle };
     }
-    return { kind: 'schedule', chip: t.control.monitorSchedule(name), lines: middle === 'none' ? [t.control.monitorNothing] : [], note, middle };
+    return { kind: 'schedule', chip: t.control.monitorSchedule(name), lines: [], note, middle };
 }
 
 /**

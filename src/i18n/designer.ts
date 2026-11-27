@@ -1649,7 +1649,6 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         presenterDetected: 'Presenter erkannt: Vor und Zurück schalten wie die Knöpfe.',
         monitorSwitch: 'Wechseln',
         monitorSilent: 'Der Bildschirm meldet sich nicht – ist er an?',
-        monitorNothing: 'Nichts zu schalten.',
         monitorService: (time: string | null) => (time ? `Gottesdienst · ${time}` : 'Gottesdienst'),
         monitorRehearsal: 'Probe',
         monitorPresentation: (name: string | null) => (name ? `Präsentation · ${name}` : 'Präsentation'),

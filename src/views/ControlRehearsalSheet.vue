@@ -23,7 +23,7 @@ const playlist = computed(() => props.playlists.find((p) => p.id === chosen.valu
 </script>
 
 <template>
-    <ControlSheet :title="t.control.rehearsalSheetTitle(monitorName)" @close="emit('close')">
+    <ControlSheet :title="t.control.rehearsalSheetTitle(monitorName)" icon="tv" @close="emit('close')">
         <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
         <p v-if="!playlists.length" class="note" data-testid="rehearsal-sheet-none">{{ t.control.screenNoPlaylist }}</p>
         <template v-else>

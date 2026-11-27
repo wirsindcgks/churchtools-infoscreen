@@ -76,7 +76,7 @@ describe('monitorState (Plan.md 135 C)', () => {
     });
 
     it('the schedule: grey, nothing to switch; the middle stays empty', () => {
-        expect(monitorState(position(), NOW, context)).toEqual({ kind: 'schedule', chip: 'Zeitplan · Ablauf', lines: ['Nichts zu schalten.'], note: null, middle: 'none' });
+        expect(monitorState(position(), NOW, context)).toEqual({ kind: 'schedule', chip: 'Zeitplan · Ablauf', lines: [], note: null, middle: 'none' });
     });
 
     it('a songsheet of the rehearsal shows its song, also without a rehearsal override', () => {

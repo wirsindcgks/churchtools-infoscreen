@@ -204,7 +204,8 @@ describe('ControlView (Plan.md 135 C)', () => {
         const { wrapper } = setup({ catalog: catalog({ screens: [{ id: 's1', name: 'Bühne' }, { id: 's2', name: 'Saal' }] }), positions: { s1: position() } });
         await flushPromises();
         expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Zeitplan · Ablauf');
-        expect(wrapper.get('[data-testid="monitor-line"]').text()).toBe('Nichts zu schalten.');
+        // No line below: "Nichts zu schalten." confused more than it said (user, 2026-11-27).
+        expect(wrapper.find('[data-testid="monitor-line"]').exists()).toBe(false);
         expect(wrapper.find('[data-testid="control-service"]').exists()).toBe(false);
         expect(wrapper.find('[data-testid="control-slides"]').exists()).toBe(false);
         await wrapper.get('[data-testid="monitor-switch"]').trigger('click');
