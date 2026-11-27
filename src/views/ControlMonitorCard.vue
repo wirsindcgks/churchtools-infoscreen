@@ -25,12 +25,15 @@ const props = defineProps<{
     busy: boolean;
     /** Between the tap and the screen taking it: the band says what happens meanwhile (see `useRehearsalControl`). */
     transfer?: 'saving' | 'start' | 'extend' | 'end' | 'late' | null;
+    /** The reading mode: the band only says, it changes nothing and opens nothing. */
+    readonly?: boolean;
 }>();
 const emit = defineEmits<{ startRehearsal: []; extend: [hours: number]; endRehearsal: [] }>();
 
 const sheetOpen = ref(false);
 /** Not while a service runs: a tap by mistake must not take the screen away from it (user, 2026-11-27). */
-const canStart = computed(() => !props.rehearsalRunning && props.monitor.rehearsal && props.state?.kind !== 'service');
+const canStart = computed(() => !props.readonly && !props.rehearsalRunning && props.monitor.rehearsal && props.state?.kind !== 'service');
+const opens = computed(() => props.rehearsalRunning && !props.readonly);
 const visible = computed(() => !!props.state || props.silent || !!props.transfer || canStart.value);
 const kind = computed(() => props.state?.kind ?? 'none');
 /** A name stands behind its word with a dot; the time and the rehearsal line stand behind it as they are. */
@@ -48,7 +51,7 @@ function end(): void {
 
 <template>
     <section v-if="visible" class="monitor" data-testid="control-monitor">
-        <component :is="rehearsalRunning ? 'button' : 'div'" class="band" :class="`tone-${kind}`" :type="rehearsalRunning ? 'button' : undefined" data-testid="monitor-band" @click="rehearsalRunning && (sheetOpen = true)">
+        <component :is="opens ? 'button' : 'div'" class="band" :class="`tone-${kind}`" :type="opens ? 'button' : undefined" data-testid="monitor-band" @click="opens && (sheetOpen = true)">
             <span class="dot" aria-hidden="true" />
             <span class="text">
                 <b v-if="state?.chip" class="word" data-testid="monitor-chip">{{ state.chip }}</b>
@@ -62,10 +65,10 @@ function end(): void {
                     {{ ' ' }}<span data-testid="monitor-detail">{{ detail }}</span>
                 </template>
             </span>
-            <span v-if="rehearsalRunning" class="pill" data-testid="monitor-change">{{ t.control.rehearsalChange }}</span>
+            <span v-if="opens" class="pill" data-testid="monitor-change">{{ t.control.rehearsalChange }}</span>
             <button v-else-if="canStart" type="button" class="start" data-testid="monitor-rehearsal" @click="emit('startRehearsal')"><span class="pill">{{ t.control.rehearsalStart }}</span></button>
         </component>
-        <ControlSheet v-if="sheetOpen && rehearsalRunning" :title="t.control.rehearsalSheetTitle(monitor.name)" icon="tv" @close="sheetOpen = false">
+        <ControlSheet v-if="sheetOpen && opens" :title="t.control.rehearsalSheetTitle(monitor.name)" icon="tv" @close="sheetOpen = false">
             <div class="row">
                 <button v-for="h in EXTEND_HOURS" :key="h" type="button" class="choice" :disabled="busy" :data-testid="`monitor-extend-${h}`" @click="extend(h)">{{ t.control.rehearsalExtend(h) }}</button>
             </div>

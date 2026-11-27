@@ -1657,6 +1657,13 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         eventGone: 'Der Termin dieses Bildschirms ist nicht zu finden.',
         stepEnd: 'Letzter Teil – nächstes Lied über „Danach“.',
         stepEndRehearsal: 'Letzter Teil.',
+        /** The reading mode (Plan.md 138): the sheet to read along. */
+        reading: 'Lesemodus',
+        readerNone: 'Für dieses Lied gibt es keinen Text zum Mitlesen – vielleicht nur als PDF.',
+        readerNoSong: 'Gerade läuft kein Lied.',
+        readerFollow: 'Zum laufenden Teil',
+        readerSmaller: 'Schrift kleiner',
+        readerLarger: 'Schrift größer',
         presenterDetected: 'Presenter erkannt: Vor und Zurück schalten wie die Knöpfe.',
         monitorSwitchLabel: (name: string) => `Bildschirm wechseln, jetzt „${name}“`,
         monitorSilent: 'Der Bildschirm meldet sich nicht – ist er an?',
