@@ -271,9 +271,9 @@ So richtest du es ein:
    „Einstellungen" ein Punkt, ist das noch zu tun.
 5. Die Seite zeigt die **Adresse der Handyseite** zum Kopieren (`…/ccm/infoscreen-designer/steuerung`). Die Musiker öffnen sie auf dem
    Handy, angemeldet in ChurchTools – oder tippen im Menü auf „Infoscreen Designer" und landen direkt dort. Wer auch in der
-   Designer-Gruppe ist, landet im Designer und wechselt mit dem Menüpunkt **„Steuerung"** unten in der Seitenleiste zur Handyseite und dort mit **„Designer"** zurück. Die Handyseite zeigt oben eine **Monitor-Karte** (siehe [Funktionen](Funktionen.md#präsentationen)); ohne freigegebenen Bildschirm führt sie den Gottesdienst nach Ablauf.
+   Designer-Gruppe ist, landet im Designer und wechselt mit dem Menüpunkt **„Steuerung"** unten in der Seitenleiste zur Handyseite und dort mit **„ChurchTools"** oben links zurück in den Designer. Die Handyseite zeigt oben eine **Monitor-Karte** (siehe [Funktionen](Funktionen.md#präsentationen)); ohne freigegebenen Bildschirm führt sie den Gottesdienst nach Ablauf. Für die Band gibt es eine kurze Anleitung zum Weitergeben: [Für Musiker](Musiker.md).
 
-   <img src="bilder/steuerung.png" alt="Handyseite „Steuerung“: oben „Jetzt“ und „Dann“, darunter das laufende Lied mit den Teil-Knöpfen, der Teil „Refrain“ ist angetippt" width="320">
+   <img src="bilder/steuerung.png" alt="Handyseite „Steuerung“: oben die Monitor-Karte „Bühne“ mit dem Chip „Gottesdienst“, darunter das laufende Lied mit den Teil-Knöpfen, der Teil „Refrain“ ist angetippt, unten „Zurück“ und „Vor“" width="320">
 
 **Proben vom Handy freigeben.** Auf derselben Seite „Musiker" wählst du unter **„Bildschirme für Proben"** die Bildschirme, die die Musiker
 für eine Probe überschreiben dürfen, und unter **„Präsentationen für Proben"** die Präsentationen, die sie dafür wählen dürfen. Zur Wahl
@@ -289,8 +289,8 @@ wird sie umgebaut), bleibt er bei seinem Zeitplan, und die Kachel in der Übersi
 
 Auf der Handyseite tippen die Musiker auf der Monitor-Karte auf **„Probe starten"**; in dem Blatt, das von unten aufgeht, wählen sie eine
 freigegebene Präsentation und die Dauer (1 bis 3 Stunden) und starten die Probe. Läuft sie, zeigt die Karte „Probe“ mit „bis …“ und dem Namen;
-mit **„+1 Std"** und **„+2 Std"** verlängern sie (höchstens vier Stunden ab jetzt), mit **„Beenden"** zeigt der Bildschirm sofort wieder, was
-der Zeitplan vorsieht. Das tut er auch, wenn die Dauer abläuft. Beginnt vorher eine Terminregel des Zeitplans, endet die Probe von selbst – der Gottesdienst gewinnt.
+mit **„+1 Std"** und **„+2 Std"** verlängern sie (höchstens vier Stunden ab jetzt), mit **„Beenden"** zeigt der Bildschirm wieder, was
+der Zeitplan vorsieht – nach wenigen Sekunden, bis dahin sagt die Karte, dass er wechselt. Das tut er auch, wenn die Dauer abläuft. Beginnt vorher eine Terminregel des Zeitplans, endet die Probe von selbst – der Gottesdienst gewinnt.
 Im Designer zeigt die Kachel des Bildschirms die laufende Probe mit Präsentation, Endzeit und Namen, nach demselben Maßstab wie der
 Fernseher; das Handy sieht nicht, ob ein Gottesdienst die Probe schon beendet hat, die Kachel schon.
 
@@ -328,9 +328,9 @@ Der **Zeitplan** schaltet zwischen den Präsentationen um: Die Gottesdienst-Prä
 kommt per Regel dazu – zum Beispiel eine **Terminregel** auf einen eigenen Kalender „Bandproben" (dann reicht es, die Proben dort
 einzutragen) oder eine **Zeitregel** wie „donnerstags 19 bis 22 Uhr".
 
-Auf der Handyseite wählen die Musiker, wenn ein Probenblatt läuft, mit **„Lied wählen"** (die Suche geht als Blatt von unten auf) das Lied, das Arrangement und tippen die Teile. Bevor jemand ein Lied
+Auf der Handyseite wählen die Musiker, wenn ein Probenblatt läuft, mit der **Lupe** („Lied wählen", die Suche geht als Blatt von unten auf) das Lied, das Arrangement und tippen die Teile. Bevor jemand ein Lied
 gewählt hat, zeigt der Bildschirm **„Kein Lied gewählt"** mit einem **QR-Code**: Scannen öffnet die Handyseite. Die Wahl gilt für alle
-Probenbildschirme; Handy und Bildschirm zeigen dasselbe Lied. **„Lied beenden"** unter den Teilen nimmt es von allen
+Probenbildschirme; Handy und Bildschirm zeigen dasselbe Lied. **„Lied beenden"** unten im Such-Blatt nimmt es von allen
 Bildschirmen, dann steht dort wieder der QR-Code. Von selbst endet die Wahl nach zwölf Stunden, damit zur nächsten Probe nicht das
 Lied von letzter Woche dasteht.
 Die Rechte sind dieselben wie im Gottesdienst.

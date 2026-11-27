@@ -81,7 +81,8 @@ function pick(id: string): void {
             <button v-for="h in EXTEND_HOURS" :key="h" type="button" :disabled="busy" :data-testid="`monitor-extend-${h}`" @click="emit('extend', h)">{{ t.control.rehearsalExtend(h) }}</button>
             <button type="button" :disabled="busy" data-testid="monitor-end" @click="emit('endRehearsal')">{{ t.control.rehearsalEnd }}</button>
         </div>
-        <button v-else-if="monitor.rehearsal" type="button" class="rehearsal" data-testid="monitor-rehearsal" @click="emit('startRehearsal')">{{ t.control.rehearsalStart }}</button>
+        <!-- Not while a service runs: a tap by mistake must not take the screen away from it (user, 2026-11-27). -->
+        <button v-else-if="monitor.rehearsal && state?.kind !== 'service'" type="button" class="rehearsal" data-testid="monitor-rehearsal" @click="emit('startRehearsal')">{{ t.control.rehearsalStart }}</button>
     </section>
 </template>
 

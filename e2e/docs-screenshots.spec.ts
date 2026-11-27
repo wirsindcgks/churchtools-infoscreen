@@ -671,7 +671,7 @@ test.describe('on a phone', () => {
         await shoot(page, 'handy');
     });
 
-    // The phone page of the musicians (Plan.md 121 E2): a made-up service with two songs, the running point a song, one part tapped.
+    // The phone page of the musicians (Plan.md 121 E2, 135): a made-up service with two songs at a released screen, the running point a song, one part tapped.
     test('the control page of the musicians', async ({ page, baseURL }) => {
         origin = new URL(baseURL!).origin;
         await fakeChurch(page);
@@ -714,8 +714,25 @@ test.describe('on a phone', () => {
         await page.route(/\?q=churchservice/, (route) =>
             route.fulfill({ json: { status: 'success', data: { pos_id: '2', switchdate: at(-2), addseconds: '0', currentTime: DOC_NOW.getTime() } } }),
         );
+        // A screen released for rehearsals that shows the songsheet of this service (Plan.md 135): the monitor card at the top.
+        await page.goto('./'); // seeds the demo store
+        await page.evaluate((now) => {
+            const key = 'infoscreen-designer.demo-store';
+            const state = JSON.parse(localStorage.getItem(key)!) as { nextId: number; categories: { id: number; shorty: string; name: string }[]; values: [number, { id: number; value: string }[]][] };
+            const list = (shorty: string, name: string): { id: number; value: string }[] => {
+                let category = state.categories.find((c) => c.shorty === shorty);
+                if (!category) state.categories.push((category = { id: state.nextId++, shorty, name }));
+                let entry = state.values.find(([id]) => id === category!.id);
+                if (!entry) state.values.push((entry = [category.id, []]));
+                return entry[1];
+            };
+            const add = (target: { id: number; value: string }[], doc: unknown) => target.push({ id: state.nextId++, value: JSON.stringify(doc) });
+            add(list('steuerung', 'Steuerung'), { kind: 'rehearsalCatalog', screens: [{ id: 's1', name: 'Bühne' }], playlists: [{ id: 'p1', name: 'Probe' }], clickScreens: [], at: now });
+            add(list('status', 'Status'), { kind: 'position', screenId: 's1', playlistId: 'p2', playlistName: 'Gottesdienst', advance: 'time', songsheet: { source: 'agenda', eventId: 7 }, seq: 0, at: now });
+            localStorage.setItem(key, JSON.stringify(state));
+        }, DOC_NOW.toISOString());
         await page.goto('steuerung');
-        await expect(page.getByTestId('control-plan')).toContainText('Segenslied');
+        await expect(page.getByTestId('monitor-chip')).toContainText('Gottesdienst');
         const current = page.getByTestId('control-current');
         await current.getByRole('button', { name: 'Refrain' }).click();
         await expect(current.locator('.part.active')).toHaveText('Refrain');

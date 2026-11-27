@@ -5,9 +5,11 @@
  * `Teleport` – it covers the same window.
  */
 import { onBeforeUnmount, onMounted, ref, useId, useTemplateRef } from 'vue';
+import Icon, { type IconName } from '../designer/Icon.vue';
 import { t } from '../i18n/designer';
 
-defineProps<{ title: string }>();
+/** `icon`: a symbol before the title – the TV where the sheet is about a screen. */
+defineProps<{ title: string; icon?: IconName }>();
 const emit = defineEmits<{ close: [] }>();
 
 const titleId = useId();
@@ -46,7 +48,7 @@ onBeforeUnmount(() => {
 <template>
     <div class="backdrop" :style="visible ? { ...visible, bottom: 'auto' } : undefined" data-testid="control-sheet-backdrop" @click.self="emit('close')">
         <section ref="panel" class="sheet" role="dialog" aria-modal="true" :aria-labelledby="titleId" tabindex="-1" data-testid="control-sheet">
-            <h2 :id="titleId" class="sheet-title">{{ title }}</h2>
+            <h2 :id="titleId" class="sheet-title"><Icon v-if="icon" :name="icon" :size="22" class="sheet-icon" />{{ title }}</h2>
             <div class="sheet-body">
                 <slot />
             </div>
@@ -90,6 +92,9 @@ onBeforeUnmount(() => {
 }
 .sheet-title {
     flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     margin: 0;
     font-size: 1.3rem;
     line-height: 1.25;
@@ -117,5 +122,9 @@ onBeforeUnmount(() => {
     font: inherit;
     text-decoration: underline;
     cursor: pointer;
+}
+.sheet-icon {
+    flex: none;
+    color: #b8bcc4;
 }
 </style>

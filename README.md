@@ -53,6 +53,7 @@ wie ein Passwort.
 Die Anleitungen:
 
 - **[Onboarding](docs/Onboarding.md)** – der Einstieg je Rolle: Administrator, Gestalter, Gerät.
+- **[Für Musiker](docs/Musiker.md)** – das Liedblatt vom Handy steuern, in einfachen Worten; zum Weitergeben an die Band.
 - **[Einrichtung für Administratoren](docs/Einrichtung.md)** – Installation, Rechte, Geräte-Benutzer, Kiosk-Browser,
   Updates und Datenschutz.
 - **[Rechte-Übersicht](docs/Rechte.md)** – wer welche Rechte braucht, als Tabelle.
