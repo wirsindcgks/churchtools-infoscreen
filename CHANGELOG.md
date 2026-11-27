@@ -4,6 +4,22 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.73.1] – 2026-11-27
+
+### Geändert
+
+- **Ebenen im Inspektor farbig statt mit Linien** (Plan.md 133). „Diese Folie“ und „Ganze Präsentation“ stehen je auf
+  einer leicht getönten Fläche; die vielen Linien zwischen den Ebenen sind weg.
+- **Unten aufklappen ohne Rollen** (Plan.md 133). Ein aufgeklappter Abschnitt unten nimmt sich die Höhe, die er braucht,
+  die Liste der Bausteine darüber wird kleiner. Rollen muss man dort nur noch, wenn ein Abschnitt höher ist als der
+  ganze Inspektor.
+
+### Behoben
+
+- **Linien neben den Namen der Ebenen** (Plan.md 133): In ChurchTools standen links und rechts von „Auf der Folie“,
+  „Diese Folie“ und „Ganze Präsentation“ zusätzliche Linien.
+- **Rand um ein gewähltes Farbfeld** (Plan.md 133): Der Ring um die gewählte Farbe war am Rand abgeschnitten.
+
 ## [0.73.0] – 2026-11-27
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Hinweis, dass „Folie“ bei vielen Bausteinen weit nach
@@ -2287,6 +2303,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.67.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.67.0
 [0.66.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.66.0
 [0.68.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.68.0
+[0.73.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.73.1
 [0.73.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.73.0
 [0.72.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.72.0
 [0.71.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.71.0
