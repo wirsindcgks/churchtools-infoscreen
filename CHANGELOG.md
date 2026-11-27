@@ -4,6 +4,22 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.73.0] – 2026-11-27
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Hinweis, dass „Folie“ bei vielen Bausteinen weit nach
+unten rutscht und die Ebenen im Inspektor nicht zu erkennen sind ([#407](https://github.com/wirsindcgks/churchtools-infoscreen/issues/407)).
+
+### Geändert
+
+- **Die Ebenen im Inspektor sind getrennt** (Plan.md 133). Ist kein Baustein gewählt, stehen Zwischenzeilen über den
+  Abschnitten: „Auf der Folie“ über der Liste der Bausteine (die jetzt kurz „Bausteine“ heißt), „Diese Folie“ über
+  „Folie“, „Aufteilung“ und „Hintergrund“, „Ganze Präsentation“ über „Präsentation“.
+- **„Folie“ bis „Präsentation“ stehen immer am selben Platz** (Plan.md 133). Am PC und am Tablet quer hängen sie
+  eingeklappt am unteren Rand des Inspektors, nur die Liste der Bausteine darüber rollt. Aufgeklappt nimmt ein
+  Abschnitt höchstens die halbe Höhe und rollt selbst. Am Handy und am iPad hochkant bleibt alles in einer Spalte.
+- **„Folie“ ist anfangs eingeklappt** (Plan.md 133) und zeigt in der Zeile die Anzeigedauer; wie bei den übrigen
+  Abschnitten ist immer nur einer offen.
+
 ## [0.72.0] – 2026-11-27
 
 Danke an Lukas ([@lub90](https://github.com/lub90)) für sein Papier „Klicksteuerung & Confidence-Monitor“, aus dem die
@@ -2271,6 +2287,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.67.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.67.0
 [0.66.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.66.0
 [0.68.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.68.0
+[0.73.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.73.0
 [0.72.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.72.0
 [0.71.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.71.0
 [0.70.3]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.70.3
