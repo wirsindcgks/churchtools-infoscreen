@@ -121,6 +121,8 @@ describe('ControlView (Plan.md 135 C)', () => {
         expect(wrapper.findAll('[data-testid="monitor-line"]').map((l) => l.text())).toEqual(['Jetzt: Segenslied']);
         expect(wrapper.find('[data-testid="monitor-switch"]').exists()).toBe(false);
         expect(repository.readPosition).toHaveBeenCalledWith('s1');
+        // While the service runs no rehearsal can be started by mistake, although the screen is released for rehearsals.
+        expect(wrapper.find('[data-testid="monitor-rehearsal"]').exists()).toBe(false);
     });
 
     it('leads from a song in a presentation by click to its next slide (choice b), and not from the last one', async () => {

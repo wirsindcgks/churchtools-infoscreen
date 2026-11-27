@@ -51,7 +51,8 @@ flowchart LR
     C --> D["Beenden"]
 ```
 
-1. Auf der Karte oben **„Probe starten"** tippen, die Dauer wählen (1 bis 3 Stunden) und bestätigen.
+1. Auf der Karte oben **„Probe starten"** tippen, die Dauer wählen (1 bis 3 Stunden) und bestätigen. Während eines
+   Gottesdienstes gibt es den Knopf nicht – so kann niemand den Bildschirm aus Versehen umschalten.
    Der Bildschirm braucht dann **einen kurzen Moment** – solange dreht sich ein Kreis mit „Wechselt zur Probe …".
 2. Mit der **Lupe** ein Lied suchen und antippen. Hat es mehrere Arrangements, wählst du darunter das richtige.
 3. Teile antippen oder mit **Vor** und **Zurück** schalten – wie im Gottesdienst. Für das nächste Lied wieder die Lupe.
