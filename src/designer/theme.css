@@ -29,6 +29,9 @@
     /* The "?" of the help (Plan.md 98): turquoise, apart from the blue of switches and buttons; teal-700 on white reads at about 5:1, teal-300 on the dark surface at more. */
     --d-help: var(--color-teal-700, oklch(51.1% 0.096 186.391));
     --d-help-pale: color-mix(in oklab, var(--d-help) 12%, var(--d-surface));
+    /* The levels of the inspector (Plan.md 133): the slide's sections lightly tinted, the playlist's a little more; mixed with the surface, so dark mode follows. */
+    --d-level-slide: color-mix(in oklab, var(--d-accent) 5%, var(--d-surface));
+    --d-level-playlist: color-mix(in oklab, var(--d-accent) 10%, var(--d-surface));
     /* Green of "+ Gruppe erstellen": creating something new. */
     --d-create: var(--color-constructive-b-bright, oklch(72.3% 0.219 149.579));
     --d-create-text: var(--color-constructive-inverted, #fff);

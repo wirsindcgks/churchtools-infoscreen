@@ -230,11 +230,13 @@ test('the slide and the playlist stay at the bottom of the inspector with many b
     const head = page.getByTestId('section-playlist-toggle');
     const bottomGap = async () => (await inspector.boundingBox())!.y + (await inspector.boundingBox())!.height - ((await head.boundingBox())!.y + (await head.boundingBox())!.height);
     expect(await bottomGap()).toBeLessThan(40);
-    // Open, "Präsentation" takes at most half the height and rolls itself.
-    await openSection(page, 'playlist');
-    const box = (await page.locator('.inspector-pinned').boundingBox())!;
-    expect(box.height).toBeLessThanOrEqual((await inspector.boundingBox())!.height / 2 + 1);
-    // The list rolls above, the head of "Präsentation" stays inside the inspector.
+    // Open, "Hintergrund" takes the height it needs and the list gives way; the name "Auf der Folie" stays in sight.
+    await openSection(page, 'background');
+    const pinned = (await page.locator('.inspector-pinned').boundingBox())!;
+    const level = (await page.getByTestId('level-on-slide').boundingBox())!;
+    expect(level.y + level.height).toBeLessThanOrEqual(pinned.y + 1);
+    expect(level.y).toBeGreaterThanOrEqual((await inspector.boundingBox())!.y - 1);
+    // The head of "Präsentation" stays inside the inspector.
     expect((await head.boundingBox())!.y).toBeGreaterThan((await inspector.boundingBox())!.y);
 
     // A phone: one column, the playlist below the list.
