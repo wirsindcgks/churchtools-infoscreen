@@ -42,8 +42,9 @@ function mountWith(initial: ClickPosition, click: ClickDoc | null = null) {
     const reads = async (next: ClickPosition) => {
         await wrapper.setProps({ position: next, readAt: Date.now() });
     };
-    const lines = () => (wrapper.emitted('info') ?? []).at(-1)![0] as { lines: string[] };
-    return { wrapper, repository, reads, lines };
+    /** The "Jetzt" row: the running slide and where it stands. */
+    const now = () => `${wrapper.get('[data-testid="control-now-title"]').text()} ${wrapper.get('[data-testid="control-now-of"]').text()}`;
+    return { wrapper, repository, reads, now };
 }
 
 describe('ControlSlides (Plan.md 124 D, 135 C)', () => {
@@ -54,38 +55,40 @@ describe('ControlSlides (Plan.md 124 D, 135 C)', () => {
     afterEach(() => vi.useRealTimers());
 
     it('lists the slides with the running one marked, and names the next one on "Vor"', async () => {
-        const { wrapper, lines } = mountWith(position({ by: 'Anna', clickAt: new Date(NOW.getTime() - 5000).toISOString() }));
+        const { wrapper, now } = mountWith(position({ by: 'Anna', clickAt: new Date(NOW.getTime() - 5000).toISOString() }));
         await flushPromises();
         expect(wrapper.findAll('[data-testid="slide-list"] button')).toHaveLength(3);
         expect(wrapper.get('[data-testid="slide-list"] button.active').text()).toContain('Lieder');
         expect(wrapper.get('[data-testid="step-hint"]').text()).toBe('Segen');
-        expect(lines().lines).toEqual(['Folie 2 von 3 · Lieder', 'zuletzt Anna, vor 5 s']);
+        expect(now()).toBe('Lieder 2 von 3');
+        expect(wrapper.get('[data-testid="slides-last"]').text()).toBe('zuletzt Anna, vor 5 s');
     });
 
     it('writes a click with the next seq, shown at once, until the screen reports it', async () => {
-        const { wrapper, repository, reads, lines } = mountWith(position());
+        const { wrapper, repository, reads, now } = mountWith(position());
         await wrapper.get('[data-testid="step-forward"]').trigger('click');
         // Shown at once, before anything is written.
-        expect(lines().lines[0]).toBe('Folie 3 von 3 · Segen');
+        expect(now()).toBe('Segen 3 von 3');
         expect(wrapper.emitted('clicked')).toBeTruthy();
         await flushPromises();
         expect(repository.writeClick.mock.calls[0]![0]).toMatchObject({ screenId: 's1', playlistId: 'p1', by: 'Max', actions: [{ seq: 1, do: 'next' }] });
         // The screen has not reported yet: the own click holds, with the author as the last one.
         await reads(position());
-        expect(lines().lines).toEqual(['Folie 3 von 3 · Segen', 'zuletzt Max, vor 0 s']);
+        expect(now()).toBe('Segen 3 von 3');
+        expect(wrapper.get('[data-testid="slides-last"]').text()).toBe('zuletzt Max, vor 0 s');
         // It has: the position counts again.
         await reads(position({ slideId: 'c', number: 3, seq: 1, by: 'Max', clickAt: NOW.toISOString() }));
-        expect(lines().lines[0]).toBe('Folie 3 von 3 · Segen');
+        expect(now()).toBe('Segen 3 von 3');
         expect(wrapper.get('[data-testid="slide-list"] button.active').text()).toContain('Segen');
     });
 
     it('lets an own click that the screen never confirms go after 20 seconds', async () => {
-        const { wrapper, reads, lines } = mountWith(position());
+        const { wrapper, reads, now } = mountWith(position());
         await wrapper.get('[data-testid="step-forward"]').trigger('click');
         await flushPromises();
         await vi.advanceTimersByTimeAsync(21_000);
         await reads(position());
-        expect(lines().lines[0]).toBe('Folie 2 von 3 · Lieder');
+        expect(now()).toBe('Lieder 2 von 3');
     });
 
     it('clicks in order, each with its own seq', async () => {
@@ -103,10 +106,10 @@ describe('ControlSlides (Plan.md 124 D, 135 C)', () => {
     });
 
     it('shows black and lifts it with the next click, which then moves nothing', async () => {
-        const { wrapper, repository, lines } = mountWith(position({ black: true }));
+        const { wrapper, repository, now } = mountWith(position({ black: true }));
         expect(wrapper.get('[data-testid="step-black"]').text()).toBe('Schwarz aufheben');
         await wrapper.get('[data-testid="step-forward"]').trigger('click');
-        expect(lines().lines[0]).toBe('Folie 2 von 3 · Lieder');
+        expect(now()).toBe('Lieder 2 von 3');
         expect(wrapper.get('[data-testid="step-black"]').text()).toBe('Schwarz');
         await flushPromises();
         expect(repository.writeClick).toHaveBeenCalledTimes(1);
@@ -121,31 +124,31 @@ describe('ControlSlides (Plan.md 124 D, 135 C)', () => {
 
     it('says "Nicht gespeichert" where the write fails, and takes the display back', async () => {
         vi.spyOn(console, 'warn').mockImplementation(() => {});
-        const { wrapper, repository, lines } = mountWith(position());
+        const { wrapper, repository, now } = mountWith(position());
         repository.writeClick.mockRejectedValueOnce(new Error('weg'));
         await wrapper.get('[data-testid="step-forward"]').trigger('click');
         await flushPromises();
         expect(wrapper.text()).toContain('Nicht gespeichert');
-        expect(lines().lines[0]).toBe('Folie 2 von 3 · Lieder');
+        expect(now()).toBe('Lieder 2 von 3');
     });
 
     it('starts over after the last slide: "Vor" names the first and moves the display there (user, 2026-11-27)', async () => {
-        const { wrapper, repository, lines } = mountWith(position({ slideId: 'c', number: 3 }));
+        const { wrapper, repository, now } = mountWith(position({ slideId: 'c', number: 3 }));
         const forward = wrapper.get('[data-testid="step-forward"]');
         expect(forward.attributes('disabled')).toBeUndefined();
         expect(wrapper.get('[data-testid="step-hint"]').text()).toContain('Begrüßung');
         await forward.trigger('click');
         await flushPromises();
         expect(repository.writeClick.mock.calls[0]![0].actions).toEqual([{ seq: 1, do: 'next' }]);
-        expect(lines().lines[0]).toBe('Folie 1 von 3 · Begrüßung');
+        expect(now()).toBe('Begrüßung 1 von 3');
     });
 
     it('keeps "Zurück" usable on the first slide and does not move the display there (the player decides)', async () => {
-        const { wrapper, repository, lines } = mountWith(position({ slideId: 'a', number: 1 }));
+        const { wrapper, repository, now } = mountWith(position({ slideId: 'a', number: 1 }));
         await wrapper.get('[data-testid="step-back"]').trigger('click');
         await flushPromises();
         expect(repository.writeClick.mock.calls[0]![0].actions).toEqual([{ seq: 1, do: 'previous' }]);
-        expect(lines().lines[0]).toBe('Folie 1 von 3 · Begrüßung');
+        expect(now()).toBe('Begrüßung 1 von 3');
     });
 
     it('takes a presenter key like the button', async () => {

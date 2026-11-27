@@ -83,7 +83,7 @@ describe('ControlView (Plan.md 135 C)', () => {
         expect(wrapper.find('[data-testid="control-area"]').exists()).toBe(false);
         expect(wrapper.get('[data-testid="control-plan"]').text()).toContain('Segenslied');
         expect(wrapper.get('[data-testid="control-current"]').text()).toContain('Strophe 1');
-        expect(wrapper.get('[data-testid="control-after"]').text()).toBe('Danach: Halleluja ›');
+        expect(wrapper.get('[data-testid="control-after"]').text()).toBe('Danach · Halleluja›');
         expect(wrapper.get('[data-testid="step-hint"]').text()).toBe('Refrain');
         expect(repository.readPosition).not.toHaveBeenCalled();
     });
@@ -117,7 +117,8 @@ describe('ControlView (Plan.md 135 C)', () => {
         expect(wrapper.get('[data-testid="control-current"]').text()).toContain('Segenslied');
         // The plan stands in the card, not as a card of its own; one screen: no "Wechseln".
         expect(wrapper.find('[data-testid="control-plan"]').exists()).toBe(false);
-        expect(wrapper.findAll('[data-testid="monitor-line"]').map((l) => l.text())).toEqual(['Jetzt: Segenslied']);
+        // The line under the band is gone: what runs stands in the "Jetzt" row (Plan.md 137 B).
+        expect(wrapper.find('[data-testid="monitor-line"]').exists()).toBe(false);
         expect(wrapper.find('[data-testid="monitor-switch"]').exists()).toBe(false);
         expect(repository.readPosition).toHaveBeenCalledWith('s1');
         // While the service runs no rehearsal can be started by mistake, although the screen is released for rehearsals.
@@ -152,7 +153,7 @@ describe('ControlView (Plan.md 135 C)', () => {
         const { wrapper } = setup({ catalog: catalog({ screens: [], clickScreens: [{ id: 's1', name: 'Bühne' }] }), positions: { s1: position(slides) } });
         await flushPromises();
         expect(wrapper.get('[data-testid="monitor-band"]').text()).toBe('Präsentation · Ablauf');
-        expect(wrapper.findAll('[data-testid="monitor-line"]').map((l) => l.text())).toEqual(['Folie 2 von 3 · Lieder']);
+        expect(wrapper.get('[data-testid="control-now"]').text()).toBe('JetztLieder2 von 3');
         expect(wrapper.findAll('[data-testid="slide-list"] button')).toHaveLength(3);
         expect(wrapper.find('[data-testid="control-current"]').exists()).toBe(false);
         expect(wrapper.find('[data-testid="control-rehearsal"]').exists()).toBe(false);
@@ -400,6 +401,6 @@ describe('ControlView (Plan.md 135 C)', () => {
         repository.readPosition.mockRejectedValueOnce(new Error('weg'));
         await vi.advanceTimersByTimeAsync(3100);
         expect(wrapper.get('[role="alert"]').text()).toContain('nicht erreichbar');
-        expect(wrapper.get('[data-testid="monitor-line"]').text()).toContain('Folie 2 von 3');
+        expect(wrapper.get('[data-testid="control-now"]').text()).toContain('2 von 3');
     });
 });

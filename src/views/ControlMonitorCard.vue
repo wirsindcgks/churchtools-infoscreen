@@ -3,7 +3,7 @@
  * The band under the head of the phone page (Plan.md 137 A): one coloured line that says what the screen shows – the word of the kind in bold
  * (Probe, Präsentation, Gottesdienst, Zeitplan), behind it the details. While a rehearsal runs the whole band is a button that opens a sheet
  * with "+1 Std", "+2 Std" and "Beenden"; where the screen is released for rehearsals, "Probe starten" stands at its right. Notes of the
- * transfer and of a silent screen take the place of the details. The lines below the band (the slide, the last click) stay for the middle (137 B).
+ * transfer and of a silent screen take the place of the details.
  */
 import { computed, ref } from 'vue';
 import { t } from '../i18n/designer';
@@ -17,8 +17,6 @@ const props = defineProps<{
     monitor: Monitor;
     /** `null` – no position (yet): see `silent`. */
     state: MonitorState | null;
-    /** The lines below the band, as the page decided them. */
-    lines: string[];
     /** The position was read and there is none. */
     silent: boolean;
     /** A rehearsal runs at the screen: the band then opens the sheet to extend and end it. */
@@ -67,7 +65,6 @@ function end(): void {
             <span v-if="rehearsalRunning" class="more" aria-hidden="true">›</span>
             <button v-else-if="canStart" type="button" class="start" data-testid="monitor-rehearsal" @click="emit('startRehearsal')">{{ t.control.rehearsalStart }} ›</button>
         </component>
-        <p v-if="lines.length" class="line" data-testid="monitor-line">{{ lines.join(' · ') }}</p>
         <ControlSheet v-if="sheetOpen && rehearsalRunning" :title="t.control.rehearsalSheetTitle(monitor.name)" icon="tv" @close="sheetOpen = false">
             <div class="row">
                 <button v-for="h in EXTEND_HOURS" :key="h" type="button" class="choice" :disabled="busy" :data-testid="`monitor-extend-${h}`" @click="extend(h)">{{ t.control.rehearsalExtend(h) }}</button>
@@ -83,8 +80,6 @@ function end(): void {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
-    /* The head stands 16 px from the edge, the middle 12: the band lines up with the head. */
-    margin: 0 4px;
 }
 p {
     margin: 0;
@@ -160,14 +155,6 @@ button.band {
     color: #c9ced6;
     font: inherit;
     cursor: pointer;
-}
-.line {
-    padding: 0 14px;
-    color: #f1f2f4;
-    font-size: 0.85rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 .row {
     display: flex;

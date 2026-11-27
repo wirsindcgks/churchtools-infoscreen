@@ -31,8 +31,8 @@ const props = defineProps<{
     /** The plan ("Jetzt", "Dann") stands here as a card, where no monitor card carries it. */
     showPlan: boolean;
 }>();
-/** What the card of the monitor says for the service: the line of the plan and the start of the event. */
-const emit = defineEmits<{ info: [info: { lines: string[]; eventStartMs: number | null }] }>();
+/** What the band of the monitor says for the service: the start of the event. */
+const emit = defineEmits<{ info: [info: { eventStartMs: number | null }] }>();
 
 const POLL_MS = 2500;
 
@@ -116,8 +116,8 @@ const plan = computed(() => {
     };
 });
 watch(
-    [plan, () => event.value?.startMs ?? null],
-    ([p, eventStartMs]) => emit('info', { lines: !p ? [] : p.over ? [t.control.planOver] : [t.control.monitorNow(p.title, p.clock)], eventStartMs }),
+    () => event.value?.startMs ?? null,
+    (eventStartMs) => emit('info', { eventStartMs }),
     { immediate: true },
 );
 
@@ -280,7 +280,7 @@ onBeforeUnmount(() => {
                 </ControlSongCard>
             </div>
             <button v-if="upNext" type="button" class="after" :disabled="!stepping || firstSection(upNext.parts) === null" data-testid="control-after" @click="chooseNext">
-                {{ t.control.after(upNext.title) }}
+                <span><span class="after-label">{{ t.control.after }}</span> · {{ upNext.title }}</span><span aria-hidden="true">›</span>
             </button>
             <section v-if="songs.length > 1" class="all control-card" data-testid="control-all">
                 <button type="button" class="all-toggle" :aria-expanded="allOpen" @click="allOpen = !allOpen">
@@ -408,16 +408,28 @@ button {
 button:disabled {
     opacity: 0.4;
 }
-/* The next song, dashed: it is not the song on the screen, but one tap away. */
+/* The next song, a flat row at the foot of the middle (Plan.md 137 B): it is not the song on the screen, but one tap away. */
 .after {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     min-height: 52px;
-    padding: 0 14px;
-    border-style: dashed;
-    color: #b8bcc4;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 12px;
+    background: #1b1e25;
+    font-size: 16px;
     text-align: left;
+}
+.after > :first-child {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+.after-label {
+    color: #8b919c;
 }
 /* A fold one sees as such: the arrow on the right turns when it opens (user, 2026-11-26). */
 .all {
