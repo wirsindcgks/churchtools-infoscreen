@@ -197,6 +197,10 @@ veröffentlichen“.*
 - **ChurchTools-Version in der README:** Badge „ChurchTools getestet …“ und der Satz im Abschnitt „Stand“ nennen die
   Version der Produktivinstanz, auf der die Erweiterung läuft. Beim Release den Nutzer fragen, ob Prod noch darauf läuft,
   und beide Stellen sonst nachziehen *(seit 2026-11-27, Nutzer)*.
+- **ChurchTools-Version prüfen:** `npm run ct:check` (liest nur). Ist die Instanz aus `.env` auf einer neuen Version, zieht
+  es deren API-Spezifikation nach `fixtures/schema/` und vergleicht jeden Endpunkt, den der Code aufruft, mit der
+  Aufzeichnung davor; Ausgang 2 heißt „etwas geändert“. Dann die gemeldeten Felder im Code nachsehen und das Ergebnis
+  als Befund eintragen (wie G85) *(seit 2026-11-27, Nutzer)*.
 - **Prüfen:** `npm run release:check -- vX.Y.Z`.
 - **Tag:** leichtgewichtig, `git tag vX.Y.Z`. Workflow `release.yml`, Asset `churchtools-infoscreen-vX.Y.Z.zip`.
 - **Danach meldet der Agent:** Link aufs Release; **das ZIP lädt der Nutzer** in der Extension-Verwaltung hoch (Test- und

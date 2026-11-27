@@ -1022,6 +1022,13 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 - **„Mitglied der Dienstgruppe“ heißt Mitglied einer Gruppe, an die ihre Dienste gebunden sind** (`/services`: Lobpreisleitung, Gesang, Gitarre mit `groupIds` [9]); ein Recht braucht der Musiker dafür nicht. **Offene Dienstgruppen** („Programm“, `viewAll: true`, G46) zeigen ihre Notizen jedem, der den Ablaufplan sieht.
 - **Folge fürs Gerät:** Für jede Dienstgruppe, deren Notizen ein Baustein zeigen soll, braucht die Rolle des Geräts **304 „Dienste einzelner Dienstkategorien sehen“** mit dieser Dienstgruppe (`dataId` als Liste, ein einzelner Wert gibt `400` „Die Eingabe muss ein Array sein“). Dasselbe Recht lässt das Gerät auch lesen, wer in diesen Dienstgruppen eingeteilt ist; der Infoscreen zeigt Dienste trotzdem nur aus offenen Dienstgruppen (G46).
 
+**G85 – Beantwortet: ChurchTools 3.139.1 ändert 13 der Endpunkte, die wir aufrufen, aber nichts, was wir lesen.** *(2026-11-27, Test- und Produktivinstanz 3.139.1, Build 32958; nur lesend: die Spezifikation über `/system/runtime/swagger/openapi.json`, diesmal mit dem Login-Token statt Session-Cookie, verglichen mit der Aufzeichnung von 3.138 (G68) durch das neue `npm run ct:check`; Anlass: Wunsch des Nutzers, die Versionen regelmäßig auf Änderungen zu prüfen)* 571 Pfade und 1151 Schemas (3.138: 548 und 1131). Von 49 Aufrufen im Code: 29 unverändert, 13 geändert, keiner entfallen, 7 wie bisher nicht beschrieben (`/custommodules` samt KV-Store, `GET`/`PATCH /groups/{id}`, `PUT /groups/{id}/members/{personId}`).
+
+- **Nur Zusätze ohne Folgen:** `/config` hat vier neue `feature_*`-Schalter, `feature_old_group_module` fehlt (lesen wir nicht); Bilder an Terminen und Beiträgen tragen `aiGenerated`, `annotation`, `annotationLink`, `description`; Beiträge `hasSeen`; die Rechte-Herkunft `directValue`, `indirectValue`, `unrestricted`; `GET /events/{id}/agenda` liefert `eventIds`.
+- **Lieder mit `usage`:** `GET /songs`, `/songs/{id}` (mit `include=usage`) und `/events/{id}/agenda/songs` nennen je Lied, wann und in welchem Event welches Arrangement lief. Für uns nur eine Möglichkeit für später (etwa „zuletzt gespielt“ in der Probe), kein Auftrag.
+- **Typen gelockert:** In `/whoami` dürfen Personenfelder `null` sein (vorher nur Text). Wir lesen davon nichts; `nickname` kommt bei uns aus den Gruppenmitgliedern und wird mit `?? ''` gelesen. Koordinaten in Adressen stehen nur noch als `null` – vermutlich ein Fehler der erzeugten Doku, wir nutzen sie nicht.
+- **Folge:** keine Änderung am Code. Ab jetzt prüft `npm run ct:check` jeden Versionssprung beim Release (AGENTS.md, „Release“).
+
 ## Der Betriebsbenutzer – wie er eingerichtet wird und wie nicht
 
 
