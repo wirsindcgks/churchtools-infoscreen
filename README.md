@@ -1,6 +1,9 @@
 # ChurchTools Infoscreen Designer
 
 [![Release](https://img.shields.io/github/v/release/wirsindcgks/churchtools-infoscreen)](https://github.com/wirsindcgks/churchtools-infoscreen/releases)
+[![Veröffentlicht](https://img.shields.io/github/release-date/wirsindcgks/churchtools-infoscreen?label=ver%C3%B6ffentlicht)](CHANGELOG.md)
+[![Getestet mit ChurchTools 3.139.1](https://img.shields.io/badge/ChurchTools-getestet_3.139.1-2b6cb0)](#stand)
+[![Prüfung](https://img.shields.io/github/actions/workflow/status/wirsindcgks/churchtools-infoscreen/ci.yml?branch=main&label=Pr%C3%BCfung)](https://github.com/wirsindcgks/churchtools-infoscreen/actions/workflows/ci.yml)
 [![Lizenz: GPL v3](https://img.shields.io/github/license/wirsindcgks/churchtools-infoscreen)](LICENSE)
 [![Mit KI entwickelt](https://img.shields.io/badge/mit_KI_entwickelt-Claude_Code-8A2BE2)](AGENTS.md)
 
@@ -72,7 +75,7 @@ nach Freigabe durch einen Administrator.
 ## Stand
 
 Die aktuelle Version steht unter [Releases](https://github.com/wirsindcgks/churchtools-infoscreen/releases). Bei uns
-zeigen seit dem 6. Oktober 2026 zwei Fernseher im Foyer ihre Folien damit; getestet ist es auf ChurchTools 3.136. Was
+zeigen seit dem 6. Oktober 2026 zwei Fernseher im Foyer ihre Folien damit; getestet ist es auf ChurchTools 3.139.1. Was
 sich je Version geändert hat, steht im [Changelog](CHANGELOG.md), was als Nächstes kommt, in [`Plan.md`](Plan.md). Fehler und Wünsche gerne im
 [Issue-Tracker](https://github.com/wirsindcgks/churchtools-infoscreen/issues).
 
