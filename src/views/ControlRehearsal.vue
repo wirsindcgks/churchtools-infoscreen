@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * The area "Probe" of the phone page (Plan.md 121, "Proben"): the musicians search a song of the song database, choose its arrangement and
- * tap its parts. A tap writes the rehearsal choice into the category `steuerung` – one for all rehearsal screens, independent of any event.
- * What another musician chose later is read every few seconds and shown here too.
+ * The song of the rehearsal on the phone page (Plan.md 121, "Proben", 135 C): the musicians search a song of the song database, choose its
+ * arrangement and tap its parts. A tap writes the rehearsal choice into the category `steuerung` – one for all rehearsal screens,
+ * independent of any event. What another musician chose later is read every few seconds and shown here too.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue';
 import { stepSection, type RehearsalDoc } from '../agenda/control';
@@ -12,12 +12,13 @@ import { t } from '../i18n/designer';
 import { loadArrangementSheet } from '../player/data';
 import type { ScreenRepository } from '../store/screen-repository';
 import Icon from '../designer/Icon.vue';
-import ControlScreen from './ControlScreen.vue';
-import ControlSong from './ControlSong.vue';
+import ControlBar from './ControlBar.vue';
+import ControlSongCard from './ControlSongCard.vue';
 import { arrangementLabels } from './arrangement-labels';
+import { sectionName } from './song-steps';
 import { usePresenterKeys } from '../player/presenter-keys';
 
-const props = defineProps<{ repository: ScreenRepository; author: string; timeZone: string }>();
+const props = defineProps<{ repository: ScreenRepository; author: string }>();
 
 const POLL_MS = 2500;
 const SEARCH_MS = 300;
@@ -71,6 +72,10 @@ const presenter = usePresenterKeys((by) => {
     const target = by === 1 ? following.value : previous.value;
     if (target !== null) void choose(target);
 });
+
+const forwardHint = computed(() => (following.value === null || !sheet.value ? '' : sectionName(sheet.value.sections[following.value], following.value)));
+/** At the last part "Vor" stays (Plan.md 124): the song changes by the search. */
+const atEnd = computed(() => !!sheet.value && section.value !== null && following.value === null);
 
 const labels = computed(() => arrangementLabels(arrangements.value, t.control.arrangement));
 
@@ -232,7 +237,6 @@ onBeforeUnmount(() => {
 
 <template>
     <div class="rehearsal" data-testid="control-rehearsal">
-        <ControlScreen :repository="repository" :author="author" :time-zone="timeZone" />
         <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
         <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
         <template v-if="showSearch">
@@ -271,19 +275,13 @@ onBeforeUnmount(() => {
             </div>
             <p v-if="sheetLoading" class="note">{{ t.control.rehearsalLoading }}</p>
             <template v-else-if="sheet">
-                <ul class="songs" data-testid="rehearsal-song">
-                    <ControlSong :title="song.name ?? ''" :song-key="sheet.key" :parts="sheet.sections" open bare :active="section" :disabled="false" @choose="choose" />
-                </ul>
+                <div class="song" data-testid="rehearsal-song">
+                    <ControlSongCard :title="song.name ?? ''" :song-key="sheet.key" :parts="sheet.sections" headless :active="section" :disabled="false" @choose="choose" />
+                </div>
+                <p v-if="atEnd" class="note" data-testid="rehearsal-end-note">{{ t.control.stepEndRehearsal }}</p>
                 <!-- In the fixed zone below the middle of the page (Plan.md 135 A). -->
                 <Teleport defer to="#control-bar">
-                    <nav class="steps">
-                        <button type="button" :disabled="previous === null" @click="previous !== null && choose(previous)">
-                            {{ t.control.back }}
-                        </button>
-                        <button type="button" :disabled="following === null" @click="following !== null && choose(following)">
-                            {{ t.control.next }}
-                        </button>
-                    </nav>
+                    <ControlBar :back-disabled="previous === null" :forward-disabled="following === null" :hint="forwardHint" @back="previous !== null && choose(previous)" @forward="following !== null && choose(following)" />
                 </Teleport>
                 <p v-if="presenter" class="note" data-testid="rehearsal-presenter">{{ t.control.presenterDetected }}</p>
             </template>
@@ -301,9 +299,23 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+/* The middle is a column: the parts take what is left and roll inside, everything else stands. */
 .rehearsal {
-    display: grid;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
+}
+.rehearsal > * {
+    flex: none;
+    min-width: 0;
+}
+.rehearsal > .song {
+    flex: 0 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 p {
     margin: 0;
@@ -416,7 +428,14 @@ button {
     font-weight: 600;
 }
 .results {
-    gap: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    /* A long list of finds rolls by itself. */
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 .results button {
     width: 100%;
@@ -424,25 +443,5 @@ button {
     border-bottom: 1px solid #2a2e36;
     border-radius: 0;
     background: transparent;
-}
-button.active {
-    background: #2f6fed;
-    border-color: #6ea8ff;
-    font-weight: 600;
-}
-button:disabled {
-    opacity: 0.4;
-}
-.steps {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-}
-/* Back and next are what a hand on stage reaches for blind: tall and in big letters, like the page of the service. */
-.steps button {
-    min-height: 80px;
-    font-size: 1.5rem;
-    font-weight: 600;
-    text-align: center;
 }
 </style>

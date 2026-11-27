@@ -49,40 +49,15 @@ test.describe('between designer and phone page on a desktop', () => {
         await dialog.getByTestId('control-qr-open').click();
         await expect(page).toHaveURL(/\/steuerung$/);
         await expect(dialog).toHaveCount(0);
-        await expect(page.getByTestId('control-area')).toContainText('Gottesdienst');
+        // Without a released screen the page shows the service alone: no card, no choice of areas (Plan.md 135 C).
+        await expect(page.getByTestId('control-middle')).toBeVisible();
+        await expect(page.getByTestId('control-monitor')).toHaveCount(0);
 
         // The pencil went (user, 2026-11-26): "ChurchTools" leads back into the designer the page was opened from.
         await page.getByTestId('control-back').click();
         await expect(page.getByTestId('screens-heading')).toBeVisible();
         // The phone page held the page behind still (Plan.md 135 A); now it may scroll again.
         expect(await page.evaluate(() => [document.documentElement.style.overflow, document.body.style.overflow])).toEqual(['', '']);
-    });
-
-    test('chooses the area from the list under the head', async ({ page }) => {
-        await page.goto('steuerung');
-        const button = page.getByTestId('control-area');
-        await expect(button).toHaveAttribute('aria-expanded', 'false');
-        await button.click();
-        await expect(button).toHaveAttribute('aria-expanded', 'true');
-        await expect(page.getByTestId('control-area-service')).toHaveAttribute('aria-pressed', 'true');
-        // Without a screen released for the click steering the list has no "Bildschirm" (Plan.md 124 D); the demo store has no such list.
-        await expect(page.getByTestId('control-area-rehearsal')).toBeVisible();
-        await expect(page.getByTestId('control-area-click')).toHaveCount(0);
-        await page.keyboard.press('Escape');
-        await expect(page.getByTestId('control-area-rehearsal')).toHaveCount(0);
-
-        await button.click();
-        await page.getByTestId('control-area-rehearsal').click();
-        await expect(page.getByTestId('control-area-rehearsal')).toHaveCount(0);
-        await expect(button).toContainText('Probe');
-        await expect(button).toHaveAttribute('aria-expanded', 'false');
-        await expect(page.getByTestId('control-screen')).toBeVisible();
-        await page.getByTestId('control-screen').locator('summary').click();
-        await expect(page.getByTestId('control-screen-none')).toBeVisible();
-
-        await button.click();
-        await page.locator('.control').click({ position: { x: 5, y: 600 } });
-        await expect(page.getByTestId('control-area-service')).toHaveCount(0);
     });
 });
 
@@ -147,14 +122,14 @@ for (const [name, viewport] of [
     test.describe(`the head of the phone page on a ${name}`, () => {
         test.use({ viewport });
 
-        test('does not run over the side and shows both buttons whole', async ({ page }) => {
+        test('does not run over the side and shows the button whole', async ({ page }) => {
             await page.goto('./');
             await goToControl(page);
             await expect(page).toHaveURL(/\/steuerung$/);
             const head = (await page.getByTestId('control-head').boundingBox())!;
             expect(head.x).toBeGreaterThanOrEqual(0);
             expect(head.x + head.width).toBeLessThanOrEqual(viewport.width);
-            for (const id of ['control-back', 'control-area']) {
+            for (const id of ['control-back']) {
                 const box = (await page.getByTestId(id).boundingBox())!;
                 expect(box.x).toBeGreaterThanOrEqual(head.x);
                 expect(box.x + box.width).toBeLessThanOrEqual(head.x + head.width + 1);

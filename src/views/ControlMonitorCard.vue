@@ -1,0 +1,181 @@
+<script setup lang="ts">
+/**
+ * The card of the monitor at the top of the middle (Plan.md 135 C): its name, "Wechseln" where there are several, a chip with what runs
+ * and the lines below it; "Probe …" where the screen is released for rehearsals. What the screen shows comes from its position only.
+ */
+import { onBeforeUnmount, ref } from 'vue';
+import Icon from '../designer/Icon.vue';
+import { t } from '../i18n/designer';
+import type { Monitor, MonitorState } from './monitor-state';
+
+defineProps<{
+    monitors: Monitor[];
+    monitor: Monitor;
+    /** `null` – no position (yet): see `silent`. */
+    state: MonitorState | null;
+    /** The lines below the chip, as the page decided them. */
+    lines: string[];
+    /** The position was read and there is none. */
+    silent: boolean;
+    rehearsalOpen: boolean;
+}>();
+const emit = defineEmits<{ choose: [id: string]; rehearsal: [] }>();
+
+/** The list under "Wechseln": a tap beside it and Escape close it. */
+const open = ref(false);
+const box = ref<HTMLElement | null>(null);
+function closeOnOutside(event: Event): void {
+    if (open.value && !box.value?.contains(event.target as Node)) open.value = false;
+}
+function closeOnEscape(event: KeyboardEvent): void {
+    if (event.key === 'Escape') open.value = false;
+}
+document.addEventListener('pointerdown', closeOnOutside);
+document.addEventListener('keydown', closeOnEscape);
+onBeforeUnmount(() => {
+    document.removeEventListener('pointerdown', closeOnOutside);
+    document.removeEventListener('keydown', closeOnEscape);
+});
+function pick(id: string): void {
+    open.value = false;
+    emit('choose', id);
+}
+</script>
+
+<template>
+    <section class="control-card monitor" data-testid="control-monitor">
+        <div class="monitor-top">
+            <span class="monitor-name" data-testid="monitor-name">{{ monitor.name }}</span>
+            <div v-if="monitors.length > 1" ref="box" class="monitor-switch">
+                <button type="button" class="switch-button" aria-haspopup="true" :aria-expanded="open" data-testid="monitor-switch" @click="open = !open">
+                    {{ t.control.monitorSwitch }}<Icon name="chevron-down" :size="16" />
+                </button>
+                <ul v-if="open" class="switch-list" role="group" :aria-label="t.control.screenChoose">
+                    <li v-for="m in monitors" :key="m.id">
+                        <button type="button" :class="{ chosen: m.id === monitor.id }" :aria-pressed="m.id === monitor.id" :data-testid="`monitor-option-${m.id}`" @click="pick(m.id)">{{ m.name }}</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <p v-if="state?.chip" class="chip" :class="`tone-${state.kind}`" data-testid="monitor-chip"><span class="dot" aria-hidden="true" />{{ state.chip }}</p>
+        <p v-for="line in lines" :key="line" class="line" data-testid="monitor-line">{{ line }}</p>
+        <p v-if="silent" class="line" data-testid="monitor-silent">{{ t.control.monitorSilent }}</p>
+        <p v-if="state?.note" class="note" data-testid="monitor-note">{{ state.note }}</p>
+        <button v-if="monitor.rehearsal" type="button" class="rehearsal" :aria-expanded="rehearsalOpen" data-testid="monitor-rehearsal" @click="emit('rehearsal')">{{ t.control.rehearsalStart }}</button>
+    </section>
+</template>
+
+<style scoped>
+.monitor {
+    flex: none;
+    display: grid;
+    gap: 6px;
+}
+p {
+    margin: 0;
+}
+.monitor-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+/* Bold, but not `strong`: ChurchTools colours that dark blue. */
+.monitor-name {
+    min-width: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #f1f2f4;
+    overflow-wrap: anywhere;
+}
+.monitor-switch {
+    position: relative;
+    flex: none;
+}
+button {
+    border: 1px solid #3a3f4a;
+    border-radius: 8px;
+    background: #1d2027;
+    color: #f1f2f4;
+    font: inherit;
+    cursor: pointer;
+}
+.switch-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 40px;
+    padding: 0 10px 0 12px;
+    font-size: 0.95rem;
+}
+.switch-button[aria-expanded='true'] {
+    border-color: #6b7180;
+}
+.switch-list {
+    position: absolute;
+    z-index: 5;
+    top: 100%;
+    right: 0;
+    margin: 4px 0 0;
+    padding: 4px;
+    min-width: 200px;
+    list-style: none;
+    border: 1px solid #3a3f4a;
+    border-radius: 10px;
+    background: #1d2027;
+}
+.switch-list button {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 12px;
+    border: 0;
+    background: none;
+    text-align: left;
+}
+.switch-list button.chosen {
+    background: #2a2e37;
+    font-weight: 600;
+}
+.chip {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px 4px 10px;
+    border-radius: 999px;
+    background: #2a2e37;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #8b909a;
+}
+.tone-service .dot {
+    background: #4ade80;
+}
+.tone-rehearsal .dot {
+    background: #facc15;
+}
+.tone-presentation .dot {
+    background: #a78bfa;
+}
+.line {
+    color: #f1f2f4;
+}
+.note {
+    color: #b8bcc4;
+    font-size: 0.85rem;
+}
+.rehearsal {
+    justify-self: start;
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: 0.95rem;
+}
+.rehearsal[aria-expanded='true'] {
+    border-color: #6b7180;
+}
+</style>

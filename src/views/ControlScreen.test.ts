@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OverrideDoc, RehearsalCatalogDoc } from '../agenda/control';
 import type { ScreenRepository } from '../store/screen-repository';
 import ControlScreen from './ControlScreen.vue';
-import { controlMemory } from './control-memory';
 
 const NOW = new Date('2026-11-11T18:00:00Z');
 const catalog: RehearsalCatalogDoc = {
@@ -14,7 +13,7 @@ const catalog: RehearsalCatalogDoc = {
     at: '2026-11-11T09:00:00Z',
 };
 
-function mountWith(read: { catalog: RehearsalCatalogDoc | null; overrides: Record<string, OverrideDoc> }) {
+function mountWith(read: { catalog: RehearsalCatalogDoc | null; overrides: Record<string, OverrideDoc> }, screenId = 's1') {
     // Like the store: what is written is what the next read returns.
     const repository = {
         readRehearsalScreens: vi.fn(async () => ({ catalog: read.catalog, overrides: { ...read.overrides } })),
@@ -22,15 +21,14 @@ function mountWith(read: { catalog: RehearsalCatalogDoc | null; overrides: Recor
             read.overrides[doc.screenId] = doc;
         }),
     };
-    const wrapper = mount(ControlScreen, { props: { repository: repository as unknown as ScreenRepository, author: 'Max', timeZone: 'Europe/Berlin' } });
+    const wrapper = mount(ControlScreen, { props: { repository: repository as unknown as ScreenRepository, author: 'Max', timeZone: 'Europe/Berlin', screenId } });
     return { wrapper, repository };
 }
 
-describe('ControlScreen (Plan.md 125 C)', () => {
+describe('ControlScreen (Plan.md 125 C, 135 C)', () => {
     beforeEach(() => {
         vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
         vi.setSystemTime(NOW);
-        controlMemory.screenId = null;
     });
     afterEach(() => vi.useRealTimers());
 
@@ -38,13 +36,18 @@ describe('ControlScreen (Plan.md 125 C)', () => {
         const { wrapper } = mountWith({ catalog: null, overrides: {} });
         await flushPromises();
         expect(wrapper.get('[data-testid="control-screen-none"]').text()).toContain('freigegeben');
-        expect(wrapper.get('summary').text()).toBe('Bildschirm');
+    });
+
+    it('says whom to ask for a screen that is not released for rehearsals', async () => {
+        const { wrapper } = mountWith({ catalog, overrides: {} }, 'other');
+        await flushPromises();
+        expect(wrapper.get('[data-testid="control-screen-none"]').text()).toContain('freigegeben');
+        expect(wrapper.find('[data-testid="control-screen-show"]').exists()).toBe(false);
     });
 
     it('writes screen, presentation, duration and author', async () => {
         const { wrapper, repository } = mountWith({ catalog, overrides: {} });
         await flushPromises();
-        expect(wrapper.get('summary').text()).toBe('Bildschirm · nach Zeitplan');
         await wrapper.get('[data-testid="control-screen-hours-3"]').trigger('click');
         await wrapper.get('[data-testid="control-screen-show"]').trigger('click');
         await flushPromises();
@@ -59,7 +62,6 @@ describe('ControlScreen (Plan.md 125 C)', () => {
     it('shows what runs and ends it', async () => {
         const { wrapper, repository } = mountWith({ catalog, overrides: { s1: running } });
         await flushPromises();
-        expect(wrapper.get('summary').text()).toContain('Probe bis 20:30');
         const box = wrapper.get('[data-testid="control-screen-running"]').text();
         expect(box).toContain('Band bis 20:30');
         expect(box).toContain('von Anna');
