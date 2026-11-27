@@ -144,3 +144,32 @@ test.describe('a button that is greyed out', () => {
         await expect(page.locator('[data-testid="rehearsal-song"] [data-testid="rehearsal-end-note"]')).toBeVisible();
     });
 });
+
+// The reading mode (Plan.md 138): the sheet with chords instead of the tiles and the bar; the page itself does not scroll.
+for (const [name, viewport] of [
+    ['small phone', { width: 375, height: 667 }],
+    ['iPad portrait', { width: 768, height: 1024 }],
+] as const) {
+    test.describe(`reading mode on a ${name}`, () => {
+        test.use({ viewport });
+
+        test('reading mode shows the sheet with chords, no bar buttons, and the page does not scroll', async ({ page }) => {
+            await answerSong(page, 4);
+            await seedRehearsal(page, 1);
+            await page.goto('steuerung');
+            await expect(page.locator('[data-testid="rehearsal-song"] .part')).toHaveCount(4);
+            await page.getByTestId('control-read').click();
+            await expect(page.getByTestId('control-read')).toHaveAttribute('aria-pressed', 'true');
+            await expect(page.getByTestId('reader-part')).toHaveCount(4);
+            await expect(page.getByTestId('reader-chord').first()).toBeVisible();
+            await expect(page.getByTestId('step-forward')).toHaveCount(0);
+            await expect(page.getByTestId('step-back')).toHaveCount(0);
+            await expect(page.getByTestId('monitor-change')).toHaveCount(0);
+            const fits = () => page.evaluate(() => document.scrollingElement!.scrollHeight <= window.innerHeight);
+            expect(await fits()).toBe(true);
+            await page.getByTestId('reader-larger').click();
+            expect(await fits()).toBe(true);
+            await expect(page.getByTestId('reader-part').nth(1)).toHaveAttribute('aria-current', 'true');
+        });
+    });
+}

@@ -27,6 +27,7 @@ import './control-card.css';
 import { controlMemory } from './control-memory';
 import { monitorList, monitorState, pickMonitor, rehearsalWithoutSheet, type Monitor } from './monitor-state';
 import { useRehearsalControl } from './useRehearsalControl';
+import { readReading, writeReading } from './reader-scale';
 import { useWakeLock } from './useWakeLock';
 
 // On stage the phone must not lock while the page is open (user, 2026-11-13).
@@ -93,6 +94,12 @@ const serviceEventId = computed(() => {
 });
 const slidesPosition = computed(() => (position.value && hasSlides(position.value) ? position.value : null));
 watch(middle, () => (info.value = { eventStartMs: null }));
+/** The reading mode (Plan.md 138): the sheet of the running song alone, nothing that switches the screen. Only where the middle shows a song. */
+const reading = ref(readReading());
+watch(reading, writeReading);
+const hasSong = computed(() => middle.value === 'service' || middle.value === 'rehearsal');
+const readingOn = computed(() => reading.value && hasSong.value);
+watch(readingOn, (on) => on && (sheetOpen.value = false));
 
 // --- reading the position of the monitor: every 3 seconds, every second for 15 after an own click (G16), only while the page is seen ---
 
@@ -277,6 +284,7 @@ onBeforeUnmount(() => {
                 </div>
                 <span v-else class="monitor-switch"><Icon name="tv" :size="18" class="monitor-icon" /><span class="monitor-name" data-testid="monitor-name">{{ monitor.name }}</span></span>
             </template>
+            <button v-if="hasSong && !unavailable && !loading" type="button" class="read" :class="{ on: reading }" :aria-pressed="reading" :aria-label="t.control.reading" data-testid="control-read" @click="reading = !reading"><Icon name="eye" :size="22" /></button>
             <h1>{{ t.control.title }}</h1>
         </header>
         <div class="middle" data-testid="control-middle">
@@ -291,12 +299,13 @@ onBeforeUnmount(() => {
                     :rehearsal-running="rehearsalRunning"
                     :busy="rehearsal.busy.value"
                     :transfer="rehearsal.transfer.value"
+                    :readonly="readingOn"
                     @start-rehearsal="sheetOpen = true"
                     @extend="(hours) => rehearsal.extend(hours)"
                     @end-rehearsal="rehearsal.end()"
                 />
                 <ControlRehearsalSheet
-                    v-if="sheetOpen && monitor"
+                    v-if="sheetOpen && monitor && !readingOn"
                     :monitor-name="monitor.name"
                     :playlists="catalog?.playlists ?? []"
                     :busy="rehearsal.busy.value"
@@ -306,10 +315,10 @@ onBeforeUnmount(() => {
                 />
                 <p v-if="rehearsal.notSaved.value && !sheetOpen" class="warn" role="alert">{{ t.control.notSaved }}</p>
                 <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
-                <ControlService v-if="middle === 'service'" :repository="repository" :author="author" :time-zone="timeZone" :event-id="serviceEventId" :show-plan="!monitor" @info="(next) => (info = next)" />
-                <ControlRehearsal v-else-if="middle === 'rehearsal' && repository" :repository="repository" :author="author" />
-                <button v-if="nextSlide" type="button" class="next-slide" data-testid="control-next-slide" @click="goNextSlide">{{ t.control.nextSlide(nextSlide.name) }}</button>
-                <p v-if="nextSlide && nextSlideNotSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
+                <ControlService v-if="middle === 'service'" :repository="repository" :author="author" :time-zone="timeZone" :event-id="serviceEventId" :show-plan="!monitor" :reading="readingOn" @info="(next) => (info = next)" />
+                <ControlRehearsal v-else-if="middle === 'rehearsal' && repository" :repository="repository" :author="author" :reading="readingOn" />
+                <button v-if="nextSlide && !readingOn" type="button" class="next-slide" data-testid="control-next-slide" @click="goNextSlide">{{ t.control.nextSlide(nextSlide.name) }}</button>
+                <p v-if="nextSlide && !readingOn && nextSlideNotSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
                 <p v-else-if="noProbeSheet" class="note" data-testid="monitor-no-sheet">{{ t.control.noProbeSheet }}</p>
                 <ControlSlides
                     v-else-if="middle === 'slides' && repository && slidesPosition && monitor"
@@ -342,6 +351,11 @@ onBeforeUnmount(() => {
     background: #101114;
     color: #f2f2f2;
     font-size: 1.1rem;
+    /* The side margin grows with the window: 16 px on a phone, about 30 px on an iPad upright, 43 px across. */
+    /* The edge all round (user, 2026-11-27: symmetric, top and bottom too, a step narrower than before): on phones the old 12 px above and
+       below and 16 px at the sides stay; on a tablet it grows evenly – about 23 px upright, 33 px across. */
+    --edge: clamp(12px, 4vw - 8px, 44px);
+    --gutter: max(16px, var(--edge));
     /* The page is always dark: the help "?" takes the turquoise of the dark mode of the designer. */
     --d-help: var(--color-teal-300, oklch(85.5% 0.138 181.071));
     --d-surface: #101114;
@@ -361,7 +375,7 @@ h1 {
     align-items: center;
     min-width: 0;
     gap: 8px;
-    padding: 12px 16px;
+    padding: var(--edge) var(--gutter) 12px;
 }
 /* Head (Plan.md 137 A): the back button with the arrow alone, 44 × 44, in the frame of the editor's "zurück" (user, 2026-11-26), in the dark of this page. */
 .back {
@@ -380,6 +394,22 @@ h1 {
 }
 .back:active {
     border-color: #6b7180;
+}
+/* The eye at the right of the head: flat like the back button; lit while the reading mode is on. */
+.read {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    box-sizing: border-box;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 10px;
+}
+.read.on {
+    border-color: #8ab4ff;
+    color: #8ab4ff;
 }
 /* A flex box of its own: with a percentage width on the button, Safari sized the name to almost nothing ("Confide…", user, 2026-11-27). */
 .monitor-switch {
@@ -471,7 +501,11 @@ button {
     display: flex;
     flex-direction: column;
     gap: 14px;
-    padding: 0 16px 12px;
+    padding: 0 var(--gutter) 12px;
+}
+/* Without the bar (the reading mode) the middle keeps the edge below itself. */
+.control:has(.bar:empty) .middle {
+    padding-bottom: var(--edge);
 }
 .middle > :deep(*) {
     min-width: 0;
@@ -479,7 +513,7 @@ button {
 .bar {
     flex: none;
     /* As in the drafts (Plan.md 137 C): no rule above; 18 px below, so eight parts of a song fit a small phone with the bar. */
-    padding: 12px 12px 18px;
+    padding: 12px max(12px, var(--edge)) max(18px, var(--edge));
     background: #101114;
 }
 .bar:empty {

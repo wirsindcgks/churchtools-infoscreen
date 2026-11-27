@@ -21,7 +21,7 @@ vi.mock('../ct/api', async (importOriginal) => ({
 }));
 vi.mock('../player/data', async (importOriginal) => ({
     ...(await importOriginal<typeof import('../player/data')>()),
-    loadArrangementSheet: vi.fn(async () => ({ sections: [{ label: 'Strophe', lines: [] }, { label: 'Refrain', lines: [] }] })),
+    loadArrangementSheet: vi.fn(async () => ({ sections: [{ label: 'Strophe', lines: [{ text: 'Halleluja', chords: [{ at: 0, chord: 'C' }] }] }, { label: 'Refrain', lines: [] }] })),
 }));
 vi.mock('../store/backend', () => ({ getRepository: vi.fn(async () => ({ repository: store.repository })) }));
 
@@ -67,6 +67,7 @@ describe('ControlView (Plan.md 135 C)', () => {
     beforeEach(() => {
         vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
         vi.setSystemTime(NOW);
+        localStorage.clear();
         Object.assign(controlMemory, { monitors: null, monitorId: null, events: null, eventId: null, timeZone: null });
         vi.spyOn(churchToolsPlayerData, 'agendaEvents').mockResolvedValue([event]);
         vi.spyOn(churchToolsPlayerData, 'agendaPosition').mockResolvedValue(null);
@@ -408,5 +409,71 @@ describe('ControlView (Plan.md 135 C)', () => {
         await vi.advanceTimersByTimeAsync(3100);
         expect(wrapper.get('[role="alert"]').text()).toContain('nicht erreichbar');
         expect(wrapper.get('[data-testid="control-now"]').text()).toContain('2 von 3');
+    });
+
+    describe('reading mode (Plan.md 138)', () => {
+        const rehearsal = { until: '2026-11-26T09:52:00Z', by: 'Anna' };
+        const song = { kind: 'rehearsal', songId: 9, arrangementId: 4, section: 0, at: NOW.toISOString() };
+
+        it('offers the eye only where the middle shows a song, and switches with aria-pressed', async () => {
+            const { wrapper } = setup({ catalog: catalog(), positions: { s1: position(slides) } });
+            await flushPromises();
+            expect(wrapper.find('[data-testid="control-read"]').exists()).toBe(false);
+            wrapper.unmount();
+            const running = setup({ catalog: catalog(), positions: { s1: position({ rehearsal, songsheet: { source: 'rehearsal' } }) }, rehearsal: song });
+            await flushPromises();
+            const eye = running.wrapper.get('[data-testid="control-read"]');
+            expect(eye.attributes('aria-label')).toBe('Lesemodus');
+            expect(eye.attributes('aria-pressed')).toBe('false');
+            await eye.trigger('click');
+            expect(eye.attributes('aria-pressed')).toBe('true');
+            await eye.trigger('click');
+            expect(eye.attributes('aria-pressed')).toBe('false');
+        });
+
+        it('shows the parts with chords in the rehearsal and nothing that switches the screen', async () => {
+            const { wrapper } = setup({ catalog: catalog(), positions: { s1: position({ rehearsal, songsheet: { source: 'rehearsal' } }) }, rehearsal: song });
+            await flushPromises();
+            await wrapper.get('[data-testid="control-read"]').trigger('click');
+            expect(wrapper.findAll('[data-testid="reader-part"]')).toHaveLength(2);
+            expect(wrapper.get('[data-testid="reader-chord"]').text()).toBe('C');
+            expect(wrapper.find('[data-testid="rehearsal-song"]').exists()).toBe(false);
+            expect(wrapper.find('[data-testid="rehearsal-other"]').exists()).toBe(false);
+            expect(wrapper.find('[data-testid="step-forward"]').exists()).toBe(false);
+            expect(wrapper.find('[data-testid="monitor-change"]').exists()).toBe(false);
+            expect(wrapper.find('[data-testid="monitor-rehearsal"]').exists()).toBe(false);
+            await wrapper.get('[data-testid="monitor-band"]').trigger('click');
+            expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+        });
+
+        it('shows the running song of the service without "Danach"', async () => {
+            const { wrapper } = setup({ catalog: catalog(), positions: { s1: position({ songsheet: { source: 'agenda', eventId: 7 } }) } });
+            await flushPromises();
+            await wrapper.get('[data-testid="control-read"]').trigger('click');
+            expect(wrapper.get('[data-testid="control-reader"]').text()).toContain('Segenslied');
+            expect(wrapper.find('[data-testid="control-after"]').exists()).toBe(false);
+            expect(wrapper.find('[data-testid="control-all"]').exists()).toBe(false);
+            expect(wrapper.find('[data-testid="step-forward"]').exists()).toBe(false);
+        });
+
+        it('says so for a song without text', async () => {
+            vi.mocked(await import('../player/data')).loadArrangementSheet.mockResolvedValueOnce({ sections: [] });
+            const { wrapper } = setup({ catalog: catalog(), positions: { s1: position({ rehearsal, songsheet: { source: 'rehearsal' } }) }, rehearsal: song });
+            await flushPromises();
+            await wrapper.get('[data-testid="control-read"]').trigger('click');
+            expect(wrapper.get('[data-testid="reader-none"]').text()).toContain('Mitlesen');
+        });
+
+        it('remembers the mode on this device', async () => {
+            const first = setup({ catalog: catalog(), positions: { s1: position({ rehearsal, songsheet: { source: 'rehearsal' } }) }, rehearsal: song });
+            await flushPromises();
+            await first.wrapper.get('[data-testid="control-read"]').trigger('click');
+            expect(localStorage.getItem('infoscreen-designer.control-reading')).toBe('1');
+            first.wrapper.unmount();
+            const again = setup({ catalog: catalog(), positions: { s1: position({ rehearsal, songsheet: { source: 'rehearsal' } }) }, rehearsal: song });
+            await flushPromises();
+            expect(again.wrapper.get('[data-testid="control-read"]').attributes('aria-pressed')).toBe('true');
+            expect(again.wrapper.find('[data-testid="control-reader"]').exists()).toBe(true);
+        });
     });
 });

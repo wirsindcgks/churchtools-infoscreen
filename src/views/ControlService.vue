@@ -16,6 +16,7 @@ import { usePresenterKeys } from '../player/presenter-keys';
 import type { ScreenRepository } from '../store/screen-repository';
 import Icon from '../designer/Icon.vue';
 import ControlBar from './ControlBar.vue';
+import ControlReader from './ControlReader.vue';
 import ControlSong from './ControlSong.vue';
 import ControlSongCard from './ControlSongCard.vue';
 import { controlMemory } from './control-memory';
@@ -30,6 +31,8 @@ const props = defineProps<{
     eventId?: number;
     /** The plan ("Jetzt", "Dann") stands here as a card, where no monitor card carries it. */
     showPlan: boolean;
+    /** The reading mode: the sheet alone, nothing that switches the screen. */
+    reading: boolean;
 }>();
 /** What the band of the monitor says for the service: the start of the event. */
 const emit = defineEmits<{ info: [info: { eventStartMs: number | null }] }>();
@@ -134,7 +137,7 @@ const forwardHint = computed(() => (following.value ? partName(event.value!, fol
 /** A presenter steps like "Zurück" and "Vor" (Plan.md 124 A). */
 const presenter = usePresenterKeys((by) => {
     const target = by === 1 ? following.value : previous.value;
-    if (target) void choose(target);
+    if (target && !props.reading) void choose(target);
 });
 
 function preselected(list: AgendaEvent[]): AgendaEvent {
@@ -245,10 +248,10 @@ onBeforeUnmount(() => {
         <p v-else-if="!events.length" class="note">{{ t.control.noEvents }}</p>
         <p v-else-if="!event" class="note" data-testid="control-gone">{{ t.control.eventGone }}</p>
         <template v-else>
-            <select v-if="props.eventId === undefined && events.length > 1" v-model="chosenId" class="event" :aria-label="t.control.eventLabel">
+            <select v-if="!reading && props.eventId === undefined && events.length > 1" v-model="chosenId" class="event" :aria-label="t.control.eventLabel">
                 <option v-for="e in events" :key="e.eventId" :value="e.eventId">{{ eventLabel(e) }}</option>
             </select>
-            <div v-if="showPlan && plan" class="plan control-card" data-testid="control-plan">
+            <div v-if="!reading && showPlan && plan" class="plan control-card" data-testid="control-plan">
                 <template v-if="plan.over">{{ t.control.planOver }}</template>
                 <template v-else>
                     <div class="plan-now">
@@ -262,53 +265,63 @@ onBeforeUnmount(() => {
                     </div>
                 </template>
             </div>
-            <p v-if="plan && !plan.over && !stepping" class="locked control-card" data-testid="control-locked">{{ t.control.noSongsLeft }}</p>
+            <p v-if="!reading && plan && !plan.over && !stepping" class="locked control-card" data-testid="control-locked">{{ t.control.noSongsLeft }}</p>
             <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
             <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
-            <div v-if="current" class="current" data-testid="control-current">
-                <ControlSongCard
-                    :title="current.title"
-                    :song-key="current.key"
-                    :parts="current.parts"
-                    :active="activePart?.itemIndex === current.index ? activePart.section : null"
-                    :disabled="!stepping"
-                    @choose="(n) => choose({ itemIndex: current!.index, section: n })"
-                >
-                    <template v-if="atEnd" #foot>
-                        <p class="note small" data-testid="control-end">{{ t.control.stepEnd }}</p>
-                    </template>
-                </ControlSongCard>
-            </div>
-            <button v-if="upNext" type="button" class="after" :disabled="!stepping || firstSection(upNext.parts) === null" data-testid="control-after" @click="chooseNext">
-                <span><span class="after-label">{{ t.control.after }}</span> · {{ upNext.title }}</span><span class="after-pill">{{ t.control.afterGo }}</span>
-            </button>
-            <section v-if="songs.length > 1" class="all control-card" data-testid="control-all">
-                <button type="button" class="all-toggle" :aria-expanded="allOpen" @click="allOpen = !allOpen">
-                    <span>{{ t.control.allSongs(songs.length) }}</span>
-                    <Icon class="fold" name="chevron-down" :size="20" />
-                </button>
-                <ul v-if="allOpen" class="all-list">
-                    <ControlSong
-                        v-for="song in songs"
-                        :key="song.index"
-                        :title="song.title"
-                        :song-key="song.key"
-                        :parts="song.parts"
-                        :open="opened === song.index"
-                        :active="activePart?.itemIndex === song.index ? activePart.section : null"
-                        :shown="song.index === current?.index"
-                        :played="played(song.index) && song.index !== current?.index"
+            <ControlReader
+                v-if="reading"
+                :title="current?.title ?? null"
+                :song-key="current?.key"
+                :parts="current?.parts ?? []"
+                :active="current && activePart?.itemIndex === current.index ? activePart.section : null"
+                class="reader"
+            />
+            <template v-else>
+                <div v-if="current" class="current" data-testid="control-current">
+                    <ControlSongCard
+                        :title="current.title"
+                        :song-key="current.key"
+                        :parts="current.parts"
+                        :active="activePart?.itemIndex === current.index ? activePart.section : null"
                         :disabled="!stepping"
-                        @toggle="toggle(song.index)"
-                        @choose="(n) => choose({ itemIndex: song.index, section: n })"
-                    />
-                </ul>
-            </section>
-            <p v-if="presenter" class="note" data-testid="control-presenter">{{ t.control.presenterDetected }}</p>
-            <!-- In the fixed zone below the middle of the page (Plan.md 135 A). -->
-            <Teleport defer to="#control-bar">
-                <ControlBar :back-disabled="!previous" :forward-disabled="!following" :hint="forwardHint" @back="previous && choose(previous)" @forward="following && choose(following)" />
-            </Teleport>
+                        @choose="(n) => choose({ itemIndex: current!.index, section: n })"
+                    >
+                        <template v-if="atEnd" #foot>
+                            <p class="note small" data-testid="control-end">{{ t.control.stepEnd }}</p>
+                        </template>
+                    </ControlSongCard>
+                </div>
+                <button v-if="upNext" type="button" class="after" :disabled="!stepping || firstSection(upNext.parts) === null" data-testid="control-after" @click="chooseNext">
+                    <span><span class="after-label">{{ t.control.after }}</span> · {{ upNext.title }}</span><span class="after-pill">{{ t.control.afterGo }}</span>
+                </button>
+                <section v-if="songs.length > 1" class="all control-card" data-testid="control-all">
+                    <button type="button" class="all-toggle" :aria-expanded="allOpen" @click="allOpen = !allOpen">
+                        <span>{{ t.control.allSongs(songs.length) }}</span>
+                        <Icon class="fold" name="chevron-down" :size="20" />
+                    </button>
+                    <ul v-if="allOpen" class="all-list">
+                        <ControlSong
+                            v-for="song in songs"
+                            :key="song.index"
+                            :title="song.title"
+                            :song-key="song.key"
+                            :parts="song.parts"
+                            :open="opened === song.index"
+                            :active="activePart?.itemIndex === song.index ? activePart.section : null"
+                            :shown="song.index === current?.index"
+                            :played="played(song.index) && song.index !== current?.index"
+                            :disabled="!stepping"
+                            @toggle="toggle(song.index)"
+                            @choose="(n) => choose({ itemIndex: song.index, section: n })"
+                        />
+                    </ul>
+                </section>
+                <p v-if="presenter" class="note" data-testid="control-presenter">{{ t.control.presenterDetected }}</p>
+                <!-- In the fixed zone below the middle of the page (Plan.md 135 A). -->
+                <Teleport defer to="#control-bar">
+                    <ControlBar :back-disabled="!previous" :forward-disabled="!following" :hint="forwardHint" @back="previous && choose(previous)" @forward="following && choose(following)" />
+                </Teleport>
+            </template>
         </template>
     </div>
 </template>
@@ -325,6 +338,9 @@ onBeforeUnmount(() => {
 .service > * {
     flex: none;
     min-width: 0;
+}
+.service > .reader {
+    flex: 1 1 0;
 }
 .service > .current {
     flex: 1 1 0;

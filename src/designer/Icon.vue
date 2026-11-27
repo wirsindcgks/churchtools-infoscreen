@@ -13,6 +13,7 @@ const PATHS = {
     landscape: ['M4 6.5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z'],
     portrait: ['M7.5 3h9a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z'],
     plus: ['M12 5v14', 'M5 12h14'],
+    minus: ['M5 12h14'],
     search: [circle(11, 11, 6.5), 'M16 16l4.5 4.5'],
     // "Ganze Folie" (Plan.md 79, C3): four corners drawn inwards.
     'frame-fit': ['M4 9V4h5', 'M20 9V4h-5', 'M4 15v5h5', 'M20 15v5h-5'],

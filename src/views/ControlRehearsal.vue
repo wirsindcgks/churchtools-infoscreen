@@ -13,13 +13,14 @@ import { loadArrangementSheet } from '../player/data';
 import type { ScreenRepository } from '../store/screen-repository';
 import Icon from '../designer/Icon.vue';
 import ControlBar from './ControlBar.vue';
+import ControlReader from './ControlReader.vue';
 import ControlSheet from './ControlSheet.vue';
 import ControlSongCard from './ControlSongCard.vue';
 import { arrangementLabels } from './arrangement-labels';
 import { sectionName } from './song-steps';
 import { usePresenterKeys } from '../player/presenter-keys';
 
-const props = defineProps<{ repository: ScreenRepository; author: string }>();
+const props = defineProps<{ repository: ScreenRepository; author: string; /** The reading mode: the sheet alone, nothing that switches the screen. */ reading: boolean }>();
 
 const POLL_MS = 2500;
 const SEARCH_MS = 300;
@@ -66,7 +67,7 @@ const previous = computed(() => (sheet.value ? stepSection(sheet.value, section.
 const following = computed(() => (sheet.value ? stepSection(sheet.value, section.value, 1) : null));
 /** A presenter steps like "Zurück" and "Weiter" (Plan.md 124 A) – once a sheet is there; in the search field the keys type. */
 const presenter = usePresenterKeys((by) => {
-    if (!sheet.value || sheetLoading.value) return;
+    if (props.reading || !sheet.value || sheetLoading.value) return;
     const target = by === 1 ? following.value : previous.value;
     if (target !== null) void choose(target);
 });
@@ -236,64 +237,70 @@ onBeforeUnmount(() => {
     <div class="rehearsal" data-testid="control-rehearsal">
         <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
         <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
-        <ControlSheet v-if="searchOpen" :title="t.control.chooseSong" @close="closeSearch">
-            <input ref="searchInput" v-model="query" type="search" class="search" :placeholder="t.control.search" :aria-label="t.control.search" data-testid="rehearsal-search">
-            <p v-if="searching" class="note">{{ t.control.searching }}</p>
-            <p v-else-if="searched && !results.length" class="note" data-testid="rehearsal-none">
-                {{ t.control.noSong }}
-            </p>
-            <ul v-if="results.length" class="results" data-testid="rehearsal-results">
-                <li v-for="found in results" :key="found.id!">
-                    <button type="button" @click="pickSong(found)">
-                        {{ found.name }}
-                    </button>
-                </li>
-            </ul>
-            <!-- A rare step, so quiet: text only, at the foot of the sheet (user, 2026-11-27). -->
-            <template v-if="song" #foot>
-                <button type="button" class="end" data-testid="rehearsal-end" @click="endSong">
-                    {{ t.control.endSong }}
-                </button>
-            </template>
-        </ControlSheet>
-        <template v-if="song">
-            <div class="song" :class="{ fill: !!sheet }" data-testid="rehearsal-song">
-                <ControlSongCard :title="song.name ?? ''" :song-key="sheet?.key" :parts="sheet?.sections ?? []" :active="section" :disabled="false" :hide-parts="!sheet" @choose="choose">
-                    <template #action>
-                        <button type="button" class="pick" :aria-label="t.control.chooseSong" data-testid="rehearsal-other" @click="openSearch"><Icon name="search" :size="22" /></button>
-                    </template>
-                    <template v-if="arrangements.length > 1" #sub>
-                        <div class="arrangements" role="group" :aria-label="t.control.arrangement">
-                            <button v-for="(a, i) in arrangements" :key="a.id" type="button" class="pill" :class="{ chosen: a.id === arrangementId }" :aria-pressed="a.id === arrangementId" @click="showArrangement(a.id, null, true)">
-                                <span class="pill-name">{{ labels[i]!.name }}</span><span v-if="labels[i]!.key" class="pill-key">&nbsp;· {{ labels[i]!.key }}</span>
-                            </button>
-                        </div>
-                    </template>
-                    <template v-if="atEnd && sheet && !sheetLoading" #foot>
-                        <!-- At the last part "Lied beenden" stands in sight, a word in a frame like "Ändern" in the band (user, 2026-11-27); the sheet of the search keeps it for the middle of a song. -->
-                        <div class="last-row">
-                            <p class="note small" data-testid="rehearsal-end-note">{{ t.control.stepEndRehearsal }}</p>
-                            <button type="button" class="end-pill" data-testid="rehearsal-end-last" @click="endSong"><span class="end-frame">{{ t.control.endSong }}</span></button>
-                        </div>
-                    </template>
-                </ControlSongCard>
-            </div>
+        <template v-if="reading">
             <p v-if="sheetLoading" class="note">{{ t.control.rehearsalLoading }}</p>
-            <template v-else-if="sheet">
-                <!-- In the fixed zone below the middle of the page (Plan.md 135 A). -->
-                <Teleport defer to="#control-bar">
-                    <ControlBar :back-disabled="previous === null" :forward-disabled="following === null" :hint="forwardHint" @back="previous !== null && choose(previous)" @forward="following !== null && choose(following)" />
-                </Teleport>
-                <p v-if="presenter" class="note" data-testid="rehearsal-presenter">{{ t.control.presenterDetected }}</p>
-            </template>
-            <p v-else class="note" data-testid="rehearsal-nosheet">
-                {{ t.control.noRehearsalSheet }}
-            </p>
+            <ControlReader v-else :title="song ? (song.name ?? '') : null" :song-key="sheet?.key" :parts="sheet?.sections ?? []" :active="section" class="reader" />
         </template>
-        <section v-else class="control-card none">
-            <p class="note">{{ t.control.rehearsalNone }}</p>
-            <button type="button" class="pick words" data-testid="rehearsal-other" @click="openSearch"><Icon name="search" :size="20" />{{ t.control.chooseSong }}</button>
-        </section>
+        <template v-else>
+            <ControlSheet v-if="searchOpen" :title="t.control.chooseSong" @close="closeSearch">
+                <input ref="searchInput" v-model="query" type="search" class="search" :placeholder="t.control.search" :aria-label="t.control.search" data-testid="rehearsal-search">
+                <p v-if="searching" class="note">{{ t.control.searching }}</p>
+                <p v-else-if="searched && !results.length" class="note" data-testid="rehearsal-none">
+                    {{ t.control.noSong }}
+                </p>
+                <ul v-if="results.length" class="results" data-testid="rehearsal-results">
+                    <li v-for="found in results" :key="found.id!">
+                        <button type="button" @click="pickSong(found)">
+                            {{ found.name }}
+                        </button>
+                    </li>
+                </ul>
+                <!-- A rare step, so quiet: text only, at the foot of the sheet (user, 2026-11-27). -->
+                <template v-if="song" #foot>
+                    <button type="button" class="end" data-testid="rehearsal-end" @click="endSong">
+                        {{ t.control.endSong }}
+                    </button>
+                </template>
+            </ControlSheet>
+            <template v-if="song">
+                <div class="song" :class="{ fill: !!sheet }" data-testid="rehearsal-song">
+                    <ControlSongCard :title="song.name ?? ''" :song-key="sheet?.key" :parts="sheet?.sections ?? []" :active="section" :disabled="false" :hide-parts="!sheet" @choose="choose">
+                        <template #action>
+                            <button type="button" class="pick" :aria-label="t.control.chooseSong" data-testid="rehearsal-other" @click="openSearch"><Icon name="search" :size="22" /></button>
+                        </template>
+                        <template v-if="arrangements.length > 1" #sub>
+                            <div class="arrangements" role="group" :aria-label="t.control.arrangement">
+                                <button v-for="(a, i) in arrangements" :key="a.id" type="button" class="pill" :class="{ chosen: a.id === arrangementId }" :aria-pressed="a.id === arrangementId" @click="showArrangement(a.id, null, true)">
+                                    <span class="pill-name">{{ labels[i]!.name }}</span><span v-if="labels[i]!.key" class="pill-key">&nbsp;· {{ labels[i]!.key }}</span>
+                                </button>
+                            </div>
+                        </template>
+                        <template v-if="atEnd && sheet && !sheetLoading" #foot>
+                            <!-- At the last part "Lied beenden" stands in sight, a word in a frame like "Ändern" in the band (user, 2026-11-27); the sheet of the search keeps it for the middle of a song. -->
+                            <div class="last-row">
+                                <p class="note small" data-testid="rehearsal-end-note">{{ t.control.stepEndRehearsal }}</p>
+                                <button type="button" class="end-pill" data-testid="rehearsal-end-last" @click="endSong"><span class="end-frame">{{ t.control.endSong }}</span></button>
+                            </div>
+                        </template>
+                    </ControlSongCard>
+                </div>
+                <p v-if="sheetLoading" class="note">{{ t.control.rehearsalLoading }}</p>
+                <template v-else-if="sheet">
+                    <!-- In the fixed zone below the middle of the page (Plan.md 135 A). -->
+                    <Teleport defer to="#control-bar">
+                        <ControlBar :back-disabled="previous === null" :forward-disabled="following === null" :hint="forwardHint" @back="previous !== null && choose(previous)" @forward="following !== null && choose(following)" />
+                    </Teleport>
+                    <p v-if="presenter" class="note" data-testid="rehearsal-presenter">{{ t.control.presenterDetected }}</p>
+                </template>
+                <p v-else class="note" data-testid="rehearsal-nosheet">
+                    {{ t.control.noRehearsalSheet }}
+                </p>
+            </template>
+            <section v-else class="control-card none">
+                <p class="note">{{ t.control.rehearsalNone }}</p>
+                <button type="button" class="pick words" data-testid="rehearsal-other" @click="openSearch"><Icon name="search" :size="20" />{{ t.control.chooseSong }}</button>
+            </section>
+        </template>
     </div>
 </template>
 
@@ -311,6 +318,9 @@ onBeforeUnmount(() => {
     min-width: 0;
 }
 /* The card takes what is left; it may shrink, but not to nothing – the parts must stay in view, the middle rolls before they vanish (user, 2026-11-27). */
+.rehearsal > .reader {
+    flex: 1 1 0;
+}
 .rehearsal > .song {
     display: flex;
     flex-direction: column;
