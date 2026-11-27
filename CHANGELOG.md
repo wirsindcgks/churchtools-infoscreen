@@ -4,6 +4,32 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.74.0] – 2026-11-27
+
+### Neu
+
+- **Die Handyseite „Steuerung“ ist neu gestaltet** (Plan.md 137). Oben steht der Bildschirm mit seinem Namen; ein Tipp
+  darauf wechselt ihn. Darunter zeigt ein farbiges Band, was dort läuft: gelb die Probe, lila eine Präsentation, grün
+  der Gottesdienst, grau der Zeitplan. Eine schmale Zeile „Jetzt“ nennt den laufenden Liedteil oder die laufende Folie
+  mit „3 von 8“. Liedteile sind große Kacheln, Folien breite Zeilen zum Antippen. Unten stehen „Zurück“ und ein großes
+  helles „Vor“, das sagt, was als Nächstes kommt.
+- **Probe im Band** (Plan.md 137). „Probe starten ›“ steht rechts im Band; während einer Probe öffnet ein Tipp aufs Band
+  ein Blatt mit „+1 Std“, „+2 Std“ (grün) und „Beenden“ (rot).
+
+### Geändert
+
+- **„Vor“ an der letzten Folie beginnt wieder bei der ersten** (Plan.md 124), am Handy und mit dem Presenter am Pi;
+  „Zurück“ an der ersten Folie bleibt stehen.
+- **„Schwarz“ gibt es am Handy nicht mehr** (Plan.md 137). Mit der Taste „B“ eines Presenters am Pi geht es weiter; ist
+  ein Bildschirm schwarz, sagt das die Zeile „Jetzt“, und „Vor“ holt das Bild zurück.
+- **Nur Vornamen** (Plan.md 135) in „zuletzt …“ und bei der Probe – der Nachname nahm nur Platz.
+- **Ohne „?“ und ohne den Satz „… folgen“** (Plan.md 135) auf der Handyseite; er brachte nichts.
+
+### Behoben
+
+- **Lange Namen sprengten die Handyseite** (Plan.md 135): „Wechseln“, „+1 Std“ und „Beenden“ ragten über den Rand, in
+  Safari war der Name des Bildschirms auch bei freiem Platz gekürzt.
+
 ## [0.73.1] – 2026-11-27
 
 ### Geändert
@@ -2303,6 +2329,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.67.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.67.0
 [0.66.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.66.0
 [0.68.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.68.0
+[0.74.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.74.0
 [0.73.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.73.1
 [0.73.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.73.0
 [0.72.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.72.0
