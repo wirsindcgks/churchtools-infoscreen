@@ -1647,6 +1647,8 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         forward: 'Vor',
         allSongs: (n: number) => `Alle Lieder (${n})`,
         after: 'Danach',
+        /** The pill at the right of the "Danach" row: jumps to the next song. */
+        afterGo: 'Weiter',
         nowLabel: 'Jetzt',
         nowAria: 'Auf dem Bildschirm',
         nowOf: (number: number, total: number) => `${number} von ${total}`,
@@ -1654,7 +1656,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         nextSlide: (name: string) => `Nächste Folie: ${name} ›`,
         eventGone: 'Der Termin dieses Bildschirms ist nicht zu finden.',
         stepEnd: 'Letzter Teil – nächstes Lied über „Danach“.',
-        stepEndRehearsal: 'Letzter Teil – anderes Lied über die Lupe.',
+        stepEndRehearsal: 'Letzter Teil.',
         presenterDetected: 'Presenter erkannt: Vor und Zurück schalten wie die Knöpfe.',
         monitorSwitchLabel: (name: string) => `Bildschirm wechseln, jetzt „${name}“`,
         monitorSilent: 'Der Bildschirm meldet sich nicht – ist er an?',
@@ -1664,6 +1666,8 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         monitorSchedule: 'Zeitplan',
         monitorRehearsalLine: (until: string, by: string | null) => `bis ${until}${by ? ` · ${by}` : ''}`,
         rehearsalStart: 'Probe starten',
+        /** The pill in the band while a rehearsal runs: opens the sheet to extend or end it. */
+        rehearsalChange: 'Ändern',
         rehearsalServiceNote: 'Ein Gottesdienst laut Zeitplan beendet die Probe.',
         rehearsalExtend: (hours: number) => `+${hours} Std`,
         rehearsalEnd: 'Beenden',

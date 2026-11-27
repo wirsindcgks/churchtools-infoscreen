@@ -264,10 +264,10 @@ onBeforeUnmount(() => {
         <header class="head" data-testid="control-head">
             <a href="/" class="back" data-testid="control-back" :aria-label="t.control.backAria" @click.prevent="leaveControl(!!router.options.history.state.back)"><Icon name="back" :size="20" /></a>
             <template v-if="monitor && !unavailable">
-                <!-- With several screens the name is the switch (user, 2026-11-27): the arrow says it opens; with one it is a name and nothing more. -->
+                <!-- With several screens the name is the switch (user, 2026-11-27): the arrow says it opens; with one it is a name and nothing more. The TV before it says the name is a screen. -->
                 <div v-if="monitors.length > 1" ref="switchBox" class="monitor-switch">
                     <button type="button" class="switch-button" aria-haspopup="true" :aria-expanded="switchOpen" :aria-label="t.control.monitorSwitchLabel(monitor.name)" data-testid="monitor-switch" @click="switchOpen = !switchOpen">
-                        <span class="monitor-name" data-testid="monitor-name">{{ monitor.name }}</span><Icon name="chevron-down" :size="14" class="switch-chevron" />
+                        <Icon name="tv" :size="18" class="monitor-icon" /><span class="monitor-name" data-testid="monitor-name">{{ monitor.name }}</span><Icon name="chevron-down" :size="14" class="switch-chevron" />
                     </button>
                     <ul v-if="switchOpen" class="switch-list" role="group" :aria-label="t.control.screenChoose">
                         <li v-for="m in monitors" :key="m.id">
@@ -275,7 +275,7 @@ onBeforeUnmount(() => {
                         </li>
                     </ul>
                 </div>
-                <span v-else class="monitor-switch"><span class="monitor-name" data-testid="monitor-name">{{ monitor.name }}</span></span>
+                <span v-else class="monitor-switch"><Icon name="tv" :size="18" class="monitor-icon" /><span class="monitor-name" data-testid="monitor-name">{{ monitor.name }}</span></span>
             </template>
             <h1>{{ t.control.title }}</h1>
         </header>
@@ -391,7 +391,7 @@ h1 {
 /* Bold, but not `strong`: ChurchTools colours that dark blue. */
 .monitor-name {
     min-width: 0;
-    padding: 0 6px;
+    padding: 0 6px 0 0;
     font-size: 16px;
     font-weight: 600;
     color: #c9ced6;
@@ -401,7 +401,14 @@ h1 {
 }
 span.monitor-switch {
     align-items: center;
+    gap: 6px;
     height: 44px;
+}
+/* The TV before the name, in both cases (user, 2026-11-27). */
+.monitor-icon {
+    flex: none;
+    margin-left: 6px;
+    color: #9aa0aa;
 }
 button {
     border: 1px solid #3a3f4a;

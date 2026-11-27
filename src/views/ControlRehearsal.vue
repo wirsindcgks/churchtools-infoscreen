@@ -265,12 +265,16 @@ onBeforeUnmount(() => {
                     <template v-if="arrangements.length > 1" #sub>
                         <div class="arrangements" role="group" :aria-label="t.control.arrangement">
                             <button v-for="(a, i) in arrangements" :key="a.id" type="button" class="pill" :class="{ chosen: a.id === arrangementId }" :aria-pressed="a.id === arrangementId" @click="showArrangement(a.id, null, true)">
-                                {{ labels[i] }}
+                                <span class="pill-name">{{ labels[i]!.name }}</span><span v-if="labels[i]!.key" class="pill-key">&nbsp;· {{ labels[i]!.key }}</span>
                             </button>
                         </div>
                     </template>
                     <template v-if="atEnd && sheet && !sheetLoading" #foot>
-                        <p class="note small" data-testid="rehearsal-end-note">{{ t.control.stepEndRehearsal }}</p>
+                        <!-- At the last part "Lied beenden" stands in sight, a word in a frame like "Ändern" in the band (user, 2026-11-27); the sheet of the search keeps it for the middle of a song. -->
+                        <div class="last-row">
+                            <p class="note small" data-testid="rehearsal-end-note">{{ t.control.stepEndRehearsal }}</p>
+                            <button type="button" class="end-pill" data-testid="rehearsal-end-last" @click="endSong"><span class="end-frame">{{ t.control.endSong }}</span></button>
+                        </div>
                     </template>
                 </ControlSongCard>
             </div>
@@ -327,6 +331,40 @@ p {
     font-size: 0.85rem;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.last-row {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.last-row .note {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+/* 44 px to tap, a 30 px frame to see; the target reaches over the row, so the row costs the parts no more height than the line of text did. */
+.end-pill {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin: -12px 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: center;
+}
+.end-frame {
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 12px;
+    border: 1px solid #6b7180;
+    border-radius: 999px;
+    color: #e6e8ec;
+    font-size: 14px;
+    font-weight: 600;
     white-space: nowrap;
 }
 .warn {
@@ -404,13 +442,26 @@ button {
     flex-wrap: wrap;
     gap: 8px;
 }
+/* A long name of its own stops at half the row with "…", so one pill never takes a row alone (user, 2026-11-27). */
 .pill {
+    display: inline-flex;
+    max-width: calc(50% - 4px);
+    white-space: nowrap;
     min-height: 32px;
     padding: 3px 11px;
     border-radius: 999px;
     background: transparent;
     font-size: 0.8em;
     color: #b8bcc4;
+}
+/* Only the name is cut; the key stays whole – it is what the musicians look for. */
+.pill-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.pill-key {
+    flex: none;
 }
 .pill.chosen {
     border-color: #e6e8ec;
