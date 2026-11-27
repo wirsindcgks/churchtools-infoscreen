@@ -271,7 +271,7 @@ So richtest du es ein:
    „Einstellungen" ein Punkt, ist das noch zu tun.
 5. Die Seite zeigt die **Adresse der Handyseite** zum Kopieren (`…/ccm/infoscreen-designer/steuerung`). Die Musiker öffnen sie auf dem
    Handy, angemeldet in ChurchTools – oder tippen im Menü auf „Infoscreen Designer" und landen direkt dort. Wer auch in der
-   Designer-Gruppe ist, landet im Designer und wechselt mit dem Menüpunkt **„Steuerung"** unten in der Seitenleiste zur Handyseite und dort mit **„ChurchTools"** oben links zurück in den Designer. Die Handyseite zeigt oben eine **Monitor-Karte** (siehe [Funktionen](Funktionen.md#präsentationen)); ohne freigegebenen Bildschirm führt sie den Gottesdienst nach Ablauf.
+   Designer-Gruppe ist, landet im Designer und wechselt mit dem Menüpunkt **„Steuerung"** unten in der Seitenleiste zur Handyseite und dort mit **„ChurchTools"** oben links zurück in den Designer. Die Handyseite zeigt oben eine **Monitor-Karte** (siehe [Funktionen](Funktionen.md#präsentationen)); ohne freigegebenen Bildschirm führt sie den Gottesdienst nach Ablauf. Für die Band gibt es eine kurze Anleitung zum Weitergeben: [Für Musiker](Musiker.md).
 
    <img src="bilder/steuerung.png" alt="Handyseite „Steuerung“: oben die Monitor-Karte „Bühne“ mit dem Chip „Gottesdienst“, darunter das laufende Lied mit den Teil-Knöpfen, der Teil „Refrain“ ist angetippt, unten „Zurück“ und „Vor“" width="320">
 
