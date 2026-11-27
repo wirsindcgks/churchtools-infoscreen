@@ -1686,7 +1686,6 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         rehearsalLoading: 'Lied wird geladen …',
         chooseSong: 'Lied wählen',
         endSong: 'Lied beenden',
-        screenNoRelease: 'Für Proben ist noch kein Bildschirm freigegeben. Ein Administrator gibt ihn in der Einrichtung unter „Musiker“ frei.',
         screenNoPlaylist: 'Für Proben ist noch keine Probenpräsentation freigegeben. Ein Administrator gibt sie in der Einrichtung unter „Musiker“ frei.',
         screenChoose: 'Bildschirm wählen',
         playlistChoose: 'Präsentation wählen',
