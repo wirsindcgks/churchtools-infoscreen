@@ -62,8 +62,8 @@ function end(): void {
                     {{ ' ' }}<span data-testid="monitor-detail">{{ detail }}</span>
                 </template>
             </span>
-            <span v-if="rehearsalRunning" class="more" aria-hidden="true">›</span>
-            <button v-else-if="canStart" type="button" class="start" data-testid="monitor-rehearsal" @click="emit('startRehearsal')">{{ t.control.rehearsalStart }} ›</button>
+            <span v-if="rehearsalRunning" class="pill" data-testid="monitor-change">{{ t.control.rehearsalChange }}</span>
+            <button v-else-if="canStart" type="button" class="start" data-testid="monitor-rehearsal" @click="emit('startRehearsal')"><span class="pill">{{ t.control.rehearsalStart }}</span></button>
         </component>
         <ControlSheet v-if="sheetOpen && rehearsalRunning" :title="t.control.rehearsalSheetTitle(monitor.name)" icon="tv" @close="sheetOpen = false">
             <div class="row">
@@ -140,16 +140,28 @@ button.band {
     font-weight: 600;
     color: var(--word);
 }
-.more {
+/* A word in a frame instead of "›" (user, 2026-11-27): it looks like a button, the frame in the colour of the band. */
+.pill {
     flex: none;
-    color: #d6cfa8;
+    display: inline-flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 12px;
+    border: 1px solid var(--dot);
+    border-radius: 999px;
+    color: var(--word);
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
 }
 /* The whole height of the band is the target; the label sits at the right edge. */
 .start {
     flex: none;
     align-self: stretch;
-    margin: 0 -14px 0 0;
-    padding: 0 14px 0 8px;
+    display: flex;
+    align-items: center;
+    margin: 0 -8px 0 0;
+    padding: 0 8px;
     border: 0;
     background: none;
     color: #c9ced6;

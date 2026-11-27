@@ -280,7 +280,7 @@ onBeforeUnmount(() => {
                 </ControlSongCard>
             </div>
             <button v-if="upNext" type="button" class="after" :disabled="!stepping || firstSection(upNext.parts) === null" data-testid="control-after" @click="chooseNext">
-                <span><span class="after-label">{{ t.control.after }}</span> · {{ upNext.title }}</span><span aria-hidden="true">›</span>
+                <span><span class="after-label">{{ t.control.after }}</span> · {{ upNext.title }}</span><span class="after-pill">{{ t.control.afterGo }}</span>
             </button>
             <section v-if="songs.length > 1" class="all control-card" data-testid="control-all">
                 <button type="button" class="all-toggle" :aria-expanded="allOpen" @click="allOpen = !allOpen">
@@ -430,6 +430,20 @@ button:disabled {
 }
 .after-label {
     color: #8b919c;
+}
+/* A word in a frame instead of "›", like "Ändern" in the band (user, 2026-11-27); the whole row stays the target. */
+.after-pill {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 12px;
+    border: 1px solid #6b7180;
+    border-radius: 999px;
+    color: #e6e8ec;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
 }
 /* A fold one sees as such: the arrow on the right turns when it opens (user, 2026-11-26). */
 .all {

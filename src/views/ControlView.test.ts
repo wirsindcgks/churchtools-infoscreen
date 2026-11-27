@@ -83,7 +83,7 @@ describe('ControlView (Plan.md 135 C)', () => {
         expect(wrapper.find('[data-testid="control-area"]').exists()).toBe(false);
         expect(wrapper.get('[data-testid="control-plan"]').text()).toContain('Segenslied');
         expect(wrapper.get('[data-testid="control-current"]').text()).toContain('Strophe 1');
-        expect(wrapper.get('[data-testid="control-after"]').text()).toBe('Danach · Halleluja›');
+        expect(wrapper.get('[data-testid="control-after"]').text()).toBe('Danach · HallelujaWeiter');
         expect(wrapper.get('[data-testid="step-hint"]').text()).toBe('Als Nächstes: Refrain');
         expect(repository.readPosition).not.toHaveBeenCalled();
     });
@@ -168,7 +168,7 @@ describe('ControlView (Plan.md 135 C)', () => {
         const { wrapper } = setup({ catalog: catalog(), positions: { s1: position({ rehearsal, songsheet: { source: 'rehearsal' } }) } });
         await flushPromises();
         expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Probe');
-        expect(wrapper.get('[data-testid="monitor-band"]').text()).toBe('Probe bis 19:11 · Anna›');
+        expect(wrapper.get('[data-testid="monitor-band"]').text()).toBe('Probe bis 19:11 · AnnaÄndern');
         expect(wrapper.find('[data-testid="control-rehearsal"]').exists()).toBe(true);
         expect(wrapper.find('[data-testid="control-service"]').exists()).toBe(false);
     });
@@ -185,7 +185,12 @@ describe('ControlView (Plan.md 135 C)', () => {
         expect(repository.writeRehearsal).toHaveBeenCalledWith(expect.objectContaining({ songId: 9, arrangementId: 4, section: 1, by: 'Max' }));
         expect(wrapper.get('[data-testid="step-forward"]').attributes('disabled')).toBeDefined();
         // The hint stands in the card of the song, under the parts.
-        expect(wrapper.get('[data-testid="rehearsal-song"] [data-testid="rehearsal-end-note"]').text()).toBe('Letzter Teil – anderes Lied über die Lupe.');
+        expect(wrapper.get('[data-testid="rehearsal-song"] [data-testid="rehearsal-end-note"]').text()).toBe('Letzter Teil.');
+        // Beside it "Lied beenden" stands in sight and ends the song without the search (user, 2026-11-27).
+        await wrapper.get('[data-testid="rehearsal-end-last"]').trigger('click');
+        await flushPromises();
+        expect(repository.writeRehearsal).toHaveBeenLastCalledWith(expect.objectContaining({ ended: true, songId: 0 }));
+        expect(wrapper.find('[data-testid="rehearsal-song"]').exists()).toBe(false);
     });
 
     it('ends the song of the rehearsal from the sheet of the search, and the page then offers the search again', async () => {
@@ -221,7 +226,7 @@ describe('ControlView (Plan.md 135 C)', () => {
         const { wrapper, repository } = setup({ catalog: catalog(), positions: { s1: position() } });
         await flushPromises();
         expect(wrapper.find('[data-testid="control-screen"]').exists()).toBe(false);
-        expect(wrapper.get('[data-testid="monitor-rehearsal"]').text()).toBe('Probe starten ›');
+        expect(wrapper.get('[data-testid="monitor-rehearsal"]').text()).toBe('Probe starten');
         await wrapper.get('[data-testid="monitor-rehearsal"]').trigger('click');
         expect(wrapper.get('[role="dialog"] h2').text()).toBe('Probe auf „Bühne“');
         await wrapper.get('[data-testid="control-sheet-cancel"]').trigger('click');
@@ -267,7 +272,7 @@ describe('ControlView (Plan.md 135 C)', () => {
             const { wrapper } = setup({ catalog: catalog(), positions: { s1: running() } });
             await flushPromises();
             expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Probe');
-            expect(wrapper.get('[data-testid="monitor-band"]').text()).toBe('Probe bis 10:52 · Anna›');
+            expect(wrapper.get('[data-testid="monitor-band"]').text()).toBe('Probe bis 10:52 · AnnaÄndern');
             expect(wrapper.find('[data-testid="monitor-line"]').exists()).toBe(false);
             // Neither the sentence about the service (it stands in the sheet "Probe starten") nor the one about who follows stays in the card.
             expect(wrapper.find('[data-testid="monitor-rehearsal-note"]').exists()).toBe(false);
