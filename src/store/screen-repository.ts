@@ -662,13 +662,20 @@ export class ScreenRepository {
 
     /** The presentations with a song sheet of the source "Probe" in one of their slides (Plan.md 125 A), by name. */
     async listRehearsalPlaylists(): Promise<{ id: string; name: string }[]> {
+        return (await this.listPlaylistsBySheet()).withSheet;
+    }
+
+    /** Every presentation and, of them, those with a song sheet of the source "Probe" – by name (Plan.md 125 A, 135 D: the page warns about a release that lost its sheet). */
+    async listPlaylistsBySheet(): Promise<{ all: { id: string; name: string }[]; withSheet: { id: string; name: string }[] }> {
         const [{ playlists }, slides] = await Promise.all([this.readPlaylistCategory(), this.readShownSlides()]);
-        return rehearsalPlaylists(
-            playlists.map((p) => p.doc),
-            slides,
-        )
-            .map((p) => ({ id: p.id, name: p.name }))
-            .sort((a, b) => a.name.localeCompare(b.name, LOCALE));
+        const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, LOCALE);
+        const docs = playlists.map((p) => p.doc);
+        return {
+            all: docs.map((p) => ({ id: p.id, name: p.name })).sort(byName),
+            withSheet: rehearsalPlaylists(docs, slides)
+                .map((p) => ({ id: p.id, name: p.name }))
+                .sort(byName),
+        };
     }
 
     /**

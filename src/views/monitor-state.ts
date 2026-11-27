@@ -79,3 +79,11 @@ export function monitorState(position: PositionDoc | null, now: number, context:
     }
     return { kind: 'schedule', chip: t.control.monitorSchedule(name), lines: middle === 'none' ? [t.control.monitorNothing] : [], note, middle };
 }
+
+/**
+ * A rehearsal runs at the screen, but its songsheet is neither of the rehearsal nor of the service: the screen shows no rehearsal sheet
+ * (Plan.md 135 D, a stale release). Of the position the screen reported – not of what the page laid over it.
+ */
+export function rehearsalWithoutSheet(position: PositionDoc | null): boolean {
+    return !!position?.rehearsal && !(position.songsheet && position.songsheet !== true);
+}

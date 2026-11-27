@@ -1,12 +1,14 @@
 <script setup lang="ts">
 /**
- * The card of the monitor at the top of the middle (Plan.md 135 C): its name, "Wechseln" where there are several, a chip with what runs
- * and the lines below it; "Probe …" where the screen is released for rehearsals. What the screen shows comes from its position only.
+ * The card of the monitor at the top of the middle (Plan.md 135 C, D): its name, "Wechseln" where there are several, a chip with what runs
+ * and the lines below it. Where the screen is released for rehearsals: "Probe starten", and while a rehearsal runs the buttons to extend
+ * and end it. What the screen shows comes from its position only.
  */
 import { onBeforeUnmount, ref } from 'vue';
 import Icon from '../designer/Icon.vue';
 import { t } from '../i18n/designer';
 import type { Monitor, MonitorState } from './monitor-state';
+import { EXTEND_HOURS } from './rehearsal-override';
 
 defineProps<{
     monitors: Monitor[];
@@ -17,9 +19,12 @@ defineProps<{
     lines: string[];
     /** The position was read and there is none. */
     silent: boolean;
-    rehearsalOpen: boolean;
+    /** A rehearsal runs at the screen: the card then shows who started it, and the buttons to extend and end it. */
+    rehearsalRunning: boolean;
+    /** The write of the rehearsal is on its way: the buttons rest. */
+    busy: boolean;
 }>();
-const emit = defineEmits<{ choose: [id: string]; rehearsal: [] }>();
+const emit = defineEmits<{ choose: [id: string]; startRehearsal: []; extend: [hours: number]; endRehearsal: [] }>();
 
 /** The list under "Wechseln": a tap beside it and Escape close it. */
 const open = ref(false);
@@ -61,7 +66,14 @@ function pick(id: string): void {
         <p v-for="line in lines" :key="line" class="line" data-testid="monitor-line">{{ line }}</p>
         <p v-if="silent" class="line" data-testid="monitor-silent">{{ t.control.monitorSilent }}</p>
         <p v-if="state?.note" class="note" data-testid="monitor-note">{{ state.note }}</p>
-        <button v-if="monitor.rehearsal" type="button" class="rehearsal" :aria-expanded="rehearsalOpen" data-testid="monitor-rehearsal" @click="emit('rehearsal')">{{ t.control.rehearsalStart }}</button>
+        <template v-if="rehearsalRunning">
+            <p class="note" data-testid="monitor-rehearsal-note">{{ t.control.rehearsalServiceNote }}</p>
+            <div class="actions">
+                <button v-for="h in EXTEND_HOURS" :key="h" type="button" :disabled="busy" :data-testid="`monitor-extend-${h}`" @click="emit('extend', h)">{{ t.control.rehearsalExtend(h) }}</button>
+                <button type="button" :disabled="busy" data-testid="monitor-end" @click="emit('endRehearsal')">{{ t.control.rehearsalEnd }}</button>
+            </div>
+        </template>
+        <button v-else-if="monitor.rehearsal" type="button" class="rehearsal" data-testid="monitor-rehearsal" @click="emit('startRehearsal')">{{ t.control.rehearsalStart }}</button>
     </section>
 </template>
 
@@ -175,7 +187,17 @@ button {
     padding: 0 14px;
     font-size: 0.95rem;
 }
-.rehearsal[aria-expanded='true'] {
-    border-color: #6b7180;
+.actions {
+    display: flex;
+    gap: 8px;
+}
+.actions button {
+    flex: 1 1 0;
+    min-height: 40px;
+    padding: 0 8px;
+    font-size: 0.95rem;
+}
+button:disabled {
+    opacity: 0.4;
 }
 </style>

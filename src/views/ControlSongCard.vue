@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * The song on the phone page as a card (Plan.md 135 C): its name and key above, the parts as a grid – the running one blue. Only the grid
- * rolls inside the card, the running part is brought into view.
+ * The song on the phone page as a card (Plan.md 135 C, D): its name and key above (with a button to the right and small chips below where
+ * the page puts them), the parts as a grid – the running one blue. Only the grid rolls inside the card, the running part is brought into view.
  */
 import type { SheetSection } from '../agenda/songsheet';
 import ControlSong from './ControlSong.vue';
@@ -13,19 +13,21 @@ defineProps<{
     /** The part the screen shows, if it is one of this song. */
     active: number | null;
     disabled: boolean;
-    /** Without the name above – the page sets it itself (the rehearsal, whose name is also its search). */
-    headless?: boolean;
+    /** Without the parts: the sheet is not there (yet) and the page says why. */
+    hideParts?: boolean;
 }>();
 const emit = defineEmits<{ choose: [section: number] }>();
 </script>
 
 <template>
     <section class="control-card song-card">
-        <header v-if="!headless" class="song-head">
+        <header class="song-head">
             <h2 class="song-title" data-testid="song-title">{{ title }}</h2>
             <span v-if="songKey" class="song-key" data-testid="song-key">{{ songKey }}</span>
+            <slot name="action" />
         </header>
-        <div class="song-parts">
+        <slot name="sub" />
+        <div v-if="!hideParts" class="song-parts">
             <ul class="song-list">
                 <ControlSong :title="title" :song-key="songKey" :parts="parts" open bare :active="active" :disabled="disabled" @choose="(n) => emit('choose', n)" />
             </ul>
@@ -45,15 +47,17 @@ const emit = defineEmits<{ choose: [section: number] }>();
 .song-head {
     flex: none;
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 10px;
 }
 .song-title {
     flex: 1;
     min-width: 0;
     margin: 0;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
+    font-weight: 600;
     line-height: 1.2;
+    color: #f2f2f2;
     overflow-wrap: anywhere;
 }
 .song-key {

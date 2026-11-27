@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * The buttons in the fixed zone below the middle of the phone page (Plan.md 135 C): "Zurück" and "Vor", the main button, with what comes
- * next in small letters below; with a presentation "Schwarz" as well. The parts of the page put it into the zone by `Teleport`.
+ * next in small letters below; with the slides "Schwarz" as well. The parts of the page put it into the zone by `Teleport`.
  */
 import { t } from '../i18n/designer';
 
@@ -10,7 +10,9 @@ defineProps<{
     forwardDisabled: boolean;
     /** What "Vor" leads to: "Strophe 2", the name of the slide. */
     hint?: string;
-    /** With a presentation: whether the stage is black; without it there is no button. */
+    /** Only where the middle shows the slides: the button "Schwarz". (Not `black !== undefined`: Vue makes an absent boolean prop `false`.) */
+    withBlack?: boolean;
+    /** Whether the stage is black. */
     black?: boolean;
     blackDisabled?: boolean;
 }>();
@@ -18,13 +20,13 @@ const emit = defineEmits<{ back: []; forward: []; black: [] }>();
 </script>
 
 <template>
-    <nav class="steps" :class="{ withBlack: black !== undefined }">
+    <nav class="steps" :class="{ withBlack }">
         <button type="button" class="step-back" :disabled="backDisabled" data-testid="step-back" @click="emit('back')">{{ t.control.back }}</button>
         <button type="button" class="step-forward" :disabled="forwardDisabled" data-testid="step-forward" @click="emit('forward')">
             <span>{{ t.control.forward }}</span>
             <small v-if="hint" data-testid="step-hint">{{ hint }}</small>
         </button>
-        <button v-if="black !== undefined" type="button" class="step-black" :class="{ on: black }" :disabled="blackDisabled" :aria-pressed="black" data-testid="step-black" @click="emit('black')">
+        <button v-if="withBlack" type="button" class="step-black" :class="{ on: black }" :disabled="blackDisabled" :aria-pressed="black" data-testid="step-black" @click="emit('black')">
             {{ black ? t.control.clickBlackOff : t.control.clickBlack }}
         </button>
     </nav>
@@ -67,9 +69,10 @@ button {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 400;
-    opacity: 0.85;
+    /* White, not a tint: #dfe8ff on this blue is 3.7:1, white 4.55:1 (Plan.md 135 D). */
+    color: #ffffff;
 }
 .step-black {
     font-size: 1.1rem;

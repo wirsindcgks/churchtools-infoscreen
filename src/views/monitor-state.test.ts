@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PositionDoc } from '../model/position';
-import { monitorList, monitorState, pickMonitor, slideLines } from './monitor-state';
+import { monitorList, monitorState, pickMonitor, rehearsalWithoutSheet, slideLines } from './monitor-state';
 
 const NOW = Date.parse('2026-11-26T10:00:00Z');
 const context = { timeZone: 'Europe/Berlin' };
@@ -97,5 +97,21 @@ describe('slideLines', () => {
     it('names the slide when it has a name, and the last click when there was one', () => {
         expect(slideLines(shown, null, NOW)).toEqual(['Folie 1 von 2']);
         expect(slideLines({ ...shown, slides: [{ id: 'a', name: 'Lieder' }] }, { by: null, at: NOW - 90_000 }, NOW)).toEqual(['Folie 1 von 2 · Lieder', 'zuletzt vor 1 Min.']);
+    });
+});
+
+describe('rehearsalWithoutSheet (Plan.md 135 D)', () => {
+    const rehearsal = { until: '2026-11-26T11:00:00Z' };
+
+    it('is true for a rehearsal without a songsheet or with one of unknown source', () => {
+        expect(rehearsalWithoutSheet(position({ rehearsal }))).toBe(true);
+        expect(rehearsalWithoutSheet(position({ rehearsal, songsheet: true }))).toBe(true);
+    });
+
+    it('is false with a songsheet of the rehearsal or of the service, without a rehearsal and without a position', () => {
+        expect(rehearsalWithoutSheet(position({ rehearsal, songsheet: { source: 'rehearsal' } }))).toBe(false);
+        expect(rehearsalWithoutSheet(position({ rehearsal, songsheet: { source: 'agenda', eventId: 7 } }))).toBe(false);
+        expect(rehearsalWithoutSheet(position())).toBe(false);
+        expect(rehearsalWithoutSheet(null)).toBe(false);
     });
 });

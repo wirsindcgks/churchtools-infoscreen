@@ -325,7 +325,8 @@ onBeforeUnmount(() => {
 }
 .service > .current {
     flex: 0 1 auto;
-    min-height: 0;
+    /* Never squeezed to nothing: the parts stay in view, the middle rolls before they vanish. */
+    min-height: 9rem;
     display: flex;
     flex-direction: column;
 }

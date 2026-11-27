@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * The song of the rehearsal on the phone page (Plan.md 121, "Proben", 135 C): the musicians search a song of the song database, choose its
- * arrangement and tap its parts. A tap writes the rehearsal choice into the category `steuerung` – one for all rehearsal screens,
+ * The song of the rehearsal on the phone page (Plan.md 121, "Proben", 135 C, D): the musicians search a song of the song database in a sheet
+ * from below, choose its arrangement and tap its parts. A tap writes the rehearsal choice into the category `steuerung` – one for all rehearsal screens,
  * independent of any event. What another musician chose later is read every few seconds and shown here too.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue';
@@ -13,6 +13,7 @@ import { loadArrangementSheet } from '../player/data';
 import type { ScreenRepository } from '../store/screen-repository';
 import Icon from '../designer/Icon.vue';
 import ControlBar from './ControlBar.vue';
+import ControlSheet from './ControlSheet.vue';
 import ControlSongCard from './ControlSongCard.vue';
 import { arrangementLabels } from './arrangement-labels';
 import { sectionName } from './song-steps';
@@ -44,11 +45,8 @@ let loadRun = 0;
 let pollTimer: ReturnType<typeof setTimeout> | undefined;
 let gone = false;
 
-/**
- * Search, then play (user, 2026-11-13): with a song the search folds away behind "Anderes Lied"; without one it is all there is.
- */
+/** Search, then play (user, 2026-11-13): the search is a sheet from below, so the song and its parts keep the whole page. */
 const searchOpen = ref(false);
-const showSearch = computed(() => !song.value || searchOpen.value);
 const searchInput = useTemplateRef<HTMLInputElement>('searchInput');
 
 async function openSearch(): Promise<void> {
@@ -194,7 +192,6 @@ async function adopt(doc: RehearsalDoc): Promise<void> {
     }
     if (song.value?.id !== doc.songId) {
         // Whoever is typing a search keeps it open; the song of the other musician shows once it is closed.
-        if (!song.value && query.value.trim()) searchOpen.value = true;
         song.value = await fetchSong(doc.songId);
     }
     await showArrangement(doc.arrangementId, doc.section);
@@ -239,13 +236,8 @@ onBeforeUnmount(() => {
     <div class="rehearsal" data-testid="control-rehearsal">
         <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
         <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
-        <template v-if="showSearch">
-            <div class="field search-row">
-                <input ref="searchInput" v-model="query" type="search" class="search" :placeholder="t.control.search" :aria-label="t.control.search" data-testid="rehearsal-search">
-                <button v-if="song" type="button" class="icon" :aria-label="t.control.closeSearch" :title="t.control.closeSearch" @click="closeSearch">
-                    <Icon name="close" :size="20" />
-                </button>
-            </div>
+        <ControlSheet v-if="searchOpen" :title="t.control.chooseSong" @close="closeSearch">
+            <input ref="searchInput" v-model="query" type="search" class="search" :placeholder="t.control.search" :aria-label="t.control.search" data-testid="rehearsal-search">
             <p v-if="searching" class="note">{{ t.control.searching }}</p>
             <p v-else-if="searched && !results.length" class="note" data-testid="rehearsal-none">
                 {{ t.control.noSong }}
@@ -257,27 +249,24 @@ onBeforeUnmount(() => {
                     </button>
                 </li>
             </ul>
-        </template>
-        <template v-if="song && !searchOpen">
-            <!-- Title and magnifier in one frame like a search field: it is the title that is searched (user, 2026-11-13); the whole frame opens the search. -->
-            <div class="field head" @click="openSearch">
-                <h2 class="title" data-testid="rehearsal-title">
-                    {{ song.name }}<span v-if="sheet?.key" class="key">{{ sheet.key }}</span>
-                </h2>
-                <button type="button" class="icon" data-testid="rehearsal-other" :aria-label="t.control.otherSong" :title="t.control.otherSong" @click.stop="openSearch">
-                    <Icon name="search" :size="20" />
-                </button>
-            </div>
-            <div v-if="arrangements.length > 1" class="arrangements" role="group" :aria-label="t.control.arrangement">
-                <button v-for="(a, i) in arrangements" :key="a.id" type="button" class="pill" :class="{ chosen: a.id === arrangementId }" :aria-pressed="a.id === arrangementId" @click="showArrangement(a.id, null, true)">
-                    {{ labels[i] }}
-                </button>
+        </ControlSheet>
+        <template v-if="song">
+            <div class="song" data-testid="rehearsal-song">
+                <ControlSongCard :title="song.name ?? ''" :song-key="sheet?.key" :parts="sheet?.sections ?? []" :active="section" :disabled="false" :hide-parts="!sheet" @choose="choose">
+                    <template #action>
+                        <button type="button" class="pick" data-testid="rehearsal-other" @click="openSearch"><Icon name="search" :size="20" />{{ t.control.chooseSong }}</button>
+                    </template>
+                    <template v-if="arrangements.length > 1" #sub>
+                        <div class="arrangements" role="group" :aria-label="t.control.arrangement">
+                            <button v-for="(a, i) in arrangements" :key="a.id" type="button" class="pill" :class="{ chosen: a.id === arrangementId }" :aria-pressed="a.id === arrangementId" @click="showArrangement(a.id, null, true)">
+                                {{ labels[i] }}
+                            </button>
+                        </div>
+                    </template>
+                </ControlSongCard>
             </div>
             <p v-if="sheetLoading" class="note">{{ t.control.rehearsalLoading }}</p>
             <template v-else-if="sheet">
-                <div class="song" data-testid="rehearsal-song">
-                    <ControlSongCard :title="song.name ?? ''" :song-key="sheet.key" :parts="sheet.sections" headless :active="section" :disabled="false" @choose="choose" />
-                </div>
                 <p v-if="atEnd" class="note" data-testid="rehearsal-end-note">{{ t.control.stepEndRehearsal }}</p>
                 <!-- In the fixed zone below the middle of the page (Plan.md 135 A). -->
                 <Teleport defer to="#control-bar">
@@ -292,9 +281,10 @@ onBeforeUnmount(() => {
                 {{ t.control.endSong }}
             </button>
         </template>
-        <p v-else-if="!song && !results.length && !searching && !searched" class="note">
-            {{ t.control.rehearsalNone }}
-        </p>
+        <section v-else class="control-card none">
+            <p class="note">{{ t.control.rehearsalNone }}</p>
+            <button type="button" class="pick" data-testid="rehearsal-other" @click="openSearch"><Icon name="search" :size="20" />{{ t.control.chooseSong }}</button>
+        </section>
     </div>
 </template>
 
@@ -311,9 +301,10 @@ onBeforeUnmount(() => {
     flex: none;
     min-width: 0;
 }
+/* The card may shrink, but not to nothing – the parts must stay in view, the middle rolls before they vanish (user, 2026-11-27). */
 .rehearsal > .song {
     flex: 0 1 auto;
-    min-height: 0;
+    min-height: 9rem;
     display: flex;
     flex-direction: column;
 }
@@ -328,65 +319,40 @@ p {
     border-radius: 8px;
     background: #4a2020;
 }
+.none {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
 /* A rare step, so quiet: text only, under the parts. */
 .end {
     justify-self: center;
+    align-self: center;
     min-height: 44px;
     padding: 0 16px;
     border: 0;
     background: none;
     color: #b8bcc4;
     font: inherit;
+    font-size: 0.95rem;
     text-decoration: underline;
     cursor: pointer;
 }
-/* One frame for both states – the title with the magnifier, the search with the cross – so the icon keeps its place. */
-.field {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.search {
     box-sizing: border-box;
-    min-height: 56px;
-    padding: 4px 6px 4px 14px;
+    width: 100%;
+    min-height: 52px;
+    padding: 0 14px;
     border: 1px solid #3a3f4a;
     border-radius: 10px;
-    background: #1d2027;
-}
-.head {
-    cursor: pointer;
-}
-.search {
-    flex: 1;
-    min-width: 0;
-    min-height: 44px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: inherit;
+    background: #101114;
+    color: #f2f2f2;
     font: inherit;
+}
+.search:focus {
     outline: none;
-}
-.field:focus-within {
     border-color: #6b7180;
-}
-.title {
-    flex: 1;
-    min-width: 0;
-    margin: 0;
-    font-size: 1.6rem;
-    line-height: 1.2;
-    overflow-wrap: anywhere;
-}
-.title .key {
-    margin-left: 0.5em;
-    color: #b8bcc4;
-    font-weight: 400;
-    font-variant-numeric: tabular-nums;
-}
-.arrangements {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
 }
 button {
     min-height: 56px;
@@ -399,20 +365,21 @@ button {
     text-align: left;
     cursor: pointer;
 }
-/* Magnifier and cross inside the frame: plain, light, the same size and place. */
-.icon {
+/* The magnifier and the words: one button, in the head of the song card or beside the note. */
+.pick {
     flex: none;
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     min-height: 44px;
-    box-sizing: border-box;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: transparent;
-    color: #f1f2f4;
+    padding: 0 12px;
+    font-size: 0.95rem;
+    text-align: center;
+}
+.arrangements {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 .pill {
     min-height: 32px;
@@ -431,11 +398,6 @@ button {
     list-style: none;
     margin: 0;
     padding: 0;
-    /* A long list of finds rolls by itself. */
-    flex: 0 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
 }
 .results button {
     width: 100%;

@@ -4,6 +4,8 @@ import type { RehearsalCatalogDoc } from '../agenda/control';
 import type { AgendaEvent, LiveItem } from '../agenda/live';
 import type { PositionDoc } from '../model/position';
 import { churchToolsPlayerData } from '../player/data';
+import type { SongResponse } from '../ct/api';
+import * as ctApi from '../ct/api';
 import ControlView from './ControlView.vue';
 import { controlMemory } from './control-memory';
 
@@ -15,6 +17,7 @@ vi.mock('../ct/api', async (importOriginal) => ({
     fetchTimeZone: vi.fn(async () => 'Europe/Berlin'),
     fetchCalendars: vi.fn(async () => [{ id: 1 }]),
     fetchSong: vi.fn(async () => ({ id: 9, name: 'Lied', arrangements: [{ id: 4 }] })),
+    searchSongs: vi.fn(async () => []),
 }));
 vi.mock('../player/data', async (importOriginal) => ({
     ...(await importOriginal<typeof import('../player/data')>()),
@@ -49,6 +52,7 @@ function setup(read: { catalog: RehearsalCatalogDoc | null; positions?: Record<s
         readControls: vi.fn(async () => ({})),
         readRehearsal: vi.fn(async () => read.rehearsal ?? null),
         writeRehearsal: vi.fn(async () => {}),
+        writeOverride: vi.fn<(doc: unknown) => Promise<void>>(async () => {}),
         readClick: vi.fn(async () => null),
         writeControl: vi.fn(async () => {}),
     };
@@ -166,15 +170,124 @@ describe('ControlView (Plan.md 135 C)', () => {
         expect(wrapper.find('[data-testid="monitor-chip"]').exists()).toBe(false);
     });
 
-    it('offers "Probe …" for a screen released for rehearsals, and opens the box under the card', async () => {
-        const { wrapper } = setup({ catalog: catalog(), positions: { s1: position() } });
+    it('offers "Probe starten" for a screen released for rehearsals, and opens a sheet from below', async () => {
+        const { wrapper, repository } = setup({ catalog: catalog(), positions: { s1: position() } });
         await flushPromises();
-        await wrapper.get('[data-testid="monitor-rehearsal"]').trigger('click');
-        await flushPromises();
-        expect(wrapper.find('[data-testid="control-screen"]').exists()).toBe(true);
-        expect(wrapper.find('[data-testid="control-screen"] details').exists()).toBe(false);
-        await wrapper.get('[data-testid="monitor-rehearsal"]').trigger('click');
         expect(wrapper.find('[data-testid="control-screen"]').exists()).toBe(false);
+        expect(wrapper.get('[data-testid="monitor-rehearsal"]').text()).toBe('Probe starten');
+        await wrapper.get('[data-testid="monitor-rehearsal"]').trigger('click');
+        expect(wrapper.get('[role="dialog"] h2').text()).toBe('Probe auf „Bühne“');
+        await wrapper.get('[data-testid="control-sheet-cancel"]').trigger('click');
+        expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+        expect(repository.writeOverride).not.toHaveBeenCalled();
+    });
+
+    it('starts the rehearsal from the sheet: writes the override, closes the sheet and shows the rehearsal in the card at once', async () => {
+        const { wrapper, repository } = setup({ catalog: catalog(), positions: { s1: position() } });
+        await flushPromises();
+        await wrapper.get('[data-testid="monitor-rehearsal"]').trigger('click');
+        await wrapper.get('[data-testid="rehearsal-sheet-start"]').trigger('click');
+        await flushPromises();
+        const doc = repository.writeOverride.mock.calls[0]![0] as { screenId: string; playlistId: string; until: string; at: string; by: string };
+        expect(doc).toMatchObject({ kind: 'override', screenId: 's1', playlistId: 'p1', by: 'Max' });
+        expect(Date.parse(doc.until) - Date.parse(doc.at)).toBe(2 * 3600_000);
+        expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+        expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Probe bis 12:00');
+        expect(wrapper.get('[data-testid="monitor-line"]').text()).toBe('gestartet von Max');
+        expect(wrapper.find('[data-testid="monitor-rehearsal"]').exists()).toBe(false);
+    });
+
+    it('keeps the sheet open and says so where the write fails', async () => {
+        const { wrapper, repository } = setup({ catalog: catalog(), positions: { s1: position() } });
+        await flushPromises();
+        repository.writeOverride.mockRejectedValueOnce(new Error('weg'));
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        await wrapper.get('[data-testid="monitor-rehearsal"]').trigger('click');
+        await wrapper.get('[data-testid="rehearsal-sheet-start"]').trigger('click');
+        await flushPromises();
+        expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
+        expect(wrapper.get('[role="alert"]').text()).toContain('Nicht gespeichert');
+        expect(wrapper.find('[data-testid="monitor-end"]').exists()).toBe(false);
+    });
+
+    describe('while a rehearsal runs', () => {
+        const rehearsal = { until: '2026-11-26T09:52:00Z', by: 'Anna' };
+        const running = (over: Partial<PositionDoc> = {}) => position({ rehearsal, songsheet: { source: 'rehearsal' }, ...over });
+
+        it('says it once in the card – chip, who started it, the sentence about the service – with the three buttons and no box of its own', async () => {
+            const { wrapper } = setup({ catalog: catalog(), positions: { s1: running() } });
+            await flushPromises();
+            expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Probe bis 10:52');
+            expect(wrapper.findAll('[data-testid="monitor-line"]').map((l) => l.text())).toEqual(['gestartet von Anna']);
+            expect(wrapper.get('[data-testid="monitor-rehearsal-note"]').text()).toBe('Ein Gottesdienst laut Zeitplan beendet die Probe.');
+            expect(wrapper.get('[data-testid="monitor-extend-1"]').text()).toBe('+1 Std');
+            expect(wrapper.get('[data-testid="monitor-extend-2"]').text()).toBe('+2 Std');
+            expect(wrapper.get('[data-testid="monitor-end"]').text()).toBe('Beenden');
+            expect(wrapper.find('[data-testid="monitor-rehearsal"]').exists()).toBe(false);
+            expect(wrapper.find('[data-testid="control-screen"]').exists()).toBe(false);
+            // Nothing twice: the end of the rehearsal and its author stand in one place.
+            expect(wrapper.text().match(/Probe bis/g)).toHaveLength(1);
+            expect(wrapper.text().match(/Anna/g)).toHaveLength(1);
+        });
+
+        it('extends from the end that stands, for the presentation that runs, and shows the new end at once', async () => {
+            const { wrapper, repository } = setup({ catalog: catalog(), positions: { s1: running({ playlistId: 'p1' }) } });
+            await flushPromises();
+            await wrapper.get('[data-testid="monitor-extend-2"]').trigger('click');
+            await flushPromises();
+            const doc = repository.writeOverride.mock.calls[0]![0] as { playlistId: string; until: string; by: string };
+            expect(doc).toMatchObject({ playlistId: 'p1', until: '2026-11-26T11:52:00.000Z', by: 'Max' });
+            expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Probe bis 12:52');
+        });
+
+        it('ends the rehearsal and offers "Probe starten" again', async () => {
+            const { wrapper, repository } = setup({ catalog: catalog(), positions: { s1: running() } });
+            await flushPromises();
+            await wrapper.get('[data-testid="monitor-end"]').trigger('click');
+            await flushPromises();
+            expect(repository.writeOverride.mock.calls[0]![0]).toMatchObject({ screenId: 's1', playlistId: '', ended: true, by: 'Max' });
+            expect(wrapper.find('[data-testid="monitor-end"]').exists()).toBe(false);
+            expect(wrapper.find('[data-testid="monitor-rehearsal"]').exists()).toBe(true);
+        });
+
+        it('shows the song with its parts and a "Lied wählen" button, no "Schwarz" in the bar although the presentation is at the click', async () => {
+            const song = { kind: 'rehearsal', songId: 9, arrangementId: 4, section: 0, at: NOW.toISOString() };
+            const { wrapper } = setup({ catalog: catalog(), positions: { s1: running(slides) }, rehearsal: song });
+            await flushPromises();
+            const card = wrapper.get('[data-testid="rehearsal-song"]');
+            expect(card.get('[data-testid="song-title"]').text()).toBe('Lied');
+            expect(card.get('[data-testid="rehearsal-other"]').text()).toBe('Lied wählen');
+            // The parts are in the card, not squeezed out of it.
+            expect(card.findAll('.part').map((b) => b.text())).toEqual(['Strophe', 'Refrain']);
+            // One arrangement: no chips.
+            expect(card.find('.arrangements').exists()).toBe(false);
+            expect(wrapper.find('[data-testid="step-black"]').exists()).toBe(false);
+            expect(wrapper.text()).not.toContain('Schwarz');
+            expect(wrapper.find('[data-testid="slide-list"]').exists()).toBe(false);
+            expect(wrapper.get('[data-testid="rehearsal-end"]').text()).toBe('Lied beenden');
+        });
+
+        it('opens the search of the song as a sheet, and a find closes it', async () => {
+            vi.mocked(ctApi.searchSongs).mockResolvedValue([{ id: 9, name: 'Lied', arrangements: [{ id: 4, isDefault: true }] } as SongResponse]);
+            const { wrapper, repository } = setup({ catalog: catalog(), positions: { s1: running() } });
+            await flushPromises();
+            expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+            await wrapper.get('[data-testid="rehearsal-other"]').trigger('click');
+            expect(wrapper.get('[role="dialog"] h2').text()).toBe('Lied wählen');
+            await wrapper.get('[data-testid="rehearsal-search"]').setValue('Lie');
+            await vi.advanceTimersByTimeAsync(400);
+            await wrapper.get('[data-testid="rehearsal-results"] button').trigger('click');
+            await flushPromises();
+            expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+            expect(repository.writeRehearsal).toHaveBeenCalledWith(expect.objectContaining({ songId: 9, arrangementId: 4 }));
+        });
+
+        it('says that the screen shows no rehearsal sheet, instead of the song card', async () => {
+            const { wrapper } = setup({ catalog: catalog(), positions: { s1: position({ rehearsal }) } });
+            await flushPromises();
+            expect(wrapper.get('[data-testid="monitor-no-sheet"]').text()).toBe('Der Bildschirm zeigt kein Probenblatt.');
+            expect(wrapper.find('[data-testid="control-rehearsal"]').exists()).toBe(false);
+        });
     });
 
     it('remembers the monitor chosen, and takes it again where it is still released', async () => {

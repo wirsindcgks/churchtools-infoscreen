@@ -278,15 +278,19 @@ So richtest du es ein:
 **Proben vom Handy freigeben.** Auf derselben Seite „Musiker" wählst du unter **„Bildschirme für Proben"** die Bildschirme, die die Musiker
 für eine Probe überschreiben dürfen, und unter **„Präsentationen für Proben"** die Präsentationen, die sie dafür wählen dürfen. Zur Wahl
 stehen nur Präsentationen mit einem Liedblatt der Quelle „Probe"; eine, die noch nicht freigegeben ist, nennt die Seite in einem Hinweis.
+**Die Seite hält die Liste aktuell:** Öffnet ein Administrator „Musiker“ und stimmen ein Name oder die Menge der freigegebenen
+Bildschirme und Präsentationen nicht mehr mit der Liste für die Musiker überein (etwa weil eine Präsentation umbenannt wurde), schreibt die
+Seite die Liste neu – nur dann, nicht bei jedem Öffnen. Eine freigegebene Präsentation, die kein Probenblatt mehr hat, bekommt eine Warnung
+(„„Ablauf“ ist freigegeben, hat aber kein Probenblatt.“) und fällt aus der Liste.
 Die Musiker sehen weder Bildschirme noch Präsentationen – beim „Speichern" schreibt die Seite deshalb eine Liste mit den Namen in die
 Kategorie „Steuerung". Danach auf „Rechte aktualisieren" tippen (siehe oben), damit Fernseher und Gestalter diese Kategorie lesen.
 Der Bildschirm folgt einer Probe nur, wenn die Präsentation ein Liedblatt der Quelle „Probe" hat – verliert eine freigegebene Präsentation es (oder
 wird sie umgebaut), bleibt er bei seinem Zeitplan, und die Kachel in der Übersicht zeigt keine Probe.
 
-Auf der Handyseite wählen die Musiker auf der Monitor-Karte unter **„Probe …"** eine freigegebene Präsentation und die
-Dauer (1 bis 3 Stunden) und tippen auf **„Auf Bildschirm zeigen"**. Läuft dort schon eine Probe, steht da, was bis wann und von wem läuft; mit
-**„Verlängern"** beginnt die gewählte Dauer neu, mit **„Probe beenden"** zeigt der Bildschirm sofort wieder, was der Zeitplan vorsieht. Das
-tut er auch, wenn die Dauer abläuft. Beginnt vorher eine Terminregel des Zeitplans, endet die Probe von selbst – der Gottesdienst gewinnt.
+Auf der Handyseite tippen die Musiker auf der Monitor-Karte auf **„Probe starten"**; in dem Blatt, das von unten aufgeht, wählen sie eine
+freigegebene Präsentation und die Dauer (1 bis 3 Stunden) und starten die Probe. Läuft sie, zeigt die Karte „Probe bis …“ und „gestartet von …“;
+mit **„+1 Std"** und **„+2 Std"** verlängern sie (höchstens vier Stunden ab jetzt), mit **„Beenden"** zeigt der Bildschirm sofort wieder, was
+der Zeitplan vorsieht. Das tut er auch, wenn die Dauer abläuft. Beginnt vorher eine Terminregel des Zeitplans, endet die Probe von selbst – der Gottesdienst gewinnt.
 Im Designer zeigt die Kachel des Bildschirms die laufende Probe mit Präsentation, Endzeit und Namen, nach demselben Maßstab wie der
 Fernseher; das Handy sieht nicht, ob ein Gottesdienst die Probe schon beendet hat, die Kachel schon.
 
@@ -324,7 +328,7 @@ Der **Zeitplan** schaltet zwischen den Präsentationen um: Die Gottesdienst-Prä
 kommt per Regel dazu – zum Beispiel eine **Terminregel** auf einen eigenen Kalender „Bandproben" (dann reicht es, die Proben dort
 einzutragen) oder eine **Zeitregel** wie „donnerstags 19 bis 22 Uhr".
 
-Auf der Handyseite suchen die Musiker, wenn ein Probenblatt läuft, das Lied, das Arrangement und tippen die Teile. Bevor jemand ein Lied
+Auf der Handyseite wählen die Musiker, wenn ein Probenblatt läuft, mit **„Lied wählen"** (die Suche geht als Blatt von unten auf) das Lied, das Arrangement und tippen die Teile. Bevor jemand ein Lied
 gewählt hat, zeigt der Bildschirm **„Kein Lied gewählt"** mit einem **QR-Code**: Scannen öffnet die Handyseite. Die Wahl gilt für alle
 Probenbildschirme; Handy und Bildschirm zeigen dasselbe Lied. **„Lied beenden"** unter den Teilen nimmt es von allen
 Bildschirmen, dann steht dort wieder der QR-Code. Von selbst endet die Wahl nach zwölf Stunden, damit zur nächsten Probe nicht das

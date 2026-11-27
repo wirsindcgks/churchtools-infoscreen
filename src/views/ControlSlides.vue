@@ -175,7 +175,7 @@ onBeforeUnmount(() => clearInterval(ticker));
         <p v-if="presenter" class="note" data-testid="slides-presenter">{{ t.control.presenterDetected }}</p>
         <!-- In the fixed zone below the middle of the page (Plan.md 135 A). -->
         <Teleport defer to="#control-bar">
-            <ControlBar :back-disabled="false" :forward-disabled="false" :hint="forwardHint" :black="black" @back="step(-1)" @forward="step(1)" @black="blackClick" />
+            <ControlBar :back-disabled="false" :forward-disabled="false" :hint="forwardHint" with-black :black="black" @back="step(-1)" @forward="step(1)" @black="blackClick" />
         </Teleport>
     </div>
 </template>
@@ -195,7 +195,7 @@ onBeforeUnmount(() => clearInterval(ticker));
 }
 .slides > .slide-card {
     flex: 0 1 auto;
-    min-height: 0;
+    min-height: 9rem;
     overflow-y: auto;
     overscroll-behavior: contain;
 }

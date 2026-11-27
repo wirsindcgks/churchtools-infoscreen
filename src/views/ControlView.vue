@@ -2,10 +2,12 @@
 /**
  * The phone page of the musicians (Plan.md 121 E2, 135): they steer the monitor in front of them. At the top the card of the monitor says
  * what it shows (from the position the screen reports into `status`), in the middle the song with its parts or the slides, below "Zurück"
- * and "Vor". Without a screen released for rehearsals or the click steering the page shows the song of the service alone.
+ * and "Vor". Without a screen released for rehearsals or the click steering the page shows the song of the service alone. "Probe starten"
+ * opens a sheet from below; a running rehearsal is extended and ended in the card.
  * Built for a dark stage, thumbs and a narrow screen.
  */
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
+import type { RehearsalCatalogDoc } from '../agenda/control';
 import { useRouter } from 'vue-router';
 import { fetchTimeZone } from '../ct/api';
 import { currentPerson, displayName } from '../ct/client';
@@ -16,14 +18,15 @@ import { getRepository } from '../store/backend';
 import type { ScreenRepository } from '../store/screen-repository';
 import ControlMonitorCard from './ControlMonitorCard.vue';
 import ControlRehearsal from './ControlRehearsal.vue';
-import ControlScreen from './ControlScreen.vue';
+import ControlRehearsalSheet from './ControlRehearsalSheet.vue';
 import ControlService from './ControlService.vue';
 import ControlSlides from './ControlSlides.vue';
 import { pollDelay } from './click-steering';
 import { leaveControl } from './control-back';
 import './control-card.css';
 import { controlMemory } from './control-memory';
-import { monitorList, monitorState, pickMonitor, type Monitor } from './monitor-state';
+import { monitorList, monitorState, pickMonitor, rehearsalWithoutSheet, type Monitor } from './monitor-state';
+import { useRehearsalControl } from './useRehearsalControl';
 import { useWakeLock } from './useWakeLock';
 
 // On stage the phone must not lock while the page is open (user, 2026-11-13).
@@ -54,7 +57,9 @@ const timeZone = ref(controlMemory.timeZone ?? 'Europe/Berlin');
 const monitors = shallowRef<Monitor[]>(controlMemory.monitors ?? []);
 const monitorId = ref(controlMemory.monitorId);
 const monitor = computed(() => pickMonitor(monitors.value, monitorId.value));
-const rehearsalOpen = ref(false);
+/** The presentations released for rehearsals, from the catalog in `steuerung`. */
+const catalog = shallowRef<RehearsalCatalogDoc | null>(null);
+const sheetOpen = ref(false);
 
 /** What the monitor reported; `positionRead` – a reading came, `null` then means that the screen reports nothing. */
 const position = shallowRef<PositionDoc | null>(null);
@@ -66,7 +71,19 @@ const info = shallowRef<{ lines: string[]; eventStartMs: number | null }>({ line
 const tick = ref(Date.now());
 const ticker = setInterval(() => (tick.value = Date.now()), 1000);
 
-const state = computed(() => (monitor.value ? monitorState(position.value, tick.value, { timeZone: timeZone.value, eventStartMs: info.value.eventStartMs }) : null));
+const rehearsal = useRehearsalControl({ repository, author, screenId: computed(() => monitor.value?.id), position, now: tick });
+/** The position with the own rehearsal write laid over it, until the screen reports it. */
+const shownPosition = computed<PositionDoc | null>(() => {
+    if (!position.value) return null;
+    const own = rehearsal.shown.value;
+    const shown: PositionDoc = { ...position.value, rehearsal: own ? { until: own.until, ...(own.by ? { by: own.by } : {}) } : undefined };
+    if (!own) delete shown.rehearsal;
+    return shown;
+});
+const state = computed(() => (monitor.value ? monitorState(shownPosition.value, tick.value, { timeZone: timeZone.value, eventStartMs: info.value.eventStartMs }) : null));
+const rehearsalRunning = computed(() => state.value?.kind === 'rehearsal');
+/** The rehearsal runs, but the screen shows no rehearsal sheet (no song, no service): the middle says so. */
+const noProbeSheet = computed(() => middle.value === 'none' && rehearsalWithoutSheet(position.value));
 const lines = computed(() => (info.value.lines.length ? info.value.lines : (state.value?.lines ?? [])));
 /** Without a monitor the song of the service stands alone. */
 const middle = computed(() => (monitor.value ? (positionRead.value ? (state.value?.middle ?? 'none') : 'none') : 'service'));
@@ -134,6 +151,11 @@ function clicked(): void {
     schedule();
 }
 
+/** The sheet closes once the write went through; where it did not, it stays and says so. */
+async function startRehearsal(playlistId: string, hours: number): Promise<void> {
+    if (await rehearsal.start(playlistId, hours)) sheetOpen.value = false;
+}
+
 function chooseMonitor(id: string): void {
     monitorId.value = id;
     controlMemory.monitorId = id;
@@ -145,7 +167,8 @@ watch(
         position.value = null;
         positionRead.value = false;
         info.value = { lines: [], eventStartMs: null };
-        rehearsalOpen.value = false;
+        sheetOpen.value = false;
+        rehearsal.reset();
         failure.value = null;
         void start();
     },
@@ -163,13 +186,13 @@ onMounted(async () => {
             return;
         }
         // The list of the released screens; where it cannot be read the page shows the service alone, as without a release.
-        const catalog = await handle.repository
+        catalog.value = await handle.repository
             .readRehearsalScreens()
             .then((read) => read.catalog)
             .catch(() => null);
         if (gone) return;
         const before = monitor.value?.id;
-        monitors.value = monitorList(catalog);
+        monitors.value = monitorList(catalog.value);
         Object.assign(controlMemory, { monitors: monitors.value, timeZone: zone });
         // The monitor of the memory is still there, so its watcher does not read: read here.
         if (monitor.value && monitor.value.id === before) await start();
@@ -206,14 +229,27 @@ onBeforeUnmount(() => {
                     :state="state"
                     :lines="lines"
                     :silent="positionRead && !position"
-                    :rehearsal-open="rehearsalOpen"
+                    :rehearsal-running="rehearsalRunning"
+                    :busy="rehearsal.busy.value"
                     @choose="chooseMonitor"
-                    @rehearsal="rehearsalOpen = !rehearsalOpen"
+                    @start-rehearsal="sheetOpen = true"
+                    @extend="(hours) => rehearsal.extend(hours)"
+                    @end-rehearsal="rehearsal.end()"
                 />
-                <ControlScreen v-if="monitor?.rehearsal && rehearsalOpen && repository" :repository="repository" :author="author" :time-zone="timeZone" :screen-id="monitor.id" />
+                <ControlRehearsalSheet
+                    v-if="sheetOpen && monitor"
+                    :monitor-name="monitor.name"
+                    :playlists="catalog?.playlists ?? []"
+                    :busy="rehearsal.busy.value"
+                    :not-saved="rehearsal.notSaved.value"
+                    @close="sheetOpen = false"
+                    @start="startRehearsal"
+                />
+                <p v-if="rehearsal.notSaved.value && !sheetOpen" class="warn" role="alert">{{ t.control.notSaved }}</p>
                 <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
                 <ControlService v-if="middle === 'service'" :repository="repository" :author="author" :time-zone="timeZone" :event-id="serviceEventId" :show-plan="!monitor" @info="(next) => (info = next)" />
                 <ControlRehearsal v-else-if="middle === 'rehearsal' && repository" :repository="repository" :author="author" />
+                <p v-else-if="noProbeSheet" class="control-card note" data-testid="monitor-no-sheet">{{ t.control.noProbeSheet }}</p>
                 <ControlSlides
                     v-else-if="middle === 'slides' && repository && slidesPosition && monitor"
                     :repository="repository"
