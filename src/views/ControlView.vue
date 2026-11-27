@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * The phone page of the musicians (Plan.md 121 E2, 135): they steer the monitor in front of them. At the top the card of the monitor says
- * what it shows (from the position the screen reports into `status`), in the middle the song with its parts or the slides, below "Zurück"
+ * The phone page of the musicians (Plan.md 121 E2, 135): they steer the monitor in front of them. At the top the head names the monitor (the name
+ * switches it where there are several) and the band below it says what it shows (from the position the screen reports into `status`), in the middle the song with its parts or the slides, below "Zurück"
  * and "Vor". Without a screen released for rehearsals or the click steering the page shows the song of the service alone. "Probe starten"
- * opens a sheet from below; a running rehearsal is extended and ended in the card.
+ * opens a sheet from below; a running rehearsal is extended and ended in a sheet opened from the band (Plan.md 137 A).
  * Built for a dark stage, thumbs and a narrow screen.
  */
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
@@ -190,8 +190,19 @@ async function startRehearsal(playlistId: string, hours: number): Promise<void> 
 }
 
 function chooseMonitor(id: string): void {
+    switchOpen.value = false;
     monitorId.value = id;
     controlMemory.monitorId = id;
+}
+
+/** The list under the name in the head (Plan.md 137 A): a tap beside it and Escape close it. */
+const switchOpen = ref(false);
+const switchBox = ref<HTMLElement | null>(null);
+function closeSwitchOnOutside(event: Event): void {
+    if (switchOpen.value && !switchBox.value?.contains(event.target as Node)) switchOpen.value = false;
+}
+function closeSwitchOnEscape(event: KeyboardEvent): void {
+    if (event.key === 'Escape') switchOpen.value = false;
 }
 watch(
     () => monitor.value?.id,
@@ -209,6 +220,8 @@ watch(
 
 onMounted(async () => {
     document.addEventListener('visibilitychange', onVisibility);
+    document.addEventListener('pointerdown', closeSwitchOnOutside);
+    document.addEventListener('keydown', closeSwitchOnEscape);
     try {
         const [person, handle, zone] = await Promise.all([currentPerson(), getRepository(), fetchTimeZone()]);
         repository.value = handle.repository;
@@ -242,13 +255,29 @@ onBeforeUnmount(() => {
     clearTimeout(timer);
     clearInterval(ticker);
     document.removeEventListener('visibilitychange', onVisibility);
+    document.removeEventListener('pointerdown', closeSwitchOnOutside);
+    document.removeEventListener('keydown', closeSwitchOnEscape);
 });
 </script>
 
 <template>
     <main class="infoscreen-designer control">
         <header class="head" data-testid="control-head">
-            <a href="/" class="back" data-testid="control-back" :aria-label="t.control.backAria" @click.prevent="leaveControl(!!router.options.history.state.back)"><Icon name="back" :size="18" /><span>{{ t.control.backToChurchTools }}</span></a>
+            <a href="/" class="back" data-testid="control-back" :aria-label="t.control.backAria" @click.prevent="leaveControl(!!router.options.history.state.back)"><Icon name="back" :size="20" /></a>
+            <template v-if="monitor && !unavailable">
+                <!-- With several screens the name is the switch (user, 2026-11-27): the arrow says it opens; with one it is a name and nothing more. -->
+                <div v-if="monitors.length > 1" ref="switchBox" class="monitor-switch">
+                    <button type="button" class="switch-button" aria-haspopup="true" :aria-expanded="switchOpen" :aria-label="t.control.monitorSwitchLabel(monitor.name)" data-testid="monitor-switch" @click="switchOpen = !switchOpen">
+                        <span class="monitor-name" data-testid="monitor-name">{{ monitor.name }}</span><Icon name="chevron-down" :size="14" class="switch-chevron" />
+                    </button>
+                    <ul v-if="switchOpen" class="switch-list" role="group" :aria-label="t.control.screenChoose">
+                        <li v-for="m in monitors" :key="m.id">
+                            <button type="button" :class="{ chosen: m.id === monitor.id }" :aria-pressed="m.id === monitor.id" :data-testid="`monitor-option-${m.id}`" @click="chooseMonitor(m.id)">{{ m.name }}</button>
+                        </li>
+                    </ul>
+                </div>
+                <span v-else class="monitor-switch"><span class="monitor-name" data-testid="monitor-name">{{ monitor.name }}</span></span>
+            </template>
             <h1>{{ t.control.title }}</h1>
         </header>
         <div class="middle" data-testid="control-middle">
@@ -257,7 +286,6 @@ onBeforeUnmount(() => {
             <template v-else>
                 <ControlMonitorCard
                     v-if="monitor"
-                    :monitors="monitors"
                     :monitor="monitor"
                     :state="state"
                     :lines="lines"
@@ -265,7 +293,6 @@ onBeforeUnmount(() => {
                     :rehearsal-running="rehearsalRunning"
                     :busy="rehearsal.busy.value"
                     :transfer="rehearsal.transfer.value"
-                    @choose="chooseMonitor"
                     @start-rehearsal="sheetOpen = true"
                     @extend="(hours) => rehearsal.extend(hours)"
                     @end-rehearsal="rehearsal.end()"
@@ -336,27 +363,100 @@ h1 {
     display: flex;
     align-items: center;
     min-width: 0;
-    padding: 8px 12px;
+    gap: 8px;
+    padding: 12px 16px;
 }
-/* Like "zurück" in the editor – a framed button with the arrow (user, 2026-11-26) –, in the dark of this page. */
+/* Head (Plan.md 137 A): the back button with the arrow alone, 44 × 44, in the frame of the editor's "zurück" (user, 2026-11-26), in the dark of this page. */
 .back {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
     flex: none;
     box-sizing: border-box;
-    min-height: 44px;
-    padding: 0 14px 0 10px;
+    width: 44px;
+    height: 44px;
     border: 1px solid #3a3f4a;
     border-radius: 10px;
     background: #1d2027;
     color: #f1f2f4;
-    font-size: 1.05rem;
     text-decoration: none;
-    white-space: nowrap;
 }
 .back:active {
     border-color: #6b7180;
+}
+/* A flex box of its own: with a percentage width on the button, Safari sized the name to almost nothing ("Confide…", user, 2026-11-27). */
+.monitor-switch {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+/* Bold, but not `strong`: ChurchTools colours that dark blue. */
+.monitor-name {
+    min-width: 0;
+    padding: 0 6px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #c9ced6;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+span.monitor-switch {
+    align-items: center;
+    height: 44px;
+}
+button {
+    border: 1px solid #3a3f4a;
+    border-radius: 8px;
+    background: #1d2027;
+    color: #f1f2f4;
+    font: inherit;
+    cursor: pointer;
+}
+/* The name as the switch: no frame, so it reads as the name; the arrow says it opens. */
+.switch-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    height: 44px;
+    padding: 0;
+    border-color: transparent;
+    background: none;
+}
+.switch-chevron {
+    flex: none;
+    color: #9aa0aa;
+}
+.switch-button[aria-expanded='true'] .switch-chevron {
+    color: #f1f2f4;
+}
+.switch-list {
+    position: absolute;
+    z-index: 5;
+    top: 100%;
+    left: 0;
+    margin: 4px 0 0;
+    padding: 4px;
+    min-width: 200px;
+    max-width: calc(100vw - 32px);
+    list-style: none;
+    border: 1px solid #3a3f4a;
+    border-radius: 10px;
+    background: #1d2027;
+}
+.switch-list button {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 12px;
+    border: 0;
+    background: none;
+    text-align: left;
+}
+.switch-list button.chosen {
+    background: #2a2e37;
+    font-weight: 600;
 }
 /* A column: the card stands, the song or the slides take what is left and roll inside their own card – the page does not scroll. */
 .middle {

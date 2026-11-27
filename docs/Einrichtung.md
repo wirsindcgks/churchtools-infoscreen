@@ -271,9 +271,9 @@ So richtest du es ein:
    „Einstellungen" ein Punkt, ist das noch zu tun.
 5. Die Seite zeigt die **Adresse der Handyseite** zum Kopieren (`…/ccm/infoscreen-designer/steuerung`). Die Musiker öffnen sie auf dem
    Handy, angemeldet in ChurchTools – oder tippen im Menü auf „Infoscreen Designer" und landen direkt dort. Wer auch in der
-   Designer-Gruppe ist, landet im Designer und wechselt mit dem Menüpunkt **„Steuerung"** unten in der Seitenleiste zur Handyseite und dort mit **„ChurchTools"** oben links zurück in den Designer. Die Handyseite zeigt oben eine **Monitor-Karte** (siehe [Funktionen](Funktionen.md#präsentationen)); ohne freigegebenen Bildschirm führt sie den Gottesdienst nach Ablauf. Für die Band gibt es eine kurze Anleitung zum Weitergeben: [Für Musiker](Musiker.md).
+   Designer-Gruppe ist, landet im Designer und wechselt mit dem Menüpunkt **„Steuerung"** unten in der Seitenleiste zur Handyseite und dort mit dem Pfeil oben links zurück in den Designer. Die Handyseite zeigt oben eine **Band** (siehe [Funktionen](Funktionen.md#präsentationen)); ohne freigegebenen Bildschirm führt sie den Gottesdienst nach Ablauf. Für die Band gibt es eine kurze Anleitung zum Weitergeben: [Für Musiker](Musiker.md).
 
-   <img src="bilder/steuerung.png" alt="Handyseite „Steuerung“: oben die Monitor-Karte „Bühne“ mit dem Chip „Gottesdienst“, darunter das laufende Lied mit den Teil-Knöpfen, der Teil „Refrain“ ist angetippt, unten „Zurück“ und „Vor“" width="320">
+   <img src="bilder/steuerung.png" alt="Handyseite „Steuerung“: oben der Name „Bühne“ und das Band „Gottesdienst“, darunter das laufende Lied mit den Teil-Knöpfen, der Teil „Refrain“ ist angetippt, unten „Zurück“ und „Vor“" width="320">
 
 **Proben vom Handy freigeben.** Auf derselben Seite „Musiker" wählst du unter **„Bildschirme für Proben"** die Bildschirme, die die Musiker
 für eine Probe überschreiben dürfen, und unter **„Präsentationen für Proben"** die Präsentationen, die sie dafür wählen dürfen. Zur Wahl
@@ -287,10 +287,10 @@ Kategorie „Steuerung". Danach auf „Rechte aktualisieren" tippen (siehe oben)
 Der Bildschirm folgt einer Probe nur, wenn die Präsentation ein Liedblatt der Quelle „Probe" hat – verliert eine freigegebene Präsentation es (oder
 wird sie umgebaut), bleibt er bei seinem Zeitplan, und die Kachel in der Übersicht zeigt keine Probe.
 
-Auf der Handyseite tippen die Musiker auf der Monitor-Karte auf **„Probe starten"**; in dem Blatt, das von unten aufgeht, wählen sie eine
-freigegebene Präsentation und die Dauer (1 bis 3 Stunden) und starten die Probe. Läuft sie, zeigt die Karte „Probe“ mit „bis …“ und dem Namen;
+Auf der Handyseite tippen die Musiker im Band auf **„Probe starten"**; in dem Blatt, das von unten aufgeht, wählen sie eine
+freigegebene Präsentation und die Dauer (1 bis 3 Stunden) und starten die Probe. Läuft sie, zeigt das Band „Probe“ mit „bis …“ und dem Namen; ein Tipp darauf öffnet ein Blatt
 mit **„+1 Std"** und **„+2 Std"** verlängern sie (höchstens vier Stunden ab jetzt), mit **„Beenden"** zeigt der Bildschirm wieder, was
-der Zeitplan vorsieht – nach wenigen Sekunden, bis dahin sagt die Karte, dass er wechselt. Das tut er auch, wenn die Dauer abläuft. Beginnt vorher eine Terminregel des Zeitplans, endet die Probe von selbst – der Gottesdienst gewinnt.
+der Zeitplan vorsieht – nach wenigen Sekunden, bis dahin sagt das Band, dass er wechselt. Das tut er auch, wenn die Dauer abläuft. Beginnt vorher eine Terminregel des Zeitplans, endet die Probe von selbst – der Gottesdienst gewinnt.
 Im Designer zeigt die Kachel des Bildschirms die laufende Probe mit Präsentation, Endzeit und Namen, nach demselben Maßstab wie der
 Fernseher; das Handy sieht nicht, ob ein Gottesdienst die Probe schon beendet hat, die Kachel schon.
 
@@ -300,7 +300,7 @@ gilt: Die Musiker sehen die Bildschirme nicht, deshalb schreibt die Seite beim �
 aktualisieren" tippen: Fernseher lesen dann „Steuerung", die Musikergruppe liest zusätzlich die Kategorie „Status", in der die Bildschirme melden, wo sie
 stehen (nur lesen). Dasselbe Leserecht auf „Status" bekommt die Musikergruppe, sobald Bildschirme für **Proben** freigegeben sind: Ein freigegebener Bildschirm
 meldet dort, welche Präsentation läuft und ob eine Probe gilt. „Status" gibt es erst, wenn ein Administrator die Startseite geöffnet hat.
-Auf der Handyseite erscheinen danach die freigegebenen Bildschirme in der Monitor-Karte (siehe [Funktionen](Funktionen.md#präsentationen)); ohne freigegebenen Bildschirm zeigt sie nur den Gottesdienst.
+Auf der Handyseite erscheinen danach die freigegebenen Bildschirme im Band (siehe [Funktionen](Funktionen.md#präsentationen)); ohne freigegebenen Bildschirm zeigt sie nur den Gottesdienst.
 
 In ChurchTools siehst du das Ergebnis an der Gruppe „Infoscreen-Musiker" unter **Einstellungen → Automatische Mitgliedschaft**: Filter
 „Mitgliedschaft in einer Gruppe" mit deinen Bandgruppen, dazu „Person ist nicht archiviert" und „Person ist nicht verstorben".

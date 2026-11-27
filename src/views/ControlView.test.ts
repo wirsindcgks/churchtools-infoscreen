@@ -107,8 +107,11 @@ describe('ControlView (Plan.md 135 C)', () => {
     it('shows the card with the chip of the service and its song, for the event the screen follows', async () => {
         const { wrapper, repository } = setup({ catalog: catalog(), positions: { s1: position({ songsheet: { source: 'agenda', eventId: 7 } }) } });
         await flushPromises();
+        // The back button is the arrow alone (Plan.md 137 A).
+        expect(wrapper.get('[data-testid="control-back"]').text()).toBe('');
         expect(wrapper.get('[data-testid="monitor-name"]').text()).toBe('Bühne');
-        expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Gottesdienst · 10:30');
+        expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Gottesdienst');
+        expect(wrapper.get('[data-testid="monitor-detail"]').text()).toBe('10:30');
         // No "?" with a sentence about who follows: it brought nothing (user, 2026-11-27).
         expect(wrapper.find('[data-testid="monitor-info"]').exists()).toBe(false);
         expect(wrapper.get('[data-testid="control-current"]').text()).toContain('Segenslied');
@@ -148,7 +151,7 @@ describe('ControlView (Plan.md 135 C)', () => {
     it('shows the slides for a presentation at the click, never together with a song', async () => {
         const { wrapper } = setup({ catalog: catalog({ screens: [], clickScreens: [{ id: 's1', name: 'Bühne' }] }), positions: { s1: position(slides) } });
         await flushPromises();
-        expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Präsentation · Ablauf');
+        expect(wrapper.get('[data-testid="monitor-band"]').text()).toBe('Präsentation · Ablauf');
         expect(wrapper.findAll('[data-testid="monitor-line"]').map((l) => l.text())).toEqual(['Folie 2 von 3 · Lieder']);
         expect(wrapper.findAll('[data-testid="slide-list"] button')).toHaveLength(3);
         expect(wrapper.find('[data-testid="control-current"]').exists()).toBe(false);
@@ -163,7 +166,7 @@ describe('ControlView (Plan.md 135 C)', () => {
         const { wrapper } = setup({ catalog: catalog(), positions: { s1: position({ rehearsal, songsheet: { source: 'rehearsal' } }) } });
         await flushPromises();
         expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Probe');
-        expect(wrapper.get('[data-testid="monitor-line"]').text()).toBe('bis 19:11 · Anna');
+        expect(wrapper.get('[data-testid="monitor-band"]').text()).toBe('Probe bis 19:11 · Anna›');
         expect(wrapper.find('[data-testid="control-rehearsal"]').exists()).toBe(true);
         expect(wrapper.find('[data-testid="control-service"]').exists()).toBe(false);
     });
@@ -199,7 +202,7 @@ describe('ControlView (Plan.md 135 C)', () => {
     it('leaves the middle empty for the schedule, and says where the screen reports nothing', async () => {
         const { wrapper } = setup({ catalog: catalog({ screens: [{ id: 's1', name: 'Bühne' }, { id: 's2', name: 'Saal' }] }), positions: { s1: position() } });
         await flushPromises();
-        expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Zeitplan · Ablauf');
+        expect(wrapper.get('[data-testid="monitor-band"]').text()).toContain('Zeitplan · Ablauf');
         // No line below: "Nichts zu schalten." confused more than it said (user, 2026-11-27).
         expect(wrapper.find('[data-testid="monitor-line"]').exists()).toBe(false);
         expect(wrapper.find('[data-testid="control-service"]').exists()).toBe(false);
@@ -216,7 +219,7 @@ describe('ControlView (Plan.md 135 C)', () => {
         const { wrapper, repository } = setup({ catalog: catalog(), positions: { s1: position() } });
         await flushPromises();
         expect(wrapper.find('[data-testid="control-screen"]').exists()).toBe(false);
-        expect(wrapper.get('[data-testid="monitor-rehearsal"]').text()).toBe('Probe starten');
+        expect(wrapper.get('[data-testid="monitor-rehearsal"]').text()).toBe('Probe starten ›');
         await wrapper.get('[data-testid="monitor-rehearsal"]').trigger('click');
         expect(wrapper.get('[role="dialog"] h2').text()).toBe('Probe auf „Bühne“');
         await wrapper.get('[data-testid="control-sheet-cancel"]').trigger('click');
@@ -235,7 +238,7 @@ describe('ControlView (Plan.md 135 C)', () => {
         expect(Date.parse(doc.until) - Date.parse(doc.at)).toBe(2 * 3600_000);
         expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
         expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Probe');
-        expect(wrapper.get('[data-testid="monitor-line"]').text()).toBe('bis 12:00 · Max');
+        expect(wrapper.get('[data-testid="monitor-band"]').classes()).toContain('tone-rehearsal');
         expect(wrapper.find('[data-testid="monitor-rehearsal"]').exists()).toBe(false);
         // Until the screen reports it, the card says that it switches (user, 2026-11-27: "es passiert nichts").
         expect(wrapper.get('[data-testid="monitor-transfer"]').text()).toBe('Wechselt zur Probe …');
@@ -258,18 +261,21 @@ describe('ControlView (Plan.md 135 C)', () => {
         const rehearsal = { until: '2026-11-26T09:52:00Z', by: 'Anna' };
         const running = (over: Partial<PositionDoc> = {}) => position({ rehearsal, songsheet: { source: 'rehearsal' }, ...over });
 
-        it('says it once in the card – chip, one line with the end and who started it – with the three buttons, and no sentences that stay', async () => {
+        it('says it once in the band – the word, the end and who started it – and opens a sheet with the three buttons, and no sentences that stay', async () => {
             const { wrapper } = setup({ catalog: catalog(), positions: { s1: running() } });
             await flushPromises();
             expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Probe');
-            expect(wrapper.findAll('[data-testid="monitor-line"]').map((l) => l.text())).toEqual(['bis 10:52 · Anna']);
+            expect(wrapper.get('[data-testid="monitor-band"]').text()).toBe('Probe bis 10:52 · Anna›');
+            expect(wrapper.find('[data-testid="monitor-line"]').exists()).toBe(false);
             // Neither the sentence about the service (it stands in the sheet "Probe starten") nor the one about who follows stays in the card.
             expect(wrapper.find('[data-testid="monitor-rehearsal-note"]').exists()).toBe(false);
             expect(wrapper.find('[data-testid="monitor-note"]').exists()).toBe(false);
             expect(wrapper.text()).not.toContain('Ein Gottesdienst laut Zeitplan');
             expect(wrapper.text()).not.toContain('Alle Probenmonitore folgen');
-            // Name and chip in one row.
-            expect(wrapper.get('.monitor-top').findAll('[data-testid="monitor-name"], [data-testid="monitor-chip"]')).toHaveLength(2);
+            // The buttons wait in the sheet that the band opens.
+            expect(wrapper.find('[data-testid="monitor-extend-1"]').exists()).toBe(false);
+            await wrapper.get('[data-testid="monitor-band"]').trigger('click');
+            expect(wrapper.get('[role="dialog"] h2').text()).toBe('Probe auf „Bühne“');
             expect(wrapper.get('[data-testid="monitor-extend-1"]').text()).toBe('+1 Std');
             expect(wrapper.get('[data-testid="monitor-extend-2"]').text()).toBe('+2 Std');
             expect(wrapper.get('[data-testid="monitor-end"]').text()).toBe('Beenden');
@@ -284,18 +290,21 @@ describe('ControlView (Plan.md 135 C)', () => {
         it('extends from the end that stands, for the presentation that runs, and shows the new end at once', async () => {
             const { wrapper, repository } = setup({ catalog: catalog(), positions: { s1: running({ playlistId: 'p1' }) } });
             await flushPromises();
+            await wrapper.get('[data-testid="monitor-band"]').trigger('click');
             await wrapper.get('[data-testid="monitor-extend-2"]').trigger('click');
             await flushPromises();
+            expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
             const doc = repository.writeOverride.mock.calls[0]![0] as { playlistId: string; until: string; by: string };
             expect(doc).toMatchObject({ playlistId: 'p1', until: '2026-11-26T11:52:00.000Z', by: 'Max' });
             expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Probe');
-            expect(wrapper.get('[data-testid="monitor-line"]').text()).toBe('bis 12:52 · Max');
+            expect(wrapper.get('[data-testid="monitor-band"]').classes()).toContain('tone-rehearsal');
             expect(wrapper.get('[data-testid="monitor-transfer"]').text()).toBe('Übernimmt die Zeit …');
         });
 
         it('ends the rehearsal and offers "Probe starten" again', async () => {
             const { wrapper, repository } = setup({ catalog: catalog(), positions: { s1: running() } });
             await flushPromises();
+            await wrapper.get('[data-testid="monitor-band"]').trigger('click');
             await wrapper.get('[data-testid="monitor-end"]').trigger('click');
             await flushPromises();
             expect(repository.writeOverride.mock.calls[0]![0]).toMatchObject({ screenId: 's1', playlistId: '', ended: true, by: 'Max' });
@@ -358,7 +367,7 @@ describe('ControlView (Plan.md 135 C)', () => {
         await wrapper.get('[data-testid="monitor-option-s2"]').trigger('click');
         await flushPromises();
         expect(controlMemory.monitorId).toBe('s2');
-        expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Zeitplan · Saalschleife');
+        expect(wrapper.get('[data-testid="monitor-band"]').text()).toContain('Zeitplan · Saalschleife');
         wrapper.unmount();
         const again = setup({ catalog: two, positions: { s2: position({ screenId: 's2' }) } });
         await flushPromises();

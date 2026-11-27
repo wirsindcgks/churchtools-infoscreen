@@ -51,8 +51,8 @@ describe('monitorState (Plan.md 135 C)', () => {
 
     it('the service: green, with the start of the event, the songs of the agenda in the middle', () => {
         const state = monitorState(position({ songsheet: { source: 'agenda', eventId: 7 } }), NOW, { ...context, eventStartMs: Date.parse('2026-11-26T09:30:00Z') })!;
-        expect(state).toMatchObject({ kind: 'service', chip: 'Gottesdienst · 10:30', middle: 'service' });
-        expect(monitorState(position({ songsheet: { source: 'agenda', eventId: 7 } }), NOW, context)!.chip).toBe('Gottesdienst');
+        expect(state).toMatchObject({ kind: 'service', chip: 'Gottesdienst', detail: '10:30', middle: 'service' });
+        expect(monitorState(position({ songsheet: { source: 'agenda', eventId: 7 } }), NOW, context)).toMatchObject({ chip: 'Gottesdienst', detail: null });
     });
 
     it('the rehearsal: yellow, until when and who started it', () => {
@@ -60,22 +60,23 @@ describe('monitorState (Plan.md 135 C)', () => {
         expect(monitorState(position({ rehearsal, songsheet: { source: 'rehearsal' } }), NOW, context)).toMatchObject({
             kind: 'rehearsal',
             chip: 'Probe',
-            lines: ['bis 19:11 · Anna'],
+            detail: 'bis 19:11 · Anna',
+            lines: [],
             middle: 'rehearsal',
         });
-        expect(monitorState(position({ rehearsal: { until: rehearsal.until } }), NOW, context)!.lines).toEqual(['bis 19:11']);
+        expect(monitorState(position({ rehearsal: { until: rehearsal.until } }), NOW, context)!.detail).toBe('bis 19:11');
     });
 
     it('the presentation at the click: violet, the slide and the last click', () => {
         const state = monitorState(clicking({ by: 'Anna', clickAt: new Date(NOW - 5000).toISOString() }), NOW, context)!;
-        expect(state).toMatchObject({ kind: 'presentation', chip: 'Präsentation · Ablauf', middle: 'slides' });
+        expect(state).toMatchObject({ kind: 'presentation', chip: 'Präsentation', detail: 'Ablauf', middle: 'slides' });
         expect(state.lines).toEqual(['Folie 2 von 3 · Lieder', 'zuletzt Anna, vor 5 s']);
         expect(monitorState(clicking({ advance: 'time-click' }), NOW, context)!.kind).toBe('presentation');
-        expect(monitorState(clicking({ playlistName: undefined }), NOW, context)!.chip).toBe('Präsentation');
+        expect(monitorState(clicking({ playlistName: undefined }), NOW, context)!.detail).toBeNull();
     });
 
     it('the schedule: grey, nothing to switch; the middle stays empty', () => {
-        expect(monitorState(position(), NOW, context)).toEqual({ kind: 'schedule', chip: 'Zeitplan · Ablauf', lines: [], middle: 'none' });
+        expect(monitorState(position(), NOW, context)).toEqual({ kind: 'schedule', chip: 'Zeitplan', detail: 'Ablauf', lines: [], middle: 'none' });
     });
 
     it('a songsheet of the rehearsal shows its song, also without a rehearsal override', () => {
