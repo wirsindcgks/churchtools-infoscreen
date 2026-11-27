@@ -54,6 +54,7 @@ function setup(read: { catalog: RehearsalCatalogDoc | null; positions?: Record<s
         writeRehearsal: vi.fn(async () => {}),
         writeOverride: vi.fn<(doc: unknown) => Promise<void>>(async () => {}),
         readClick: vi.fn(async () => null),
+        writeClick: vi.fn(async () => {}),
         writeControl: vi.fn(async () => {}),
     };
     store.repository = repository;
@@ -115,6 +116,30 @@ describe('ControlView (Plan.md 135 C)', () => {
         expect(wrapper.findAll('[data-testid="monitor-line"]').map((l) => l.text())).toEqual(['Jetzt: Segenslied']);
         expect(wrapper.find('[data-testid="monitor-switch"]').exists()).toBe(false);
         expect(repository.readPosition).toHaveBeenCalledWith('s1');
+    });
+
+    it('leads from a song in a presentation by click to its next slide (choice b), and not from the last one', async () => {
+        const { wrapper, repository } = setup({ catalog: catalog({ clickScreens: [{ id: 's1', name: 'Bühne' }] }), positions: { s1: position({ ...slides, songsheet: { source: 'agenda', eventId: 7 } }) } });
+        await flushPromises();
+        // The song is in the middle, below it the line to the next slide – no list of slides beside it.
+        expect(wrapper.get('[data-testid="control-current"]').text()).toContain('Segenslied');
+        expect(wrapper.find('[data-testid="control-slides"]').exists()).toBe(false);
+        expect(wrapper.get('[data-testid="control-next-slide"]').text()).toBe('Nächste Folie: Segen ›');
+        await wrapper.get('[data-testid="control-next-slide"]').trigger('click');
+        await flushPromises();
+        expect(repository.writeClick).toHaveBeenCalledWith(
+            expect.objectContaining({ kind: 'click', screenId: 's1', playlistId: 'p1', actions: [expect.objectContaining({ seq: 1, do: 'goto', slideId: 'c' })], by: 'Max' }),
+        );
+    });
+
+    it('shows no line to the next slide on the last slide or without slides', async () => {
+        const last = setup({ catalog: catalog({ clickScreens: [{ id: 's1', name: 'Bühne' }] }), positions: { s1: position({ ...slides, slideId: 'c', number: 3, songsheet: { source: 'agenda', eventId: 7 } }) } });
+        await flushPromises();
+        expect(last.wrapper.find('[data-testid="control-next-slide"]').exists()).toBe(false);
+        last.wrapper.unmount();
+        const byTime = setup({ catalog: catalog(), positions: { s1: position({ songsheet: { source: 'agenda', eventId: 7 } }) } });
+        await flushPromises();
+        expect(byTime.wrapper.find('[data-testid="control-next-slide"]').exists()).toBe(false);
     });
 
     it('shows the slides for a presentation at the click, never together with a song', async () => {

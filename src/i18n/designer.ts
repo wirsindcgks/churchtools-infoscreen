@@ -1642,6 +1642,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         forward: 'Vor',
         allSongs: (n: number) => `Alle Lieder (${n})`,
         after: (title: string) => `Danach: ${title} ›`,
+        nextSlide: (name: string) => `Nächste Folie: ${name} ›`,
         eventGone: 'Der Termin dieses Bildschirms ist nicht zu finden.',
         stepEnd: 'Letzter Teil – das nächste Lied kommt über „Danach“ oder mit dem Ablauf.',
         stepEndRehearsal: 'Letzter Teil – ein anderes Lied wählst du über die Suche.',

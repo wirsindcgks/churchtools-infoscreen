@@ -21,7 +21,7 @@ import ControlRehearsal from './ControlRehearsal.vue';
 import ControlRehearsalSheet from './ControlRehearsalSheet.vue';
 import ControlService from './ControlService.vue';
 import ControlSlides from './ControlSlides.vue';
-import { pollDelay } from './click-steering';
+import { buildClick, movedSlide, pollDelay } from './click-steering';
 import { leaveControl } from './control-back';
 import './control-card.css';
 import { controlMemory } from './control-memory';
@@ -151,6 +151,36 @@ function clicked(): void {
     schedule();
 }
 
+/**
+ * A presentation by click shows a song on one of its slides (Plan.md 135, user, 2026-11-26, choice b): "Vor" stays at the end of the song,
+ * so below the song a line leads to the next slide – the same click as tapping it in the list of slides.
+ */
+const nextSlide = computed(() => {
+    const p = slidesPosition.value;
+    if (!p || (middle.value !== 'service' && middle.value !== 'rehearsal')) return null;
+    const id = movedSlide(p, 1);
+    return id ? { id, name: p.slides.find((s) => s.id === id)?.name || t.control.slideLine(p.number + 1, p.total, '') } : null;
+});
+const nextSlideNotSaved = ref(false);
+async function goNextSlide(): Promise<void> {
+    const p = slidesPosition.value;
+    const target = nextSlide.value;
+    const repo = repository.value;
+    if (!p || !target || !repo || !monitor.value) return;
+    nextSlideNotSaved.value = false;
+    clicked();
+    try {
+        const current = await repo.readClick(monitor.value.id);
+        await repo.writeClick(
+            buildClick(current, { screenId: monitor.value.id, playlistId: p.playlistId, action: { do: 'goto', slideId: target.id }, at: new Date().toISOString(), by: author.value || undefined }),
+        );
+        clicked();
+    } catch (error) {
+        console.warn('Der Klick konnte nicht gespeichert werden:', error);
+        nextSlideNotSaved.value = true;
+    }
+}
+
 /** The sheet closes once the write went through; where it did not, it stays and says so. */
 async function startRehearsal(playlistId: string, hours: number): Promise<void> {
     if (await rehearsal.start(playlistId, hours)) sheetOpen.value = false;
@@ -249,6 +279,8 @@ onBeforeUnmount(() => {
                 <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
                 <ControlService v-if="middle === 'service'" :repository="repository" :author="author" :time-zone="timeZone" :event-id="serviceEventId" :show-plan="!monitor" @info="(next) => (info = next)" />
                 <ControlRehearsal v-else-if="middle === 'rehearsal' && repository" :repository="repository" :author="author" />
+                <button v-if="nextSlide" type="button" class="next-slide" data-testid="control-next-slide" @click="goNextSlide">{{ t.control.nextSlide(nextSlide.name) }}</button>
+                <p v-if="nextSlide && nextSlideNotSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
                 <p v-else-if="noProbeSheet" class="control-card note" data-testid="monitor-no-sheet">{{ t.control.noProbeSheet }}</p>
                 <ControlSlides
                     v-else-if="middle === 'slides' && repository && slidesPosition && monitor"
@@ -353,5 +385,20 @@ p {
     padding: 10px 12px;
     border-radius: 8px;
     background: #4a2020;
+}
+/* Like "Danach" below the song: dashed, quiet – the next slide of a presentation by click (Plan.md 135, choice b). */
+.next-slide {
+    min-height: 52px;
+    padding: 0 14px;
+    border: 1px dashed #3a3f4a;
+    border-radius: 12px;
+    background: transparent;
+    color: #b8bcc4;
+    font: inherit;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
 }
 </style>
