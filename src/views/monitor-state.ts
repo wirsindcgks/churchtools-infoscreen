@@ -35,8 +35,6 @@ export interface MonitorState {
     chip: string | null;
     /** What the position alone says below the chip; the middle may put its own lines in place of them (the own click, the plan of the service). */
     lines: string[];
-    /** The small sentence about who follows the song. */
-    note: string | null;
     middle: Middle;
 }
 
@@ -70,19 +68,18 @@ export function monitorState(position: PositionDoc | null, now: number, context:
     const name = position.playlistName || null;
     const clicking = position.advance !== 'time' && hasSlides(position);
     const middle: Middle = sheet ? (sheet.source === 'agenda' ? 'service' : 'rehearsal') : clicking ? 'slides' : 'none';
-    const note = sheet ? (sheet.source === 'agenda' ? t.control.followService : t.control.followRehearsal) : null;
     if (sheet?.source === 'agenda') {
         const start = context.eventStartMs ?? null;
-        return { kind: 'service', chip: t.control.monitorService(start === null ? null : clock(start, context.timeZone)), lines: [], note, middle };
+        return { kind: 'service', chip: t.control.monitorService(start === null ? null : clock(start, context.timeZone)), lines: [], middle };
     }
     if (position.rehearsal) {
-        return { kind: 'rehearsal', chip: t.control.monitorRehearsal, lines: [t.control.monitorRehearsalLine(clock(Date.parse(position.rehearsal.until), context.timeZone), firstName(position.rehearsal.by ?? null))], note, middle };
+        return { kind: 'rehearsal', chip: t.control.monitorRehearsal, lines: [t.control.monitorRehearsalLine(clock(Date.parse(position.rehearsal.until), context.timeZone), firstName(position.rehearsal.by ?? null))], middle };
     }
     if (clicking && hasSlides(position)) {
         const last = position.clickAt ? { by: position.by ?? null, at: Date.parse(position.clickAt) } : null;
-        return { kind: 'presentation', chip: t.control.monitorPresentation(name), lines: slideLines(position, last, now), note, middle };
+        return { kind: 'presentation', chip: t.control.monitorPresentation(name), lines: slideLines(position, last, now), middle };
     }
-    return { kind: 'schedule', chip: t.control.monitorSchedule(name), lines: [], note, middle };
+    return { kind: 'schedule', chip: t.control.monitorSchedule(name), lines: [], middle };
 }
 
 /**

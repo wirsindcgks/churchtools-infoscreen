@@ -109,12 +109,8 @@ describe('ControlView (Plan.md 135 C)', () => {
         await flushPromises();
         expect(wrapper.get('[data-testid="monitor-name"]').text()).toBe('Bühne');
         expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Gottesdienst · 10:30');
-        // The sentence about who follows is behind the "i": not there until it is tapped, gone with the second tap.
-        expect(wrapper.find('[data-testid="monitor-note"]').exists()).toBe(false);
-        await wrapper.get('[data-testid="monitor-info"]').trigger('click');
-        expect(wrapper.get('[data-testid="monitor-note"]').text()).toBe('Alle Liedblätter dieses Gottesdienstes folgen.');
-        await wrapper.get('[data-testid="monitor-info"]').trigger('click');
-        expect(wrapper.find('[data-testid="monitor-note"]').exists()).toBe(false);
+        // No "?" with a sentence about who follows: it brought nothing (user, 2026-11-27).
+        expect(wrapper.find('[data-testid="monitor-info"]').exists()).toBe(false);
         expect(wrapper.get('[data-testid="control-current"]').text()).toContain('Segenslied');
         // The plan stands in the card, not as a card of its own; one screen: no "Wechseln".
         expect(wrapper.find('[data-testid="control-plan"]').exists()).toBe(false);
@@ -168,8 +164,6 @@ describe('ControlView (Plan.md 135 C)', () => {
         await flushPromises();
         expect(wrapper.get('[data-testid="monitor-chip"]').text()).toBe('Probe');
         expect(wrapper.get('[data-testid="monitor-line"]').text()).toBe('bis 19:11 · Anna');
-        await wrapper.get('[data-testid="monitor-info"]').trigger('click');
-        expect(wrapper.get('[data-testid="monitor-note"]').text()).toBe('Alle Probenmonitore folgen.');
         expect(wrapper.find('[data-testid="control-rehearsal"]').exists()).toBe(true);
         expect(wrapper.find('[data-testid="control-service"]').exists()).toBe(false);
     });

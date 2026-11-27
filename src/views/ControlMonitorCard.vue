@@ -5,7 +5,6 @@
  * and end it. What the screen shows comes from its position only.
  */
 import { onBeforeUnmount, ref } from 'vue';
-import HelpButton from '../designer/HelpButton.vue';
 import Icon from '../designer/Icon.vue';
 import { t } from '../i18n/designer';
 import type { Monitor, MonitorState } from './monitor-state';
@@ -34,7 +33,6 @@ const emit = defineEmits<{ choose: [id: string]; startRehearsal: []; extend: [ho
 /** The list under "Wechseln": a tap beside it and Escape close it. */
 const open = ref(false);
 /** The sentence about who follows, shown by the "?" at the chip. */
-const infoOpen = ref(false);
 const box = ref<HTMLElement | null>(null);
 function closeOnOutside(event: Event): void {
     if (open.value && !box.value?.contains(event.target as Node)) open.value = false;
@@ -71,9 +69,7 @@ function pick(id: string): void {
             </div>
             <span v-else class="monitor-name" data-testid="monitor-name">{{ monitor.name }}</span>
             <p v-if="state?.chip" class="chip" :class="`tone-${state.kind}`" data-testid="monitor-chip"><span class="dot" aria-hidden="true" />{{ state.chip }}</p>
-            <HelpButton v-if="state?.note" :label="t.control.monitorInfo" :shown="infoOpen" data-testid="monitor-info" @toggle="infoOpen = !infoOpen" />
         </div>
-        <p v-if="state?.note && infoOpen" class="line note" data-testid="monitor-note">{{ state.note }}</p>
         <p v-if="lines.length" class="line" data-testid="monitor-line">{{ lines.join(' · ') }}</p>
         <p v-if="transfer" class="line transfer" :class="{ late: transfer === 'late' }" role="status" data-testid="monitor-transfer">
             <span v-if="transfer !== 'late'" class="transfer-ring" aria-hidden="true" /><span>{{ transferText[transfer] }}</span>
@@ -116,8 +112,11 @@ p {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+/* A flex box of its own: with a percentage width on the button, Safari sized the name to almost nothing ("Confide…", "Fo…" with room
+   beside it, user, 2026-11-27). The name gives way only where the row is really full. */
 .monitor-switch {
     position: relative;
+    display: flex;
     min-width: 0;
 }
 button {
@@ -133,7 +132,7 @@ button {
     display: flex;
     align-items: center;
     gap: 4px;
-    max-width: 100%;
+    min-width: 0;
     min-height: 36px;
     margin: 0 -6px;
     padding: 0 6px;
@@ -173,7 +172,9 @@ button {
     font-weight: 600;
 }
 /* The chip never shortens: the name gives way. */
+/* Right-aligned (user, 2026-11-27): the name on the left, what runs on the right. */
 .chip {
+    margin-left: auto;
     flex: none;
     display: inline-flex;
     align-items: center;
@@ -200,7 +201,6 @@ button {
 .tone-presentation .dot {
     background: #a78bfa;
 }
-/* The "?" at the chip is the one of the help in the inspector (user, 2026-11-27), at the end of the row. */
 /* The screen the card is about (user, 2026-11-27). */
 .monitor-icon {
     flex: none;
@@ -212,10 +212,6 @@ button {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-.line.note {
-    color: #b8bcc4;
-    white-space: normal;
 }
 .rehearsal {
     justify-self: start;
