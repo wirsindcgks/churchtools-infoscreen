@@ -4,6 +4,24 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.75.0] – 2026-11-27
+
+### Neu
+
+- **Lesemodus auf der Handyseite** (Plan.md 138). Ein Tipp auf das Auge oben rechts zeigt das laufende Lied zum
+  Mitlesen – Text mit den Akkorden darüber, etwa auf dem Tablet am Notenständer. Der Teil, der gerade dran ist, steht
+  hell oben, die anderen blass; schaltet die Band weiter, rollt die Seite mit. Wer selbst blättert, kommt mit „Zum
+  laufenden Teil“ zurück. Im Lesemodus lässt sich nichts umschalten, so verstellt niemand aus Versehen den Bildschirm.
+- **Schrift größer oder kleiner** im Lesemodus (Plan.md 138), mit „−“ und „+“ neben dem Liedtitel. Jedes Gerät merkt
+  sich seine Größe.
+
+### Geändert
+
+- **Mehr Rand auf dem Tablet** (Plan.md 138). Auf dem iPad hat die Handyseite ringsum gleich viel Abstand zum Rand; auf
+  dem Handy bleibt alles, wie es war.
+- **Anleitung für Musiker** für Handy und Tablet, mit dem Lesemodus und neuen Bildern ([Für Musiker](docs/Musiker.md)).
+- **Das Bild im README** zeigt den Editor mit dem neuen Inspektor und seinen farbigen Ebenen.
+
 ## [0.74.1] – 2026-11-27
 
 ### Geändert
@@ -2343,6 +2361,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.67.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.67.0
 [0.66.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.66.0
 [0.68.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.68.0
+[0.75.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.75.0
 [0.74.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.74.1
 [0.74.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.74.0
 [0.73.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.73.1
