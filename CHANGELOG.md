@@ -4,6 +4,52 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.72.0] – 2026-11-27
+
+Danke an Lukas ([@lub90](https://github.com/lub90)) für sein Papier „Klicksteuerung & Confidence-Monitor“, aus dem die
+Klicksteuerung und der Presenter entstanden sind.
+
+**Nach dem Hochladen einmal „Rechte aktualisieren“ antippen** (Einstellungen → Gruppen und Rechte): Erst dann lesen die
+Fernseher die Klicks und die Musiker den Stand der Bildschirme.
+
+### Neu
+
+- **Präsentationen von Hand weiterschalten** (Plan.md 124). Im Abschnitt „Präsentation“ gibt es „Weiterschalten“:
+  „Nach Zeit“ wie bisher, **„Per Klick“** oder **„Nach Zeit, Klicks greifen ein“**. Auf der Einstellungsseite „Musiker“
+  gibst du unter „Bildschirme für die Klicksteuerung“ frei, auf welchen Bildschirmen das gilt. Die Musiker schalten
+  dann auf der Handyseite Folie für Folie weiter, springen auf eine Folie oder legen „Schwarz“ über den Bildschirm. An
+  der ersten und der letzten Folie bleibt es stehen.
+- **Presenter am Gerät** (Plan.md 124). Ein Presenter (USB oder Bluetooth) am Gerät eines freigegebenen Bildschirms –
+  etwa am Raspberry Pi – schaltet dort die Folien, `b` und der Punkt legen Schwarz darüber. Einzuschalten unter
+  „Bedienung“ in den Einstellungen des Bildschirms.
+- **Presenter am Handy** (Plan.md 124). Ein mit dem Handy gekoppelter Bluetooth-Presenter schaltet auf der Handyseite
+  die Liedteile und Folien wie „Vor“ und „Zurück“.
+- **Anleitung „Für Musiker“** (Plan.md 135). Eine kurze Anleitung in einfachen Worten zum Weitergeben an die Band:
+  Seite öffnen, Gottesdienst, Probe, Presenter und was bei Meldungen zu tun ist.
+
+### Geändert
+
+- **Die Handyseite „Steuerung“ geht vom Bildschirm aus** (Plan.md 135). Statt der Bereiche „Gottesdienst“, „Probe“ und
+  „Bildschirm“ steht oben eine Karte des Bildschirms mit dem, was er zeigt (Gottesdienst, Probe, Präsentation,
+  Zeitplan), bei mehreren mit „Wechseln“. Die Mitte zeigt das Lied mit seinen Teilen oder die Folien, nie beides;
+  „Zurück“ und „Vor“ stehen fest unten, „Vor“ nennt, was kommt. Die Seite nimmt den ganzen Bildschirm ein – auch über
+  der Leiste von ChurchTools – und passt ohne Scrollen auf ein Handy.
+- **Probe als Aktion** (Plan.md 135). „Probe starten“ öffnet ein Blatt mit Präsentation und Dauer; läuft die Probe,
+  stehen „+1 Std“, „+2 Std“ und „Beenden“ in der Karte. Bis der Bildschirm gewechselt hat, sagt die Karte es mit einem
+  drehenden Kreis. Solange ein Gottesdienst läuft, gibt es „Probe starten“ nicht – so nimmt niemand ihn aus Versehen
+  heraus.
+- **Liedwahl in der Probe** (Plan.md 135). Die Lupe öffnet die Suche als Blatt, das bei offener Tastatur über ihr sitzt;
+  „Lied beenden“ steht dort. Am Ende eines Liedes bleibt „Vor“ stehen, das nächste Lied kommt über „Danach“ oder die
+  Lupe.
+- **Ladeanzeige beim Setzen der Rechte** (Plan.md 134). Solange die Einrichtung Gruppen und Rechte schreibt, dreht
+  sich ein Kreis mit der Bitte, auf der Seite zu bleiben; wer sie vorher verlässt, wird gefragt.
+
+### Behoben
+
+- **Probe nur mit Probenblatt** (Plan.md 135). Ein Bildschirm folgt einer Probe nur noch, wenn die gewählte Präsentation
+  ein Liedblatt der Quelle „Probe“ hat. Die Seite „Musiker“ hält die Liste für die Musiker aktuell, wenn eine
+  Präsentation umbenannt wurde, und warnt, wenn eine freigegebene kein Probenblatt mehr hat.
+
 ## [0.71.0] – 2026-11-26
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für die Hinweise, wo im Designer nicht klar war, worauf sich eine
@@ -2225,6 +2271,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.67.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.67.0
 [0.66.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.66.0
 [0.68.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.68.0
+[0.72.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.72.0
 [0.71.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.71.0
 [0.70.3]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.70.3
 [0.70.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.70.2
