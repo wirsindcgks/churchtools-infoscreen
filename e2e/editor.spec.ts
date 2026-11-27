@@ -73,6 +73,7 @@ test('"?" opens the overview of the handles, Escape closes it, and the hints nam
     await expect(dialog).toBeVisible();
     await page.getByTestId('shortcuts-close').click();
     await expect(dialog).toHaveCount(0);
+    await openSection(page, 'slide');
     await page.getByTestId('slide-name').focus();
     await page.keyboard.press('Shift+?');
     await expect(dialog).toHaveCount(0);

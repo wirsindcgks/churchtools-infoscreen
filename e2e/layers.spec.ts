@@ -32,7 +32,7 @@ test.describe('on a desktop', () => {
 
         // Nothing is chosen: the blocks stand first in the inspector.
         const section = page.getByTestId('slide-blocks');
-        await expect(section).toContainText('Bausteine dieser Folie');
+        await expect(section).toContainText('Bausteine');
         await expect(section).toContainText('oben = vorne');
         const rows = section.getByTestId('layer-row');
         await expect(rows).toHaveCount(3);

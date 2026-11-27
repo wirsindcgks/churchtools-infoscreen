@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addBlock, expectSlides, openSection } from './helpers';
+import { addBlock, expectSlides, openInspector, openSection } from './helpers';
 
 // The division of a slide (Plan.md 87 B): dashed areas as a guide, a "+" in an empty one – in demo mode.
 test.use({ viewport: { width: 1440, height: 900 } });
@@ -200,7 +200,7 @@ test('dragged into an occupied area, a block stays free and keeps its size', asy
     await expect(page.getByTestId('region-fixed')).not.toBeChecked();
 });
 
-test('opening one section of the inspector folds the other; "Bausteine dieser Folie" stays open (Plan.md 91)', async ({ page }) => {
+test('opening one section of the inspector folds the other; "Bausteine" stays open (Plan.md 91, 133)', async ({ page }) => {
     await emptySlide(page);
     await addBlock(page, 'shape');
     await openSection(page, 'arrange');
@@ -214,6 +214,35 @@ test('opening one section of the inspector folds the other; "Bausteine dieser Fo
     await openSection(page, 'layout');
     await expect(page.getByTestId('slide-blocks')).toHaveAttribute('open', '');
     await expect(page.getByTestId('section-layout')).toHaveAttribute('open', '');
+    // "Folie" stands in the group, too: opening it folds "Aufteilung".
+    await openSection(page, 'slide');
+    await expect(page.getByTestId('section-layout')).not.toHaveAttribute('open', '');
+    await expect(page.getByTestId('slide-blocks')).toHaveAttribute('open', '');
+});
+
+// The sections "Folie" to "Präsentation" stand at the bottom of the inspector where it is a column; on a phone they follow the list (Plan.md 133).
+test('the slide and the playlist stay at the bottom of the inspector with many blocks; on a phone they follow the list', async ({ page }) => {
+    await emptySlide(page);
+    for (let i = 0; i < 30; i += 1) await addBlock(page, 'shape');
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('level-playlist')).toBeVisible();
+    const inspector = page.locator('aside.inspector');
+    const head = page.getByTestId('section-playlist-toggle');
+    const bottomGap = async () => (await inspector.boundingBox())!.y + (await inspector.boundingBox())!.height - ((await head.boundingBox())!.y + (await head.boundingBox())!.height);
+    expect(await bottomGap()).toBeLessThan(40);
+    // Open, "Präsentation" takes at most half the height and rolls itself.
+    await openSection(page, 'playlist');
+    const box = (await page.locator('.inspector-pinned').boundingBox())!;
+    expect(box.height).toBeLessThanOrEqual((await inspector.boundingBox())!.height / 2 + 1);
+    // The list rolls above, the head of "Präsentation" stays inside the inspector.
+    expect((await head.boundingBox())!.y).toBeGreaterThan((await inspector.boundingBox())!.y);
+
+    // A phone: one column, the playlist below the list.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openInspector(page);
+    const list = (await page.getByTestId('slide-blocks').boundingBox())!;
+    await expect(page.getByTestId('level-playlist')).toBeAttached();
+    expect((await page.getByTestId('level-playlist').boundingBox())!.y).toBeGreaterThan(list.y + list.height - 1);
 });
 
 test('a wider or no gap takes the fixed block along (Plan.md 92)', async ({ page }) => {

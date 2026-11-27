@@ -16,6 +16,7 @@ import { useEditorStore } from './editor-store';
 import ArrangeField from './ArrangeField.vue';
 import Icon from './Icon.vue';
 import { useGeneralHelp } from './help/register';
+import InspectorDivider from './InspectorDivider.vue';
 import InspectorHelp from './InspectorHelp.vue';
 import InspectorSection from './InspectorSection.vue';
 import { BLOCK_INSPECTORS } from './inspector/blocks';
@@ -89,6 +90,8 @@ useGeneralHelp(() => (editor.templateEdit && !selection.value.length ? [{ term: 
 
 /** The layers, top first. */
 const rows = computed(() => layerRows(editor.slide?.blocks ?? []));
+/** Nothing chosen and no template open: the slide, the playlist and their dividers show (Plan.md 133). */
+const slideLevel = computed(() => !selection.value.length && !editor.templateEdit);
 const layerNumber = computed(() => (block.value ? (editor.slide?.blocks.findIndex((b) => b.id === block.value!.id) ?? -1) + 1 : 0));
 const LAYERS = [
     { where: 'front', icon: 'layer-front', label: t.inspector.layers.front },
@@ -99,7 +102,7 @@ const LAYERS = [
 </script>
 
 <template>
-    <aside class="inspector">
+    <aside class="inspector" :class="{ 'inspector--slide': slideLevel }">
         <section v-if="selection.length" data-testid="block-inspector">
             <div class="block-head">
                 <div class="head-title">
@@ -291,13 +294,19 @@ const LAYERS = [
         </section>
 
         <template v-else>
-            <!-- Without a block chosen the slide's blocks come first, for the finger and for blocks hidden under others. -->
-            <InspectorSection v-if="rows.length" id="slide-blocks" summary="" :group="false" :title="t.inspector.slideBlocks" default-open class="slide-blocks" data-testid="slide-blocks">
-                <p class="layer-position">{{ t.inspector.topIsFront }}</p>
-                <LayerList @picked="emit('picked')" />
-            </InspectorSection>
-            <!-- Slide and playlist -->
-            <SlideInspector />
+            <!-- Without a block chosen: the slide's blocks on top, rolling; slide to playlist below, pinned to the bottom
+                 where the inspector is a column (Plan.md 133). -->
+            <div class="inspector-flow">
+                <InspectorDivider :label="t.inspector.levels.onSlide" testid="level-on-slide" />
+                <InspectorSection v-if="rows.length" id="slide-blocks" summary="" :group="false" :title="t.inspector.blocksTitle" default-open class="slide-blocks" data-testid="slide-blocks">
+                    <p class="layer-position">{{ t.inspector.topIsFront }}</p>
+                    <LayerList @picked="emit('picked')" />
+                </InspectorSection>
+                <p v-else class="layer-position no-blocks" data-testid="no-blocks">{{ t.inspector.noBlocks }}</p>
+            </div>
+            <div class="inspector-pinned">
+                <SlideInspector />
+            </div>
         </template>
     </aside>
 </template>
@@ -319,6 +328,29 @@ const LAYERS = [
         overflow-x: hidden;
         padding-top: var(--d-space-3);
     }
+}
+/* Where the inspector is a column (same query as the editor's): the blocks roll, slide to playlist stay at the bottom, folded
+   they take little room, open at most half the height and roll themselves (Plan.md 133). Elsewhere (the sheet) one column. */
+@media (min-width: 75.0625rem), (min-width: 48.0625rem) and (orientation: landscape) {
+    .inspector--slide {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .inspector--slide .inspector-flow {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+    }
+    .inspector--slide .inspector-pinned {
+        flex: none;
+        max-height: 50%;
+        overflow-y: auto;
+        border-top: 1px solid var(--d-divider);
+    }
+}
+.no-blocks {
+    margin-top: var(--d-space-3);
 }
 section {
     display: grid;

@@ -63,6 +63,34 @@ describe('the layers (Plan.md 79, B3; Plan.md 88: the list stands with nothing c
     });
 });
 
+describe('the levels of the inspector (Plan.md 133)', () => {
+    it('puts a divider before each level while nothing is chosen: blocks, slide, playlist', async () => {
+        const editor = await open();
+        editor.addBlock('text');
+        editor.selectBlock(null);
+        const wrapper = mountInspector();
+        const dividers = wrapper.findAll('[role="heading"]');
+        expect(dividers.map((d) => d.attributes('data-testid'))).toEqual(['level-on-slide', 'level-this-slide', 'level-playlist']);
+        expect(dividers.map((d) => d.text())).toEqual(['Auf der Folie', 'Diese Folie', 'Ganze Präsentation']);
+        expect(wrapper.get('[data-testid="slide-blocks"]').text()).toContain('Bausteine');
+        expect(wrapper.find('[data-testid="no-blocks"]').exists()).toBe(false);
+    });
+
+    it('says so under "Auf der Folie" when the slide has no blocks', async () => {
+        await open();
+        const wrapper = mountInspector();
+        expect(wrapper.find('[data-testid="slide-blocks"]').exists()).toBe(false);
+        expect(wrapper.get('[data-testid="no-blocks"]').text()).toBe('Noch keine Bausteine auf dieser Folie.');
+    });
+
+    it('shows no divider once a block is chosen', async () => {
+        const editor = await open();
+        editor.addBlock('text');
+        const wrapper = mountInspector();
+        for (const id of ['level-on-slide', 'level-this-slide', 'level-playlist']) expect(wrapper.find(`[data-testid="${id}"]`).exists()).toBe(false);
+    });
+});
+
 describe('"Drehung und Deckkraft" (Plan.md F1)', () => {
     it('writes rotation and opacity, and takes the field away again at 0° and 100 %', async () => {
         const editor = await open();
