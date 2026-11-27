@@ -1664,6 +1664,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         readerFollow: 'Zum laufenden Teil',
         readerSmaller: 'Schrift kleiner',
         readerLarger: 'Schrift größer',
+        readerReset: (size: string) => `Schrift ${size} – zurück auf 100 %`,
         presenterDetected: 'Presenter erkannt: Vor und Zurück schalten wie die Knöpfe.',
         monitorSwitchLabel: (name: string) => `Bildschirm wechseln, jetzt „${name}“`,
         monitorSilent: 'Der Bildschirm meldet sich nicht – ist er an?',

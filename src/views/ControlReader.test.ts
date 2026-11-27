@@ -47,6 +47,20 @@ describe('ControlReader (Plan.md 138)', () => {
         expect(reader().get('[data-testid="reader-scroller"]').attributes('style')).toContain('--reader-scale: 2');
     });
 
+    it('shows the size between "−" and "+"; a tap on it goes back to 100 %, where it rests', async () => {
+        const wrapper = reader();
+        const reset = () => wrapper.get('[data-testid="reader-reset"]');
+        expect(reset().text()).toBe('100 %');
+        expect(reset().attributes('disabled')).toBeDefined();
+        await wrapper.get('[data-testid="reader-larger"]').trigger('click');
+        await wrapper.get('[data-testid="reader-larger"]').trigger('click');
+        expect(reset().text()).toBe('130 %');
+        await reset().trigger('click');
+        expect(wrapper.get('[data-testid="reader-scroller"]').attributes('style')).toContain('--reader-scale: 1');
+        expect(reset().text()).toBe('100 %');
+        expect(localStorage.getItem('infoscreen-designer.control-reading-scale')).toBe('1');
+    });
+
     it('goes down to the smallest step and stops there', async () => {
         const wrapper = reader();
         for (let i = 0; i < 3; i++) await wrapper.get('[data-testid="reader-smaller"]').trigger('click');

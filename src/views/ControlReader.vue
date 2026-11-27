@@ -102,8 +102,15 @@ onBeforeUnmount(() => {
     clearTimeout(settle);
 });
 
+/** The step of 100 %: where the reader starts, and where a tap on the shown size brings it back (user, 2026-11-27). */
+const DEFAULT_INDEX = scaleSteps.indexOf(1);
+const percent = computed(() => `${Math.round(scale.value * 100)} %`);
+
 async function step(by: number): Promise<void> {
-    scaleIndex.value = Math.min(scaleSteps.length - 1, Math.max(0, scaleIndex.value + by));
+    await setScale(scaleIndex.value + by);
+}
+async function setScale(index: number): Promise<void> {
+    scaleIndex.value = Math.min(scaleSteps.length - 1, Math.max(0, index));
     writeScale(scaleIndex.value);
     await nextTick();
     toRunning(false);
@@ -118,6 +125,8 @@ async function step(by: number): Promise<void> {
             <span class="reader-gap" />
             <template v-if="title !== null && parts.length">
                 <button type="button" class="size" :aria-label="t.control.readerSmaller" :disabled="scaleIndex === 0" data-testid="reader-smaller" @click="step(-1)"><Icon name="minus" :size="22" /></button>
+                <!-- The size as it is; a tap sets it back to 100 % (user, 2026-11-27: how does one get back to the default?). -->
+                <button type="button" class="size size-reset" :aria-label="t.control.readerReset(percent)" :disabled="scaleIndex === DEFAULT_INDEX" data-testid="reader-reset" @click="setScale(DEFAULT_INDEX)">{{ percent }}</button>
                 <button type="button" class="size" :aria-label="t.control.readerLarger" :disabled="scaleIndex === scaleSteps.length - 1" data-testid="reader-larger" @click="step(1)"><Icon name="plus" :size="22" /></button>
             </template>
         </header>
@@ -200,6 +209,21 @@ async function step(by: number): Promise<void> {
 .size:disabled {
     opacity: 0.4;
 }
+/* The shown size: as wide as "175 %", quiet; at 100 % it rests (nothing to set back) but stays readable. */
+.size-reset {
+    width: auto;
+    min-width: 64px;
+    padding: 0 8px;
+    background: none;
+    color: #c9ced6;
+    font: inherit;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+}
+.size-reset:disabled {
+    opacity: 0.7;
+    cursor: default;
+}
 .none {
     margin: 0;
     color: #b8bcc4;
@@ -215,6 +239,8 @@ async function step(by: number): Promise<void> {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    /* Never sideways – whatever is too wide breaks (see .segment). */
+    overflow-x: hidden;
     overscroll-behavior: contain;
     /* Room below, so that the last parts too can come to the top. */
     padding-bottom: 50%;
@@ -244,10 +270,13 @@ async function step(by: number): Promise<void> {
     flex-wrap: wrap;
     white-space: pre-wrap;
 }
+/* A piece may itself break (user, 2026-11-27: with a large font the page could be pushed sideways): never wider than the line. */
 .segment {
     display: inline-flex;
     flex-direction: column;
     vertical-align: bottom;
+    min-width: 0;
+    max-width: 100%;
 }
 .chord {
     padding-right: 0.4em;
@@ -259,7 +288,8 @@ async function step(by: number): Promise<void> {
 }
 .syllable {
     min-height: 1.25em;
-    white-space: pre;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 .follow {
     position: absolute;
