@@ -4,6 +4,20 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.74.1] – 2026-11-27
+
+### Geändert
+
+- **Wörter statt Pfeile auf der Handyseite** (Plan.md 137). Wo bisher ein kleines „›“ stand, steht jetzt ein Wort in
+  einem Rahmen: „Ändern“ im gelben Band einer Probe (dahinter „+1 Std“, „+2 Std“ und „Beenden“), „Probe starten“ im
+  grauen Band und „Weiter“ in der Zeile „Danach“ des Gottesdienstes.
+- **„Lied beenden“ steht am letzten Teil** (Plan.md 137). In der Probe muss man dafür nicht mehr die Suche öffnen; dort
+  bleibt der Knopf für die Mitte eines Lieds.
+- **Kürzere Namen der Arrangements** (Plan.md 137). Das Wort „Arrangement“ fällt weg: aus „Standard-Arrangement“ wird
+  „Standard“, aus „Neues Arrangement“ wird „Neu“. Lange eigene Namen werden mit „…“ gekürzt, die Tonart bleibt immer
+  ganz stehen.
+- **TV-Symbol vor dem Namen des Bildschirms** (Plan.md 137), damit klar ist, dass oben der Bildschirm steht.
+
 ## [0.74.0] – 2026-11-27
 
 ### Neu
@@ -2329,6 +2343,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.67.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.67.0
 [0.66.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.66.0
 [0.68.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.68.0
+[0.74.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.74.1
 [0.74.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.74.0
 [0.73.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.73.1
 [0.73.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.73.0
