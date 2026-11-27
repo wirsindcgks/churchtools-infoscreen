@@ -426,9 +426,11 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await expect(page.locator('.editor-stage').getByTestId('list-place').first()).toContainText('Kirchsaal');
     await expect(page.getByTestId('quick-menu')).toBeVisible(); // the short menu over the list (Plan.md 79, C1)
     await expect(page.getByTestId('save-status')).toContainText('Entwurf gesichert', { timeout: 15_000 });
-    // The inspector from its top: the levels of the block with their tinted areas (Plan.md 133) stand in the picture of the README.
-    await page.locator('aside.inspector').evaluate((el) => el.querySelectorAll('*').forEach((n) => n.scrollTop > 0 && (n.scrollTop = 0)));
-    await page.locator('aside.inspector').evaluate((el) => (el.scrollTop = 0));
+    // Nothing chosen for the picture of the README: the inspector shows its levels on their tinted areas (Plan.md 133) –
+    // „Auf der Folie“ with the blocks, „Diese Folie“ and „Ganze Präsentation“ below (user, 2026-11-27).
+    await page.keyboard.press('Escape');
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
+    await expect(page.getByTestId('level-on-slide')).toBeVisible();
     await shoot(page, 'editor');
 
     // Every block of the slide, with the field "Ausrichten" of the short menu open (Plan.md 79, D4).
