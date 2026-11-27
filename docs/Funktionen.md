@@ -150,7 +150,7 @@ Bridge, „Pre“, „Intro“, „Tag“, „Schluss“ …): aus der **Bemerku
 Arrangements**. Dann führt „Weiter“ in dieser Reihenfolge durch das Lied, Wiederholungen eingeschlossen; derselbe Teil zweimal
 hintereinander ist ein Schritt („Bridge 2×“). Teile, die im Ablauf nicht vorkommen, stehen auf dem Handy darunter unter „Nicht im
 Ablauf“ – zum spontanen Hinspringen. Statt zu tippen geht auch ein **Bluetooth-Presenter**, mit dem Handy gekoppelt: Bild ab
-oder Pfeil rechts wirkt wie „Weiter“, Bild auf oder Pfeil links wie „Zurück“, auch im Bereich „Probe“; beim ersten Klick steht
+oder Pfeil rechts wirkt wie „Weiter“, Bild auf oder Pfeil links wie „Zurück“, auch in der Probe; beim ersten Klick steht
 „Presenter erkannt“ unter den Knöpfen. Das Handy muss dafür entsperrt sein und die Seite offen haben – die Seite hält den
 Bildschirm an, solange sie offen ist. Der Schalter „Nach Zeit blättern“ ist für Gemeinden ohne Handysteuerung: Dann steht der ganze Text in **Spalten**
 und der Baustein blättert nach der Dauer des Liedes. Der Schalter „Akkorde“ blendet die Akkorde aus. Die **Quelle** „Probe“ statt „Ablauf“ zeigt das Lied, das die Musiker auf der Handyseite frei wählen, ohne Termin – für eine eigene Probenpräsentation (siehe [Einrichtung](Einrichtung.md#proben)); die Musiker können diese Präsentation auch vom Handy auf einen freigegebenen Bildschirm holen; vor der ersten Wahl steht ein QR-Code zur Steuerung da.
@@ -260,30 +260,39 @@ verknüpfte, die sich gemeinsam ändern. Auf Wunsch zeigt ein Fortschrittsbalken
 Die Vorschau im Editor läuft bei „Per Klick“ nicht von selbst weiter – mit den Pfeilen schaltest du von Hand. Klicks wirken nur auf Bildschirmen, die
 auf der Einstellungsseite „Musiker“ für die Klicksteuerung freigegeben sind (siehe [Einrichtung](Einrichtung.md)).
 
-**Vom Handy weiterschalten.** Die Handyseite „Steuerung“ nimmt den ganzen Bildschirm ein, auch über der Leiste von ChurchTools; „ChurchTools“ oben links führt zurück – in den Designer, wenn man von dort kam, sonst zur vorigen Seite von ChurchTools. Nichts muss gescrollt werden: Zurück und Weiter stehen immer unten, nur eine lange Liste in der Mitte rollt. Auf der Handyseite gibt es neben „Gottesdienst“ und „Probe“ den Bereich **„Bildschirm“** – er erscheint nur,
-wenn mindestens ein Bildschirm für die Klicksteuerung freigegeben ist. Dort wählen die Musiker den Bildschirm und sehen, wo er steht („Folie 3 von 12 – Name“).
-Große Knöpfe schalten **Zurück** und **Vor**, **Schwarz** legt Schwarz über den Bildschirm (ein weiterer Tipp, auch auf Vor oder Zurück, nimmt es weg), und in der Liste
-darunter springt ein Tipp auf eine Folie. Darunter steht, wer zuletzt geklickt hat („zuletzt Anna, vor 5 s“) – ein Klick kommt nach ein bis zwei Sekunden am
-Bildschirm an. Steht der Bildschirm auf einer Folie mit **Liedblatt**, schalten Vor und Zurück erst die Teile des Liedes (wie im Bereich „Gottesdienst“ bzw. „Probe“) und
-danach die Folie. Auch hier geht ein **Bluetooth-Presenter**: Bild ab und Pfeil rechts wirken wie Vor, Bild auf und Pfeil links wie Zurück. Läuft auf dem
-Bildschirm keine Präsentation mit Klicksteuerung, steht das da, und die Knöpfe ruhen.
+**Vom Handy weiterschalten.** Die Handyseite „Steuerung“ nimmt den ganzen Bildschirm ein, auch über der Leiste von ChurchTools; „ChurchTools“ oben links führt zurück – in den Designer, wenn man von dort kam, sonst zur vorigen Seite von ChurchTools. Nichts muss gescrollt werden: Nur eine lange Liste von Teilen oder Folien rollt in ihrer Karte, die laufende bleibt sichtbar.
 
-**An den Enden bleibt es stehen.** Auf der letzten Folie bewirkt Vor nichts, auf der ersten Zurück nichts – es gibt keinen Umlauf (der Lauf nach Zeit
-läuft dagegen weiter im Kreis). Ebenso bleibt es am letzten Teil eines Liedes: Vor geht weder zum nächsten Lied noch zur nächsten Folie, am ersten Teil
-geht Zurück nicht weiter; der Knopf ist dann ausgegraut, mit dem Hinweis „Letzter Teil“. Das Lied wechselt, wenn der Ablauf zum nächsten Programmpunkt
-geht oder ein Musiker im Bereich „Gottesdienst“ (bzw. „Probe“) ein anderes wählt. Auf Folien ohne Liedblatt bleiben die Knöpfe bedienbar: Ob ein
-blätternder Baustein dort noch eine Seite hat, weiß nur der Bildschirm. Die Bereiche „Gottesdienst“ und „Probe“ laufen weiter über die Grenze eines Liedes.
+Die Seite geht vom **Monitor** aus, nicht von einem Bereich. Ganz oben steht die **Monitor-Karte**, flach gehalten, damit das Lied den Platz bekommt: in einer Zeile der Name des Bildschirms und dahinter ein **Chip**, was gerade läuft, bei mehreren rechts **„Wechseln“** (die Seite merkt sich den letzten); darunter eine kleine Zeile. Wo es einen Satz dazu gibt, wer dem Lied folgt, steht am Chip ein kleines **„i“** – ein Tipp blendet den Satz ein, ein zweiter blendet ihn wieder aus:
+
+- grün **„Gottesdienst · 10:30“** – der Bildschirm zeigt ein Liedblatt mit der Quelle „Ablauf“; darunter „Jetzt: Predigt · 3:12“, das „i“ sagt, dass alle Liedblätter dieses Gottesdienstes folgen;
+- gelb **„Probe“** – die Musiker haben den Bildschirm für eine Probe übernommen, darunter „bis 19:11 · Anna“ (Ende und Name, nicht doppelt im Chip); das „i“ sagt, dass alle Probenmonitore dem Lied folgen;
+- lila **„Präsentation · Name“** – eine Präsentation per Klick; darunter „Folie 2 von 5 · Lieder“ und „zuletzt Anna, vor 5 s“;
+- grau **„Zeitplan · Name“** – der Bildschirm läuft nach Zeit, es gibt nichts zu schalten.
+
+Meldet sich der Bildschirm nicht, steht das da („ist er an?“). 
+**Proben starten und beenden.** Wo der Bildschirm für Proben freigegeben ist, bietet die Karte **„Probe starten“** an. Der Knopf öffnet ein **Blatt von unten**: „Probe auf „Bühne““, die Präsentation (nur freigegebene mit Probenblatt; gibt es nur eine, ist sie schon gewählt), die Dauer 1, 2 oder 3 Stunden (vorgewählt sind 2) dazu der Satz „Ein Gottesdienst laut Zeitplan beendet die Probe.“ (man liest ihn vor dem Start, nicht mehr in der Karte) und der große Knopf „Probe starten“; „Abbrechen“, ein Tipp neben das Blatt und die Esc-Taste schließen es. Danach zeigt die Karte die Probe: der Chip „Probe“, darunter „bis 10:52 · Anna“ und drei flache, kleine Knöpfe in einer Zeile – **„+1 Std“** und **„+2 Std“** schieben das Ende um diese Zeit weiter (höchstens vier Stunden ab jetzt), **„Beenden“** schaltet den Bildschirm sofort auf den Zeitplan zurück. Beginnt vorher ein Gottesdienst laut Zeitplan, endet die Probe von selbst.
+
+
+Die **Mitte** richtet sich nach dem Stand – nie zwei Dinge zugleich: bei einem Liedblatt die **Liedkarte** mit den Teilen als Raster (der laufende blau), darunter „Danach: nächstes Lied ›“ (ein Tipp wählt dessen ersten Teil) und die ausklappbare Liste **„Alle Lieder“**; in der Probe stattdessen die **Liedkarte** mit „Titel · Tonart“ in einer Zeile, rechts der **Lupe** (sie öffnet die Suche als Blatt von unten; dort steht unten auch **„Lied beenden“** als Textknopf) und, wo es mehrere gibt, den Arrangements als kleinen Knöpfen unter dem Titel. Die Liedkarte füllt den Rest der Mitte: bis zu acht Teile stehen auch auf einem kleinen Handy ohne Rollen, darunter in der Karte die kleine Zeile „Letzter Teil – …“, wenn man am Ende ist. Zeigt der Bildschirm trotz laufender Probe kein Probenblatt, sagt die Mitte „Der Bildschirm zeigt kein Probenblatt.“; bei einer Präsentation per Klick die **Folienliste**; läuft der Bildschirm nach Zeit, bleibt die Mitte leer. Der Liedteil gilt wie bisher je Gottesdienst bzw. für alle Probenmonitore – alle Liedblätter folgen. Ist kein Bildschirm freigegeben, zeigt die Seite nur die Gottesdienst-Ansicht ohne Karte (Termin, Liedkarte, „Danach“).
+
+Unten stehen fest **Zurück** und **Vor**. „Vor“ ist der Hauptknopf und nennt klein, was kommt („Strophe 2“, der Name der Folie); nur wenn die Mitte die Folien zeigt, gibt es dazu **Schwarz** (ein weiterer Tipp, auch auf Vor oder Zurück, nimmt es weg). Ein Klick kommt nach ein bis zwei Sekunden am Bildschirm an. Auch hier geht ein **Bluetooth-Presenter**: Bild ab und Pfeil rechts wirken wie Vor, Bild auf und Pfeil links wie Zurück.
+
+**An den Enden bleibt es stehen.** Auf der letzten Folie bewirkt Vor nichts, auf der ersten Zurück nichts – es gibt keinen Umlauf (der Lauf nach Zeit läuft dagegen weiter im Kreis). Ebenso bleibt es am letzten Teil eines Liedes: Vor geht nicht zum nächsten Lied, am ersten Teil geht Zurück nicht weiter; der Knopf ist dann ausgegraut (grau wie die anderen, nicht in abgedunkeltem Blau), und die Liedkarte sagt „Letzter Teil“. Das nächste Lied kommt über „Danach“ oder mit dem Ablauf. Steht das Lied auf einer Folie einer Präsentation per Klick, führt darunter die Zeile **„Nächste Folie: <Name> ›“** weiter – so kommt man vom Liedende auf die nächste Folie, ohne dass Vor seine Regel ändert. Auf Folien bleiben die Knöpfe bedienbar: Ob ein blätternder Baustein dort noch eine Seite hat, weiß nur der Bildschirm.
 
 ```mermaid
 flowchart LR
-    H["Handy<br>Bereich „Bildschirm“"]
-    S["Kategorie „Steuerung“<br>Klick je Bildschirm"]
     B["Bildschirm<br>Player"]
     T["Kategorie „Status“<br>Stand je Bildschirm"]
-    H -->|"Vor, Zurück, Schwarz"| S
+    K["Monitor-Karte<br>Chip und Zeilen"]
+    M["Mitte<br>Lied oder Folien"]
+    L["Leiste<br>Zurück, Vor, Schwarz"]
+    S["Kategorie „Steuerung“<br>Wahl und Klick"]
+    B -->|"meldet Präsentation, Probe, Liedblatt, Folie"| T
+    T -->|"liest alle 3 Sekunden"| K
+    K --> M
+    M --- L
+    L -->|"schreibt"| S
     S -->|"liest jede Sekunde"| B
-    B -->|"meldet Folie und Schwarz"| T
-    T -->|"liest alle 3 Sekunden"| H
 ```
 
 ![Präsentationen als Kacheln mit Format, Zahl der Folien und den Bildschirmen, die sie zeigen](bilder/playlists.png)

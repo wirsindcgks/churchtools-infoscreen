@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * The area "Probe" of the phone page (Plan.md 121, "Proben"): the musicians search a song of the song database, choose its arrangement and
- * tap its parts. A tap writes the rehearsal choice into the category `steuerung` – one for all rehearsal screens, independent of any event.
- * What another musician chose later is read every few seconds and shown here too.
+ * The song of the rehearsal on the phone page (Plan.md 121, "Proben", 135 C, D): the musicians search a song of the song database in a sheet
+ * from below, choose its arrangement and tap its parts. A tap writes the rehearsal choice into the category `steuerung` – one for all rehearsal screens,
+ * independent of any event. What another musician chose later is read every few seconds and shown here too.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue';
 import { stepSection, type RehearsalDoc } from '../agenda/control';
@@ -12,12 +12,14 @@ import { t } from '../i18n/designer';
 import { loadArrangementSheet } from '../player/data';
 import type { ScreenRepository } from '../store/screen-repository';
 import Icon from '../designer/Icon.vue';
-import ControlScreen from './ControlScreen.vue';
-import ControlSong from './ControlSong.vue';
+import ControlBar from './ControlBar.vue';
+import ControlSheet from './ControlSheet.vue';
+import ControlSongCard from './ControlSongCard.vue';
 import { arrangementLabels } from './arrangement-labels';
+import { sectionName } from './song-steps';
 import { usePresenterKeys } from '../player/presenter-keys';
 
-const props = defineProps<{ repository: ScreenRepository; author: string; timeZone: string }>();
+const props = defineProps<{ repository: ScreenRepository; author: string }>();
 
 const POLL_MS = 2500;
 const SEARCH_MS = 300;
@@ -43,11 +45,8 @@ let loadRun = 0;
 let pollTimer: ReturnType<typeof setTimeout> | undefined;
 let gone = false;
 
-/**
- * Search, then play (user, 2026-11-13): with a song the search folds away behind "Anderes Lied"; without one it is all there is.
- */
+/** Search, then play (user, 2026-11-13): the search is a sheet from below, so the song and its parts keep the whole page. */
 const searchOpen = ref(false);
-const showSearch = computed(() => !song.value || searchOpen.value);
 const searchInput = useTemplateRef<HTMLInputElement>('searchInput');
 
 async function openSearch(): Promise<void> {
@@ -71,6 +70,10 @@ const presenter = usePresenterKeys((by) => {
     const target = by === 1 ? following.value : previous.value;
     if (target !== null) void choose(target);
 });
+
+const forwardHint = computed(() => (following.value === null || !sheet.value ? '' : sectionName(sheet.value.sections[following.value], following.value)));
+/** At the last part "Vor" stays (Plan.md 124): the song changes by the search. */
+const atEnd = computed(() => !!sheet.value && section.value !== null && following.value === null);
 
 const labels = computed(() => arrangementLabels(arrangements.value, t.control.arrangement));
 
@@ -189,7 +192,6 @@ async function adopt(doc: RehearsalDoc): Promise<void> {
     }
     if (song.value?.id !== doc.songId) {
         // Whoever is typing a search keeps it open; the song of the other musician shows once it is closed.
-        if (!song.value && query.value.trim()) searchOpen.value = true;
         song.value = await fetchSong(doc.songId);
     }
     await showArrangement(doc.arrangementId, doc.section);
@@ -232,16 +234,10 @@ onBeforeUnmount(() => {
 
 <template>
     <div class="rehearsal" data-testid="control-rehearsal">
-        <ControlScreen :repository="repository" :author="author" :time-zone="timeZone" />
         <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
         <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
-        <template v-if="showSearch">
-            <div class="field search-row">
-                <input ref="searchInput" v-model="query" type="search" class="search" :placeholder="t.control.search" :aria-label="t.control.search" data-testid="rehearsal-search">
-                <button v-if="song" type="button" class="icon" :aria-label="t.control.closeSearch" :title="t.control.closeSearch" @click="closeSearch">
-                    <Icon name="close" :size="20" />
-                </button>
-            </div>
+        <ControlSheet v-if="searchOpen" :title="t.control.chooseSong" @close="closeSearch">
+            <input ref="searchInput" v-model="query" type="search" class="search" :placeholder="t.control.search" :aria-label="t.control.search" data-testid="rehearsal-search">
             <p v-if="searching" class="note">{{ t.control.searching }}</p>
             <p v-else-if="searched && !results.length" class="note" data-testid="rehearsal-none">
                 {{ t.control.noSong }}
@@ -253,57 +249,71 @@ onBeforeUnmount(() => {
                     </button>
                 </li>
             </ul>
-        </template>
-        <template v-if="song && !searchOpen">
-            <!-- Title and magnifier in one frame like a search field: it is the title that is searched (user, 2026-11-13); the whole frame opens the search. -->
-            <div class="field head" @click="openSearch">
-                <h2 class="title" data-testid="rehearsal-title">
-                    {{ song.name }}<span v-if="sheet?.key" class="key">{{ sheet.key }}</span>
-                </h2>
-                <button type="button" class="icon" data-testid="rehearsal-other" :aria-label="t.control.otherSong" :title="t.control.otherSong" @click.stop="openSearch">
-                    <Icon name="search" :size="20" />
+            <!-- A rare step, so quiet: text only, at the foot of the sheet (user, 2026-11-27). -->
+            <template v-if="song" #foot>
+                <button type="button" class="end" data-testid="rehearsal-end" @click="endSong">
+                    {{ t.control.endSong }}
                 </button>
-            </div>
-            <div v-if="arrangements.length > 1" class="arrangements" role="group" :aria-label="t.control.arrangement">
-                <button v-for="(a, i) in arrangements" :key="a.id" type="button" class="pill" :class="{ chosen: a.id === arrangementId }" :aria-pressed="a.id === arrangementId" @click="showArrangement(a.id, null, true)">
-                    {{ labels[i] }}
-                </button>
+            </template>
+        </ControlSheet>
+        <template v-if="song">
+            <div class="song" :class="{ fill: !!sheet }" data-testid="rehearsal-song">
+                <ControlSongCard :title="song.name ?? ''" :song-key="sheet?.key" :parts="sheet?.sections ?? []" :active="section" :disabled="false" :hide-parts="!sheet" @choose="choose">
+                    <template #action>
+                        <button type="button" class="pick" :aria-label="t.control.chooseSong" data-testid="rehearsal-other" @click="openSearch"><Icon name="search" :size="22" /></button>
+                    </template>
+                    <template v-if="arrangements.length > 1" #sub>
+                        <div class="arrangements" role="group" :aria-label="t.control.arrangement">
+                            <button v-for="(a, i) in arrangements" :key="a.id" type="button" class="pill" :class="{ chosen: a.id === arrangementId }" :aria-pressed="a.id === arrangementId" @click="showArrangement(a.id, null, true)">
+                                {{ labels[i] }}
+                            </button>
+                        </div>
+                    </template>
+                    <template v-if="atEnd && sheet && !sheetLoading" #foot>
+                        <p class="note small" data-testid="rehearsal-end-note">{{ t.control.stepEndRehearsal }}</p>
+                    </template>
+                </ControlSongCard>
             </div>
             <p v-if="sheetLoading" class="note">{{ t.control.rehearsalLoading }}</p>
             <template v-else-if="sheet">
-                <ul class="songs" data-testid="rehearsal-song">
-                    <ControlSong :title="song.name ?? ''" :song-key="sheet.key" :parts="sheet.sections" open bare :active="section" :disabled="false" @choose="choose" />
-                </ul>
                 <!-- In the fixed zone below the middle of the page (Plan.md 135 A). -->
                 <Teleport defer to="#control-bar">
-                    <nav class="steps">
-                        <button type="button" :disabled="previous === null" @click="previous !== null && choose(previous)">
-                            {{ t.control.back }}
-                        </button>
-                        <button type="button" :disabled="following === null" @click="following !== null && choose(following)">
-                            {{ t.control.next }}
-                        </button>
-                    </nav>
+                    <ControlBar :back-disabled="previous === null" :forward-disabled="following === null" :hint="forwardHint" @back="previous !== null && choose(previous)" @forward="following !== null && choose(following)" />
                 </Teleport>
                 <p v-if="presenter" class="note" data-testid="rehearsal-presenter">{{ t.control.presenterDetected }}</p>
             </template>
             <p v-else class="note" data-testid="rehearsal-nosheet">
                 {{ t.control.noRehearsalSheet }}
             </p>
-            <button v-if="!sheetLoading" type="button" class="end" data-testid="rehearsal-end" @click="endSong">
-                {{ t.control.endSong }}
-            </button>
         </template>
-        <p v-else-if="!song && !results.length && !searching && !searched" class="note">
-            {{ t.control.rehearsalNone }}
-        </p>
+        <section v-else class="control-card none">
+            <p class="note">{{ t.control.rehearsalNone }}</p>
+            <button type="button" class="pick words" data-testid="rehearsal-other" @click="openSearch"><Icon name="search" :size="20" />{{ t.control.chooseSong }}</button>
+        </section>
     </div>
 </template>
 
 <style scoped>
+/* The middle is a column: the parts take what is left and roll inside, everything else stands. */
 .rehearsal {
-    display: grid;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
+}
+.rehearsal > * {
+    flex: none;
+    min-width: 0;
+}
+/* The card takes what is left; it may shrink, but not to nothing – the parts must stay in view, the middle rolls before they vanish (user, 2026-11-27). */
+.rehearsal > .song {
+    display: flex;
+    flex-direction: column;
+}
+.rehearsal > .song.fill {
+    flex: 1 1 0;
+    min-height: 9rem;
 }
 p {
     margin: 0;
@@ -311,12 +321,25 @@ p {
 .note {
     color: #b8bcc4;
 }
+/* The line under the parts: one line, quiet. */
+.note.small {
+    flex: none;
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .warn {
     padding: 10px 12px;
     border-radius: 8px;
     background: #4a2020;
 }
-/* A rare step, so quiet: text only, under the parts. */
+.none {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
 .end {
     justify-self: center;
     min-height: 44px;
@@ -325,56 +348,25 @@ p {
     background: none;
     color: #b8bcc4;
     font: inherit;
+    font-size: 0.95rem;
+    text-align: center;
     text-decoration: underline;
     cursor: pointer;
 }
-/* One frame for both states – the title with the magnifier, the search with the cross – so the icon keeps its place. */
-.field {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.search {
     box-sizing: border-box;
-    min-height: 56px;
-    padding: 4px 6px 4px 14px;
+    width: 100%;
+    min-height: 52px;
+    padding: 0 14px;
     border: 1px solid #3a3f4a;
     border-radius: 10px;
-    background: #1d2027;
-}
-.head {
-    cursor: pointer;
-}
-.search {
-    flex: 1;
-    min-width: 0;
-    min-height: 44px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: inherit;
+    background: #101114;
+    color: #f2f2f2;
     font: inherit;
+}
+.search:focus {
     outline: none;
-}
-.field:focus-within {
     border-color: #6b7180;
-}
-.title {
-    flex: 1;
-    min-width: 0;
-    margin: 0;
-    font-size: 1.6rem;
-    line-height: 1.2;
-    overflow-wrap: anywhere;
-}
-.title .key {
-    margin-left: 0.5em;
-    color: #b8bcc4;
-    font-weight: 400;
-    font-variant-numeric: tabular-nums;
-}
-.arrangements {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
 }
 button {
     min-height: 56px;
@@ -387,20 +379,27 @@ button {
     text-align: left;
     cursor: pointer;
 }
-/* Magnifier and cross inside the frame: plain, light, the same size and place. */
-.icon {
+/* The magnifier alone, 44 × 44, in the head of the song card; the words only where no song is chosen yet. */
+.pick {
     flex: none;
-    display: grid;
-    place-items: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     width: 44px;
-    height: 44px;
     min-height: 44px;
-    box-sizing: border-box;
     padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: transparent;
-    color: #f1f2f4;
+    text-align: center;
+}
+.pick.words {
+    width: auto;
+    padding: 0 12px;
+    font-size: 0.95rem;
+}
+.arrangements {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 .pill {
     min-height: 32px;
@@ -416,7 +415,9 @@ button {
     font-weight: 600;
 }
 .results {
-    gap: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
 }
 .results button {
     width: 100%;
@@ -424,25 +425,5 @@ button {
     border-bottom: 1px solid #2a2e36;
     border-radius: 0;
     background: transparent;
-}
-button.active {
-    background: #2f6fed;
-    border-color: #6ea8ff;
-    font-weight: 600;
-}
-button:disabled {
-    opacity: 0.4;
-}
-.steps {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-}
-/* Back and next are what a hand on stage reaches for blind: tall and in big letters, like the page of the service. */
-.steps button {
-    min-height: 80px;
-    font-size: 1.5rem;
-    font-weight: 600;
-    text-align: center;
 }
 </style>

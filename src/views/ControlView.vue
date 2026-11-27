@@ -1,31 +1,34 @@
 <script setup lang="ts">
 /**
- * The phone page of the musicians (Plan.md 121 E2): they tap the part of the song a stage monitor ("Liedblatt") shows big.
- * A tap writes a choice into the category `steuerung`; the player reads it. Built for a dark stage, thumbs and a narrow screen.
+ * The phone page of the musicians (Plan.md 121 E2, 135): they steer the monitor in front of them. At the top the card of the monitor says
+ * what it shows (from the position the screen reports into `status`), in the middle the song with its parts or the slides, below "Zurück"
+ * and "Vor". Without a screen released for rehearsals or the click steering the page shows the song of the service alone. "Probe starten"
+ * opens a sheet from below; a running rehearsal is extended and ended in the card.
+ * Built for a dark stage, thumbs and a narrow screen.
  */
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
+import type { RehearsalCatalogDoc } from '../agenda/control';
 import { useRouter } from 'vue-router';
-import { stepPart, type ControlDoc, type PartRef } from '../agenda/control';
-import { agendaDisplay, clockText, pickEvent, type AgendaEvent, type AgendaPick, type LivePosition } from '../agenda/live';
-import { sheetOf, songsLeft, songsheetPick } from '../agenda/songsheet';
-import { fetchCalendars, fetchTimeZone } from '../ct/api';
+import { fetchTimeZone } from '../ct/api';
 import { currentPerson, displayName } from '../ct/client';
-import { t } from '../i18n/designer';
-import { LOCALE } from '../i18n/player';
-import { appointmentWindow, churchToolsPlayerData } from '../player/data';
-import ControlClick from './ControlClick.vue';
-import ControlRehearsal from './ControlRehearsal.vue';
-import ControlSong from './ControlSong.vue';
-import { controlMemory } from './control-memory';
-import { leaveControl } from './control-back';
-import './control-card.css';
-import { usePresenterKeys } from '../player/presenter-keys';
-import { useWakeLock } from './useWakeLock';
 import Icon from '../designer/Icon.vue';
+import { t } from '../i18n/designer';
+import { hasSlides, type PositionDoc } from '../model/position';
 import { getRepository } from '../store/backend';
 import type { ScreenRepository } from '../store/screen-repository';
+import ControlMonitorCard from './ControlMonitorCard.vue';
+import ControlRehearsal from './ControlRehearsal.vue';
+import ControlRehearsalSheet from './ControlRehearsalSheet.vue';
+import ControlService from './ControlService.vue';
+import ControlSlides from './ControlSlides.vue';
+import { buildClick, movedSlide, pollDelay } from './click-steering';
+import { leaveControl } from './control-back';
+import './control-card.css';
+import { controlMemory } from './control-memory';
+import { monitorList, monitorState, pickMonitor, rehearsalWithoutSheet, type Monitor } from './monitor-state';
+import { useRehearsalControl } from './useRehearsalControl';
+import { useWakeLock } from './useWakeLock';
 
-const POLL_MS = 2500;
 // On stage the phone must not lock while the page is open (user, 2026-11-13).
 useWakeLock();
 /**
@@ -33,257 +36,197 @@ useWakeLock();
  * G57): nothing of the host stays to hide or to scroll. While it is open the page behind must not scroll either; the old values come back
  * on leaving.
  */
-let scrollLocked: { el: HTMLElement; overflow: string }[] = [];
+let scrollLocked: { el: HTMLElement; overflow: string; background: string }[] = [];
 onMounted(() => {
-    scrollLocked = [document.documentElement, document.body].map((el) => ({ el, overflow: el.style.overflow }));
-    for (const { el } of scrollLocked) el.style.overflow = 'hidden';
+    scrollLocked = [document.documentElement, document.body].map((el) => ({ el, overflow: el.style.overflow, background: el.style.backgroundColor }));
+    // Dark behind it as well: the keyboard of iOS shifts the window and showed the white page of ChurchTools below the sheet (user, 2026-11-27).
+    for (const { el } of scrollLocked) Object.assign(el.style, { overflow: 'hidden', backgroundColor: '#101114' });
 });
 onBeforeUnmount(() => {
-    for (const { el, overflow } of scrollLocked) el.style.overflow = overflow;
+    for (const { el, overflow, background } of scrollLocked) Object.assign(el.style, { overflow, backgroundColor: background });
     scrollLocked = [];
 });
 
-const loading = ref(true);
+const router = useRouter();
+// The last visit's monitors at once; the reading below replaces them.
+const loading = ref(!controlMemory.monitors);
 const unavailable = ref(false);
 const failure = ref<string | null>(null);
-const events = shallowRef<AgendaEvent[]>([]);
-const eventId = ref<number | null>(null);
-const position = shallowRef<LivePosition | null>(null);
-const stored = shallowRef<ControlDoc | undefined>(undefined);
-/** The tap that is not confirmed by a reading yet; shown at once. */
-const local = shallowRef<ControlDoc | null>(null);
-const opened = ref<number | null>(null);
-const notSaved = ref(false);
-const timeZone = ref('Europe/Berlin');
-let repository: ScreenRepository | null = null;
-/** The same repository for the area "Probe", which is built when the page knows it. */
-const rehearsalRepository = shallowRef<ScreenRepository | null>(null);
-const area = ref(controlMemory.area);
-watch(area, (value) => (controlMemory.area = value));
+const repository = shallowRef<ScreenRepository | null>(null);
+const author = ref('');
+const timeZone = ref(controlMemory.timeZone ?? 'Europe/Berlin');
+const monitors = shallowRef<Monitor[]>(controlMemory.monitors ?? []);
+const monitorId = ref(controlMemory.monitorId);
+const monitor = computed(() => pickMonitor(monitors.value, monitorId.value));
+/** The presentations released for rehearsals, from the catalog in `steuerung`. */
+const catalog = shallowRef<RehearsalCatalogDoc | null>(null);
+const sheetOpen = ref(false);
 
-/** The list under the button in the head: "Gottesdienst" and "Probe". A tap beside it and Escape close it. */
-const areaOpen = ref(false);
-const areaBox = ref<HTMLElement | null>(null);
-/** The screens released for the click steering (Plan.md 124 D), from the list in `steuerung`; the area "Bildschirm" is offered only with at least one. */
-const clickScreens = ref<{ id: string; name: string }[]>([]);
-const areaEntries = computed(() => [
-    { value: 'service' as const, text: t.control.service, hint: t.control.areaServiceHint },
-    { value: 'rehearsal' as const, text: t.control.rehearsal, hint: t.control.areaRehearsalHint },
-    ...(clickScreens.value.length ? [{ value: 'click' as const, text: t.control.click, hint: t.control.areaClickHint }] : []),
-]);
-const areaText = computed(() => areaEntries.value.find((entry) => entry.value === area.value)?.text ?? t.control.service);
-function chooseArea(value: 'service' | 'rehearsal' | 'click'): void {
-    area.value = value;
-    areaOpen.value = false;
-}
-function closeAreaOnOutside(event: Event): void {
-    if (areaOpen.value && !areaBox.value?.contains(event.target as Node)) areaOpen.value = false;
-}
-function closeAreaOnEscape(event: KeyboardEvent): void {
-    if (event.key === 'Escape') areaOpen.value = false;
-}
-document.addEventListener('pointerdown', closeAreaOnOutside);
-document.addEventListener('keydown', closeAreaOnEscape);
-onBeforeUnmount(() => {
-    document.removeEventListener('pointerdown', closeAreaOnOutside);
-    document.removeEventListener('keydown', closeAreaOnEscape);
-});
-let author = '';
-let timer: ReturnType<typeof setTimeout> | undefined;
-let gone = false;
-
-const event = computed(() => events.value.find((e) => e.eventId === eventId.value) ?? null);
-const control = computed(() => local.value ?? stored.value);
-const pick = computed<AgendaPick | null>(() => {
-    const e = event.value;
-    if (!e) return null;
-    return pickEvent([e], { [e.eventId]: position.value }, Date.now()) ?? { event: e, position: position.value ?? undefined, phase: 'upcoming' };
-});
-const shown = computed(() => (pick.value ? songsheetPick(pick.value, control.value) : null));
-const shownIndex = computed(() => (shown.value && event.value ? event.value.items.indexOf(shown.value.item) : -1));
-const activePart = computed<PartRef | null>(() => {
-    const s = shown.value;
-    if (!s || shownIndex.value < 0) return null;
-    // Without a choice the screen shows part 1 (screens with "Nach Zeit blättern" are the exception, the page does not know the blocks).
-    const section = s.section ?? ((sheetOf(s.item)?.sections.length ?? 0) > 0 ? 0 : undefined);
-    return section === undefined ? null : { itemIndex: shownIndex.value, section };
-});
-watch(shownIndex, () => (opened.value = null));
-const toggle = (index: number) => (opened.value = opened.value === index ? null : index);
-
-const hasSong = (e: AgendaEvent) => e.items.some((item, i) => i > 0 && item.song);
-const time = (ms: number) => new Intl.DateTimeFormat(LOCALE, { hour: '2-digit', minute: '2-digit', timeZone: timeZone.value }).format(ms);
-const eventLabel = (e: AgendaEvent) => t.control.eventOption(time(e.startMs));
-
-const songs = computed(() =>
-    (event.value?.items ?? []).flatMap((item, index) => {
-        if (index < 1 || !item.song) return [];
-        const sheet = sheetOf(item);
-        return [{ index, title: item.title, key: sheet?.key ?? item.songDetails?.key, parts: sheet?.sections ?? [] }];
-    }),
-);
-
-/**
- * A long service got crowded (user, 2026-11-11): the song on the screen stands apart with its parts, the next one small below it,
- * all others folded away – the played ones pale, but still to be tapped.
- */
-const reached = computed(() => {
-    if (shownIndex.value >= 0) return shownIndex.value;
-    const p = pick.value;
-    return p && p.phase !== 'upcoming' && p.position && p.position.index > 0 ? p.position.index : 1;
-});
-const current = computed(() => songs.value.find((s) => s.index === shownIndex.value) ?? null);
-const upNext = computed(() => songs.value.find((s) => (current.value ? s.index > current.value.index : s.index >= reached.value)) ?? null);
-const others = computed(() => songs.value.filter((s) => s !== current.value && s !== upNext.value));
-const played = (index: number) => index < reached.value;
-
-/** A second of its own, so that the clock of the plan runs between the readings. */
+/** What the monitor reported; `positionRead` – a reading came, `null` then means that the screen reports nothing. */
+const position = shallowRef<PositionDoc | null>(null);
+const positionRead = ref(false);
+/** The time of the last reading: it changes with every one, also where it brought the same position. */
+const readAt = ref(0);
+/** What the middle adds to the card: the lines of the plan or of the own click, the start of the service. */
+const info = shallowRef<{ lines: string[]; eventStartMs: number | null }>({ lines: [], eventStartMs: null });
 const tick = ref(Date.now());
 const ticker = setInterval(() => (tick.value = Date.now()), 1000);
-onBeforeUnmount(() => clearInterval(ticker));
 
-/** Where the plan stands (user, 2026-11-11): the point that runs with its time left and the next one – as the block "Ablauf" sees it. */
-const plan = computed(() => {
-    const p = pick.value;
-    if (!p) return null;
-    const display = agendaDisplay(p, tick.value);
-    if (!display) return { over: true as const };
-    return {
-        over: false as const,
-        soon: display.kind === 'soon',
-        title: display.title,
-        clock: display.countdownSeconds === null ? null : clockText(display.countdownSeconds),
-        late: (display.countdownSeconds ?? 0) < 0,
-        next: display.next,
-    };
+const rehearsal = useRehearsalControl({ repository, author, screenId: computed(() => monitor.value?.id), position, now: tick });
+/** The position with the own rehearsal write laid over it, until the screen reports it. */
+const shownPosition = computed<PositionDoc | null>(() => {
+    if (!position.value) return null;
+    const own = rehearsal.shown.value;
+    const shown: PositionDoc = { ...position.value, rehearsal: own ? { until: own.until, ...(own.by ? { by: own.by } : {}) } : undefined };
+    if (!own) delete shown.rehearsal;
+    return shown;
 });
-
-const screenLine = computed(() => {
-    const s = shown.value;
-    if (!s) return t.control.screenNone;
-    const sections = sheetOf(s.item)?.sections ?? [];
-    const at = activePart.value?.section;
-    const part = at === undefined ? null : sections[at] ? sections[at]!.label || t.control.part(at + 1) : null;
-    // "Als Nächstes" shows its first part on the screen too: the line names it the same way.
-    return s.upcoming ? t.control.screenNext(s.item.title, part) : t.control.screen(s.item.title, part);
+const state = computed(() => (monitor.value ? monitorState(shownPosition.value, tick.value, { timeZone: timeZone.value, eventStartMs: info.value.eventStartMs }) : null));
+const rehearsalRunning = computed(() => state.value?.kind === 'rehearsal');
+/** The rehearsal runs, but the screen shows no rehearsal sheet (no song, no service): the middle says so. */
+const noProbeSheet = computed(() => middle.value === 'none' && rehearsalWithoutSheet(position.value));
+const lines = computed(() => (info.value.lines.length ? info.value.lines : (state.value?.lines ?? [])));
+/** Without a monitor the song of the service stands alone. */
+const middle = computed(() => (monitor.value ? (positionRead.value ? (state.value?.middle ?? 'none') : 'none') : 'service'));
+const serviceEventId = computed(() => {
+    const sheet = position.value?.songsheet;
+    return monitor.value && sheet && sheet !== true && sheet.source === 'agenda' ? sheet.eventId : undefined;
 });
+const slidesPosition = computed(() => (position.value && hasSlides(position.value) ? position.value : null));
+watch(middle, () => (info.value = { lines: [], eventStartMs: null }));
 
-/**
- * No tap once the event is over or no song is left: after "– Ende –" a stray tap brought a song back to the TV (user, 2026-11-11). The
- * screen ignores such taps as well (`songsheetPick`).
- */
-const stepping = computed(() => !!event.value && !!pick.value && !(plan.value?.over ?? false) && songsLeft(pick.value));
-/** The buttons of the service stand in the bar whenever the service shows a plan. */
-const showSteps = computed(() => !loading.value && !unavailable.value && area.value === 'service' && events.value.length > 0 && !(failure.value && !event.value));
-const previous = computed(() => (stepping.value ? stepPart(event.value!, activePart.value, -1) : null));
-const following = computed(() => (stepping.value ? stepPart(event.value!, activePart.value, 1) : null));
-/** A presenter steps like "Zurück" and "Weiter" (Plan.md 124 A); the area "Probe" listens for itself. */
-const presenter = usePresenterKeys((by) => {
-    if (area.value !== 'service') return;
-    const target = by === 1 ? following.value : previous.value;
-    if (target) void choose(target);
-});
+// --- reading the position of the monitor: every 3 seconds, every second for 15 after an own click (G16), only while the page is seen ---
 
-function preselected(list: AgendaEvent[]): AgendaEvent {
-    const now = Date.now();
-    return list.find((e) => e.startMs <= now && now <= e.endMs) ?? list.find((e) => e.startMs > now) ?? list[list.length - 1]!;
-}
+let lastClickMs: number | null = null;
+let timer: ReturnType<typeof setTimeout> | undefined;
+let gone = false;
+/** Counts the monitors chosen: a reading of a monitor left meanwhile is dropped. */
+let run = 0;
 
-async function refresh(): Promise<void> {
-    const id = eventId.value;
-    if (id === null || !repository) return;
-    const [pos, controls] = await Promise.all([churchToolsPlayerData.agendaPosition(id), repository.readControls()]);
-    position.value = pos;
-    stored.value = controls[id];
-    // The reading has caught up with the tap: the stored choice counts again.
-    if (local.value && stored.value && Date.parse(stored.value.at) >= Date.parse(local.value.at)) local.value = null;
+async function read(): Promise<void> {
+    const id = monitor.value?.id;
+    if (!id || !repository.value) return;
+    const r = run;
+    const raw = await repository.value.readPosition(id);
+    if (r !== run) return;
+    position.value = raw;
+    positionRead.value = true;
+    readAt.value = Date.now();
 }
 
 function schedule(): void {
-    if (gone) return;
+    clearTimeout(timer);
+    if (gone || document.visibilityState !== 'visible') return;
     timer = setTimeout(async () => {
         try {
-            await refresh();
+            await read();
             failure.value = null;
         } catch (e) {
+            // The last position stays.
             failure.value = t.control.failed(e instanceof Error ? e.message : null);
         }
         schedule();
-    }, POLL_MS);
+    }, pollDelay(lastClickMs, Date.now()));
 }
 
-async function choose(part: PartRef): Promise<void> {
-    const e = event.value;
-    const item = e?.items[part.itemIndex];
-    if (!e || !item || !repository) return;
-    const doc: ControlDoc = { eventId: e.eventId, itemIndex: part.itemIndex, section: part.section, at: new Date().toISOString() };
-    if (item.arrangementId !== undefined) doc.arrangementId = item.arrangementId;
-    if (author) doc.by = author;
-    notSaved.value = false;
-    local.value = doc;
+/** Reads at once and keeps the pace – on opening, after a change of monitor and when the page becomes visible again. */
+async function start(): Promise<void> {
+    clearTimeout(timer);
+    if (gone || document.visibilityState !== 'visible') return;
     try {
-        await repository.writeControl(doc);
-    } catch (error) {
-        console.warn('Die Wahl konnte nicht gespeichert werden:', error);
-        if (local.value === doc) local.value = null;
-        notSaved.value = true;
-    }
-}
-
-watch(eventId, (id) => (controlMemory.eventId = id));
-watch(eventId, async () => {
-    local.value = null;
-    stored.value = undefined;
-    position.value = null;
-    opened.value = null;
-    try {
-        await refresh();
+        await read();
+        failure.value = null;
     } catch (e) {
         failure.value = t.control.failed(e instanceof Error ? e.message : null);
     }
-});
+    schedule();
+}
 
-/** The way out (Plan.md 135): "ChurchTools" goes back into the module when the page was opened from it – the pencil went (user, 2026-11-26). */
-const router = useRouter();
+function onVisibility(): void {
+    if (document.visibilityState === 'visible') void start();
+    else clearTimeout(timer);
+}
+
+function clicked(): void {
+    lastClickMs = Date.now();
+    schedule();
+}
+
+/**
+ * A presentation by click shows a song on one of its slides (Plan.md 135, user, 2026-11-26, choice b): "Vor" stays at the end of the song,
+ * so below the song a line leads to the next slide – the same click as tapping it in the list of slides.
+ */
+const nextSlide = computed(() => {
+    const p = slidesPosition.value;
+    if (!p || (middle.value !== 'service' && middle.value !== 'rehearsal')) return null;
+    const id = movedSlide(p, 1);
+    return id ? { id, name: p.slides.find((s) => s.id === id)?.name || t.control.slideLine(p.number + 1, p.total, '') } : null;
+});
+const nextSlideNotSaved = ref(false);
+async function goNextSlide(): Promise<void> {
+    const p = slidesPosition.value;
+    const target = nextSlide.value;
+    const repo = repository.value;
+    if (!p || !target || !repo || !monitor.value) return;
+    nextSlideNotSaved.value = false;
+    clicked();
+    try {
+        const current = await repo.readClick(monitor.value.id);
+        await repo.writeClick(
+            buildClick(current, { screenId: monitor.value.id, playlistId: p.playlistId, action: { do: 'goto', slideId: target.id }, at: new Date().toISOString(), by: author.value || undefined }),
+        );
+        clicked();
+    } catch (error) {
+        console.warn('Der Klick konnte nicht gespeichert werden:', error);
+        nextSlideNotSaved.value = true;
+    }
+}
+
+/** The sheet closes once the write went through; where it did not, it stays and says so. */
+async function startRehearsal(playlistId: string, hours: number): Promise<void> {
+    if (await rehearsal.start(playlistId, hours)) sheetOpen.value = false;
+}
+
+function chooseMonitor(id: string): void {
+    monitorId.value = id;
+    controlMemory.monitorId = id;
+}
+watch(
+    () => monitor.value?.id,
+    () => {
+        ++run;
+        position.value = null;
+        positionRead.value = false;
+        info.value = { lines: [], eventStartMs: null };
+        sheetOpen.value = false;
+        rehearsal.reset();
+        failure.value = null;
+        void start();
+    },
+);
 
 onMounted(async () => {
-    // The last visit's state at once; the reading below replaces it.
-    if (controlMemory.events) {
-        events.value = controlMemory.events;
-        timeZone.value = controlMemory.timeZone ?? timeZone.value;
-        eventId.value = controlMemory.eventId;
-        loading.value = false;
-    }
+    document.addEventListener('visibilitychange', onVisibility);
     try {
         const [person, handle, zone] = await Promise.all([currentPerson(), getRepository(), fetchTimeZone()]);
-        repository = handle.repository;
-        rehearsalRepository.value = handle.repository;
-        void handle.repository
-            .readRehearsalScreens()
-            .then(({ catalog }) => {
-                clickScreens.value = catalog?.clickScreens ?? [];
-                // The remembered area is gone with the release of the screens.
-                if (area.value === 'click' && !clickScreens.value.length) area.value = 'service';
-            })
-            .catch(() => null);
-        author = displayName(person);
+        repository.value = handle.repository;
+        author.value = displayName(person);
         timeZone.value = zone;
-        if ((await repository.controlCategoryId()) === null) {
+        if ((await handle.repository.controlCategoryId()) === null) {
             unavailable.value = true;
             return;
         }
-        const calendarIds = (await fetchCalendars()).map((c) => c.id);
-        const { from, to } = appointmentWindow(new Date(), zone, 1);
-        const read = (await churchToolsPlayerData.agendaEvents(calendarIds, from, to, zone, { sheets: true })).filter(hasSong).sort((a, b) => a.startMs - b.startMs);
+        // The list of the released screens; where it cannot be read the page shows the service alone, as without a release.
+        catalog.value = await handle.repository
+            .readRehearsalScreens()
+            .then((read) => read.catalog)
+            .catch(() => null);
         if (gone) return;
-        events.value = read;
-        // An event chosen on the last visit stays chosen while it is still there.
-        const kept = read.some((e) => e.eventId === eventId.value) ? eventId.value : null;
-        eventId.value = kept ?? (read.length ? preselected(read).eventId : null);
-        Object.assign(controlMemory, { events: read, timeZone: zone });
-        // The event did not change, so its watcher does not read: read here – the repository was not there for the remembered one.
-        if (kept !== null) await refresh();
-        schedule();
+        const before = monitor.value?.id;
+        monitors.value = monitorList(catalog.value);
+        Object.assign(controlMemory, { monitors: monitors.value, timeZone: zone });
+        // The monitor of the memory is still there, so its watcher does not read: read here.
+        if (monitor.value && monitor.value.id === before) await start();
     } catch (e) {
         failure.value = t.control.failed(e instanceof Error ? e.message : null);
     } finally {
@@ -293,7 +236,10 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
     gone = true;
+    ++run;
     clearTimeout(timer);
+    clearInterval(ticker);
+    document.removeEventListener('visibilitychange', onVisibility);
 });
 </script>
 
@@ -302,117 +248,55 @@ onBeforeUnmount(() => {
         <header class="head" data-testid="control-head">
             <a href="/" class="back" data-testid="control-back" :aria-label="t.control.backAria" @click.prevent="leaveControl(!!router.options.history.state.back)"><Icon name="back" :size="18" /><span>{{ t.control.backToChurchTools }}</span></a>
             <h1>{{ t.control.title }}</h1>
-            <div ref="areaBox" class="area-box">
-                <button
-                    type="button"
-                    class="area-button"
-                    aria-haspopup="true"
-                    :aria-expanded="areaOpen"
-                    :aria-label="t.control.areaChoose"
-                    data-testid="control-area"
-                    @click="areaOpen = !areaOpen"
-                >
-                    <strong>{{ areaText }}</strong>
-                    <Icon name="chevron-down" :size="18" />
-                </button>
-                <ul v-if="areaOpen" class="area-list" role="group" :aria-label="t.control.areaChoose">
-                    <li v-for="entry in areaEntries" :key="entry.value">
-                        <button type="button" :class="{ chosen: area === entry.value }" :aria-pressed="area === entry.value" :data-testid="`control-area-${entry.value}`" @click="chooseArea(entry.value)">
-                            {{ entry.text }}<small>{{ entry.hint }}</small>
-                        </button>
-                    </li>
-                </ul>
-            </div>
         </header>
         <div class="middle" data-testid="control-middle">
             <p v-if="loading" class="note">{{ t.control.loading }}</p>
             <p v-else-if="unavailable" class="note">{{ t.control.unavailable }}</p>
             <template v-else>
-                <ControlRehearsal v-if="area === 'rehearsal' && rehearsalRepository" :repository="rehearsalRepository" :author="author" :time-zone="timeZone" />
-                <ControlClick v-else-if="area === 'click' && rehearsalRepository && clickScreens.length" :repository="rehearsalRepository" :author="author" :time-zone="timeZone" :screens="clickScreens" />
-                <template v-else-if="area === 'service'">
-                    <p v-if="failure && !event" class="note" role="alert">{{ failure }}</p>
-                    <p v-else-if="!events.length" class="note">{{ t.control.noEvents }}</p>
-                    <template v-else>
-                        <select v-if="events.length > 1" v-model="eventId" class="event" :aria-label="t.control.eventLabel">
-                            <option v-for="e in events" :key="e.eventId" :value="e.eventId">{{ eventLabel(e) }}</option>
-                        </select>
-                        <div v-if="plan" class="plan control-card" data-testid="control-plan">
-                            <template v-if="plan.over">{{ t.control.planOver }}</template>
-                            <template v-else>
-                                <div class="plan-now">
-                                    <span class="plan-label">{{ plan.soon ? t.control.planSoon : t.control.planNow }}</span>
-                                    <span class="plan-title">{{ plan.title }}</span>
-                                    <span v-if="plan.clock" class="plan-clock" :class="{ late: plan.late }">{{ plan.clock }}</span>
-                                </div>
-                                <div v-if="plan.next" class="plan-next">
-                                    <span class="plan-label">{{ t.control.planNext }}</span>
-                                    <span>{{ plan.next }}</span>
-                                </div>
-                            </template>
-                        </div>
-                        <p v-if="plan && !plan.over && !stepping" class="screen control-card" data-testid="control-locked">{{ t.control.noSongsLeft }}</p>
-                        <p v-else class="screen control-card">{{ screenLine }}</p>
-                        <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
-                        <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
-                        <div v-if="current" class="control-card">
-                            <ul class="songs" data-testid="control-current">
-                                <ControlSong
-                                    :title="current.title"
-                                    :song-key="current.key"
-                                    :parts="current.parts"
-                                    :open="true"
-                                    :active="activePart?.itemIndex === current.index ? activePart.section : null"
-                                    shown
-                                    :disabled="!stepping"
-                                    @choose="(n) => choose({ itemIndex: current!.index, section: n })"
-                                />
-                            </ul>
-                        </div>
-                        <div v-if="upNext" class="control-card">
-                            <p class="label">{{ t.control.upNext }}</p>
-                            <ul class="songs" data-testid="control-next">
-                                <ControlSong
-                                    :title="upNext.title"
-                                    :song-key="upNext.key"
-                                    :parts="upNext.parts"
-                                    :open="opened === upNext.index"
-                                    :active="null"
-                                    :disabled="!stepping"
-                                    @toggle="toggle(upNext.index)"
-                                    @choose="(n) => choose({ itemIndex: upNext!.index, section: n })"
-                                />
-                            </ul>
-                        </div>
-                        <details v-if="others.length" class="all control-card" data-testid="control-all">
-                            <summary>{{ t.control.allSongs(others.length) }}</summary>
-                            <ul class="songs">
-                                <ControlSong
-                                    v-for="song in others"
-                                    :key="song.index"
-                                    :title="song.title"
-                                    :song-key="song.key"
-                                    :parts="song.parts"
-                                    :open="opened === song.index"
-                                    :active="null"
-                                    :played="played(song.index)"
-                                    :disabled="!stepping"
-                                    @toggle="toggle(song.index)"
-                                    @choose="(n) => choose({ itemIndex: song.index, section: n })"
-                                />
-                            </ul>
-                        </details>
-                        <p v-if="presenter" class="note" data-testid="control-presenter">{{ t.control.presenterDetected }}</p>
-                    </template>
-                </template>
+                <ControlMonitorCard
+                    v-if="monitor"
+                    :monitors="monitors"
+                    :monitor="monitor"
+                    :state="state"
+                    :lines="lines"
+                    :silent="positionRead && !position"
+                    :rehearsal-running="rehearsalRunning"
+                    :busy="rehearsal.busy.value"
+                    :transfer="rehearsal.transfer.value"
+                    @choose="chooseMonitor"
+                    @start-rehearsal="sheetOpen = true"
+                    @extend="(hours) => rehearsal.extend(hours)"
+                    @end-rehearsal="rehearsal.end()"
+                />
+                <ControlRehearsalSheet
+                    v-if="sheetOpen && monitor"
+                    :monitor-name="monitor.name"
+                    :playlists="catalog?.playlists ?? []"
+                    :busy="rehearsal.busy.value"
+                    :not-saved="rehearsal.notSaved.value"
+                    @close="sheetOpen = false"
+                    @start="startRehearsal"
+                />
+                <p v-if="rehearsal.notSaved.value && !sheetOpen" class="warn" role="alert">{{ t.control.notSaved }}</p>
+                <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
+                <ControlService v-if="middle === 'service'" :repository="repository" :author="author" :time-zone="timeZone" :event-id="serviceEventId" :show-plan="!monitor" @info="(next) => (info = next)" />
+                <ControlRehearsal v-else-if="middle === 'rehearsal' && repository" :repository="repository" :author="author" />
+                <button v-if="nextSlide" type="button" class="next-slide" data-testid="control-next-slide" @click="goNextSlide">{{ t.control.nextSlide(nextSlide.name) }}</button>
+                <p v-if="nextSlide && nextSlideNotSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
+                <p v-else-if="noProbeSheet" class="control-card note" data-testid="monitor-no-sheet">{{ t.control.noProbeSheet }}</p>
+                <ControlSlides
+                    v-else-if="middle === 'slides' && repository && slidesPosition && monitor"
+                    :repository="repository"
+                    :author="author"
+                    :screen-id="monitor.id"
+                    :position="slidesPosition"
+                    :read-at="readAt"
+                    @clicked="clicked"
+                    @info="(next) => (info = next)"
+                />
             </template>
         </div>
-        <div id="control-bar" class="bar" data-testid="control-bar">
-            <nav v-if="showSteps" class="steps">
-                <button type="button" :disabled="!previous" @click="previous && choose(previous)">{{ t.control.back }}</button>
-                <button type="button" :disabled="!following" @click="following && choose(following)">{{ t.control.next }}</button>
-            </nav>
-        </div>
+        <div id="control-bar" class="bar" data-testid="control-bar" />
     </main>
 </template>
 
@@ -425,15 +309,18 @@ onBeforeUnmount(() => {
     box-sizing: border-box;
     height: 100vh;
     height: 100dvh;
-    /* Three zones: the head and the bar stand fixed, only the middle scrolls. */
+    /* Three zones: the head and the bar stand fixed, only the middle may roll. */
     display: flex;
     flex-direction: column;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     background: #101114;
     color: #f2f2f2;
     font-size: 1.1rem;
+    /* The page is always dark: the help "?" takes the turquoise of the dark mode of the designer. */
+    --d-help: var(--color-teal-300, oklch(85.5% 0.138 181.071));
+    --d-surface: #101114;
 }
-/* The title stays for screen readers; the link and the button in the head say it for the eyes. */
+/* The title stays for screen readers; the link says it for the eyes. */
 h1 {
     position: absolute;
     width: 1px;
@@ -446,12 +333,10 @@ h1 {
     flex: none;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
     min-width: 0;
     padding: 8px 12px;
 }
-/* Like "zurück" in the editor – a framed button with the arrow (user, 2026-11-26) –, in the dark of this page, like the area button. */
+/* Like "zurück" in the editor – a framed button with the arrow (user, 2026-11-26) –, in the dark of this page. */
 .back {
     display: inline-flex;
     align-items: center;
@@ -459,7 +344,6 @@ h1 {
     flex: none;
     box-sizing: border-box;
     min-height: 44px;
-    margin-right: auto;
     padding: 0 14px 0 10px;
     border: 1px solid #3a3f4a;
     border-radius: 10px;
@@ -472,13 +356,14 @@ h1 {
 .back:active {
     border-color: #6b7180;
 }
+/* A column: the card stands, the song or the slides take what is left and roll inside their own card – the page does not scroll. */
 .middle {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    display: grid;
-    align-content: start;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
     padding: 4px 12px 12px;
 }
@@ -494,73 +379,6 @@ h1 {
 .bar:empty {
     display: none;
 }
-.area-box {
-    position: relative;
-    flex: 1;
-    min-width: 0;
-}
-/* Looks like a choice (user, 2026-11-13: on the phone the dropdown was not to be recognised – no colour of its own, the dark blue of
-   ChurchTools' buttons came through): framed like the tiles, light text, the arrow at the end. */
-.head .area-button {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-    width: 100%;
-    min-height: 44px;
-    padding: 0 10px 0 14px;
-    border: 1px solid #3a3f4a;
-    border-radius: 10px;
-    background: #1d2027;
-    color: #f1f2f4;
-    font-size: 1.05rem;
-    white-space: nowrap;
-    cursor: pointer;
-}
-.head .area-button[aria-expanded='true'] {
-    border-color: #6b7180;
-}
-.head .area-button strong {
-    color: #f1f2f4;
-}
-.area-list {
-    position: absolute;
-    z-index: 5;
-    top: 100%;
-    right: 0;
-    margin: 4px 0 0;
-    padding: 4px;
-    min-width: 230px;
-    list-style: none;
-    border: 1px solid #3a3f4a;
-    border-radius: 10px;
-    background: #1d2027;
-}
-.area-list button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    min-height: 48px;
-    padding: 0 12px;
-    border: 0;
-    border-radius: 8px;
-    background: none;
-    color: #f1f2f4;
-    font: inherit;
-    line-height: 1.3;
-    text-align: left;
-    cursor: pointer;
-}
-.area-list button.chosen {
-    background: #2a2e37;
-    font-weight: 600;
-}
-.area-list small {
-    color: #b8bcc4;
-    font-size: 0.8rem;
-    font-weight: 400;
-}
 p {
     margin: 0;
 }
@@ -568,101 +386,24 @@ p {
     color: #b8bcc4;
 }
 .warn {
+    flex: none;
     padding: 10px 12px;
     border-radius: 8px;
     background: #4a2020;
 }
-/* Where the plan stands: the running point big with its time, the next one below. */
-.plan-now,
-.plan-next {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-}
-.plan-next {
-    margin-top: 4px;
-    opacity: 0.75;
-}
-.plan-label {
-    flex: none;
-    font-size: 0.75rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    opacity: 0.7;
-}
-.plan-title {
-    flex: 1;
-    min-width: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-}
-.plan-clock {
-    flex: none;
-    font-size: 1.25rem;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-}
-.plan-clock.late {
-    color: #f87171;
-}
-.screen {
-    font-weight: 600;
-}
-.event {
-    min-height: 56px;
-    padding: 0 12px;
-    border-radius: 8px;
-    border: 1px solid #3a3f4a;
-    background: #1d2027;
-    color: inherit;
-    font-size: 1.1rem;
-}
-.songs {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 8px;
-}
-.label {
-    margin: 0 0 8px;
-    font-size: 0.75rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    opacity: 0.7;
-}
-/* The rest of a long service, folded away. */
-.all summary {
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    cursor: pointer;
+/* Like "Danach" below the song: dashed, quiet – the next slide of a presentation by click (Plan.md 135, choice b). */
+.next-slide {
+    min-height: 52px;
+    padding: 0 14px;
+    border: 1px dashed #3a3f4a;
+    border-radius: 12px;
+    background: transparent;
     color: #b8bcc4;
-}
-.all > .songs {
-    margin-top: 8px;
-}
-button {
-    min-height: 56px;
-    border: 1px solid #3a3f4a;
-    border-radius: 8px;
-    background: #1d2027;
-    color: inherit;
     font: inherit;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     cursor: pointer;
-}
-button:disabled {
-    opacity: 0.4;
-}
-.steps {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-}
-/* Back and next are what a hand on stage reaches for blind: tall and in big letters (user, 2026-11-11). */
-.steps button {
-    min-height: 80px;
-    font-size: 1.5rem;
-    font-weight: 600;
 }
 </style>

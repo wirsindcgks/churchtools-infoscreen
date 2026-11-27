@@ -47,6 +47,7 @@ import {
     personGroups,
     type GroupSummary,
 } from '../setup/load';
+import { catalogOutdated, releasedWithoutSheet } from '../setup/rehearsal-catalog';
 import { releasedClickScreens, releasedRehearsalScreens, settingsToSave, type SettingsFields } from '../setup/settings-doc';
 import { churchToolsMusicianApi, provisionMusicians, updateMusicianSources } from '../setup/musicians';
 import { wikiCategoryCreation } from '../setup/wiki-creation';
@@ -264,6 +265,8 @@ const clickScreenIds = ref<string[]>([]);
 const draftClickScreens = ref<string[]>([]);
 /** The presentations with a rehearsal sheet (`isRehearsalSheet`); null until read. */
 const rehearsalPlaylists = ref<{ id: string; name: string }[] | null>(null);
+/** Names of the released presentations that have lost their rehearsal sheet (Plan.md 135 D); they fall out of the release, the page warns. */
+const releasedNoSheet = ref<string[]>([]);
 /** `controlCategoryId` is no ref: this is set with it. */
 const hasControlCategory = ref(false);
 const musicianRun = reactive({ ran: false, log: [] as string[], error: null as string | null });
@@ -1040,16 +1043,41 @@ function withdrawRehearsalPlaylist(id: string): void {
 
 async function loadRehearsalPlaylists(): Promise<void> {
     if (!repository || demo.value || page.value !== 'musicians' || rehearsalPlaylists.value) return;
-    rehearsalPlaylists.value = await repository.listRehearsalPlaylists().catch((e: unknown) => {
+    const read = await repository.listPlaylistsBySheet().catch((e: unknown) => {
         console.warn('Die Probenpräsentationen konnten nicht gelesen werden:', e);
         return null;
     });
+    rehearsalPlaylists.value = read?.withSheet ?? null;
     // A presentation that is gone, or has lost its rehearsal sheet, leaves the release like a screen that is gone.
     const known = rehearsalPlaylists.value;
-    if (known) {
+    if (read && known) {
+        releasedNoSheet.value = releasedWithoutSheet([...new Set([...rehearsalPlaylistIds.value, ...draftRehearsalPlaylists.value])], read.all, known);
         const kept = (ids: string[]): string[] => ids.filter((id) => known.some((p) => p.id === id));
         rehearsalPlaylistIds.value = kept(rehearsalPlaylistIds.value);
         draftRehearsalPlaylists.value = kept(draftRehearsalPlaylists.value);
+    }
+    await keepRehearsalCatalog();
+}
+
+/**
+ * The list for the musicians (Plan.md 135 D): where an administrator opens the page and a name or the set of screens and presentations no
+ * longer fits the release, the list is written anew – only then, not at every opening. Once per visit; a failure is only logged.
+ */
+let catalogKept = false;
+async function keepRehearsalCatalog(): Promise<void> {
+    const known = rehearsalPlaylists.value;
+    if (catalogKept || !repository || demo.value || admin.value !== true || !rehearsalReady.value || !known || !settingsLoaded.value) return;
+    catalogKept = true;
+    try {
+        const wanted = {
+            screens: screens.value.filter((sc) => rehearsalScreenIds.value.includes(sc.id)).map((sc) => ({ id: sc.id, name: sc.name })),
+            playlists: known.filter((p) => rehearsalPlaylistIds.value.includes(p.id)),
+            clickScreens: screens.value.filter((sc) => clickScreenIds.value.includes(sc.id)).map((sc) => ({ id: sc.id, name: sc.name })),
+        };
+        if (!catalogOutdated(await repository.readRehearsalCatalog(), wanted)) return;
+        await repository.writeRehearsalCatalog({ kind: 'rehearsalCatalog', ...wanted, at: new Date().toISOString() });
+    } catch (e) {
+        console.warn('Die Liste der Musiker konnte nicht aktualisiert werden:', e);
     }
 }
 watch(page, () => void loadRehearsalPlaylists());
@@ -1671,6 +1699,7 @@ onMounted(async () => {
                     settingsWritable.value = maySaveSettings(global[EXTENSION_KEY] as Partial<ModulePermissions> | undefined, categories.settings);
                 })
                 .catch(() => undefined);
+            await keepRehearsalCatalog();
         }
     } catch (e) {
         error.value = explain(e);
@@ -2345,6 +2374,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                         </button>
                                     </li>
                                 </ul>
+                                <p v-for="name in releasedNoSheet" :key="name" class="warn" role="status" data-testid="rehearsal-no-sheet">{{ t.setup.musicians.rehearsal.noSheet(name) }}</p>
                                 <p v-if="unreleasedRehearsalPlaylists.length" class="muted small" data-testid="rehearsal-unreleased">{{ t.setup.musicians.rehearsal.unreleased(unreleasedRehearsalPlaylists) }}</p>
                                 <p class="muted small">{{ t.setup.musicians.rehearsal.note }}</p>
                                 <p class="muted small">{{ t.setup.musicians.rehearsal.gone }}</p>

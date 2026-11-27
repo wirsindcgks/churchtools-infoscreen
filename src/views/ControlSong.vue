@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** One song on the phone page of the musicians (Plan.md 121 E): its name and key, opened with a button for each of its parts. */
-import { computed } from 'vue';
+import { computed, nextTick, useTemplateRef, watch } from 'vue';
 import type { SheetSection } from '../agenda/songsheet';
 import { t } from '../i18n/designer';
 
@@ -18,6 +18,18 @@ const props = defineProps<{
     bare?: boolean;
 }>();
 const emit = defineEmits<{ toggle: []; choose: [section: number] }>();
+const root = useTemplateRef<HTMLElement>('root');
+
+// The running part stays in view when the list rolls (Plan.md 135).
+watch(
+    () => props.active,
+    async (part) => {
+        if (part === null) return;
+        await nextTick();
+        root.value?.querySelector('.part.active')?.scrollIntoView?.({ block: 'nearest' });
+    },
+    { immediate: true },
+);
 
 /** The buttons keep the index of their part in the sheet; the parts outside the flow stand apart below (Plan.md 121 H). */
 const buttons = computed(() => props.parts.map((part, n) => ({ part, n })));
@@ -26,7 +38,7 @@ const outside = computed(() => buttons.value.filter(({ part }) => part.extra));
 </script>
 
 <template>
-    <li class="control-song" :class="{ shown, played }">
+    <li ref="root" class="control-song" :class="{ shown, played }">
         <button v-if="!bare" type="button" class="song" :aria-expanded="open" @click="emit('toggle')">
             <span>{{ title }}</span>
             <span v-if="songKey" class="key">{{ songKey }}</span>
@@ -119,7 +131,8 @@ button:disabled {
     gap: 8px;
 }
 .part {
-    padding: 8px;
+    min-height: 48px;
+    padding: 6px 8px;
 }
 .part.active {
     background: #2f6fed;
